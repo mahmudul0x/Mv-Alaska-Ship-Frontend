@@ -1,0 +1,124 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { motion } from "framer-motion";
+import { Bed, Wifi, Wind, Coffee, Bath, Eye } from "lucide-react";
+import { PageHero } from "@/components/site/PageHero";
+import { SectionHeader } from "@/components/site/SectionHeader";
+import { CTA } from "@/components/site/CTA";
+import { cabins } from "@/data/cabins";
+import { useRoomTypes } from "@/hooks/queries/useRoomTypes";
+import { formatBDT } from "@/lib/money";
+import img109 from "@/assets/109.jpeg";
+
+export const Route = createFileRoute("/cabins")({
+  component: Cabins,
+  head: () => ({
+    meta: [
+      { title: "Luxury Cabins & Suites — MV Alaska Cruise" },
+      { name: "description", content: "River-facing private balcony cabins, panorama suites, and honeymoon rooms aboard MV Alaska." },
+    ],
+  }),
+});
+
+const amenities = [
+  { icon: Wifi, label: "Starlink Wi-Fi" },
+  { icon: Wind, label: "Premium AC" },
+  { icon: Bath, label: "En-suite bath" },
+  { icon: Bed, label: "Egyptian linens" },
+  { icon: Coffee, label: "Mini bar" },
+  { icon: Eye, label: "Balcony view" },
+];
+
+function Cabins() {
+  const { data: roomTypes } = useRoomTypes();
+  const roomTypeByName = Object.fromEntries((roomTypes ?? []).map((rt) => [rt.name, rt]));
+
+  return (
+    <>
+      <PageHero
+        eyebrow="Cabins & Suites"
+        title={<>Your private <em className="not-italic text-gradient-gold">river</em> sanctuary.</>}
+        subtitle="Wood-clad interiors, floor-to-ceiling glass, and the Sundarbans as your view."
+        image={img109}
+      />
+
+      <section className="py-28 md:py-36 bg-background">
+        <div className="container-luxe">
+          <SectionHeader
+            align="center"
+            eyebrow="Accommodations"
+            title={<>Three categories. <em className="not-italic text-gradient-gold">One standard.</em></>}
+            description="Every cabin features private en-suite, premium bedding, ambient lighting, and uninterrupted river views."
+          />
+
+          <div className="mt-16 grid md:grid-cols-3 gap-6 lg:gap-8">
+            {cabins.map((c, i) => {
+              const roomType = roomTypeByName[c.roomTypeName];
+              const occupancy = roomType
+                ? `${roomType.max_adults} Adults${roomType.max_kids ? ` + ${roomType.max_kids} Kids` : ""}`
+                : c.occupancy;
+              const price = roomType ? formatBDT(roomType.base_price) : c.price;
+              return (
+                <motion.article
+                  key={c.slug}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-60px" }}
+                  transition={{ duration: 0.7, delay: i * 0.1 }}
+                  className="group bg-card rounded-2xl overflow-hidden shadow-luxe hover-lift"
+                >
+                  <Link to="/cabins/$slug" params={{ slug: c.slug }} className="block">
+                    <div className="relative aspect-4/3 overflow-hidden">
+                      <img src={c.img} alt={c.name} loading="lazy" className="image-zoom absolute inset-0 h-full w-full object-cover" />
+                      <div className="absolute top-4 right-4 px-3 py-1 rounded-full glass-dark text-gold-soft eyebrow text-[10px]">{c.size}</div>
+                      <div className="absolute inset-0 bg-ocean/0 group-hover:bg-ocean/20 transition-colors duration-500 flex items-center justify-center">
+                        <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 px-5 py-2.5 rounded-full glass text-background text-[10px] uppercase tracking-[0.2em] font-semibold">
+                          View Details
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-7">
+                      <h3 className="font-display text-2xl font-normal group-hover:text-gold transition-colors">{c.name}</h3>
+                      <div className="mt-1 text-sm text-muted-foreground">{occupancy}</div>
+                      <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
+                        {c.features.slice(0, 4).map((f) => (
+                          <li key={f} className="flex items-center gap-2">
+                            <span className="size-1 rounded-full bg-gold shrink-0" /> {f}
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="mt-6 pt-5 border-t border-border flex items-end justify-between">
+                        <div>
+                          <div className="eyebrow text-muted-foreground text-[10px]">Base price</div>
+                          <div className="font-display text-2xl">{price}</div>
+                        </div>
+                        <span className="px-4 py-2.5 rounded-full bg-ocean text-background text-[10px] uppercase tracking-[0.2em] font-semibold group-hover:bg-gold group-hover:text-ocean transition-colors">
+                          Explore →
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.article>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-24 bg-secondary/40">
+        <div className="container-luxe">
+          <div className="text-center eyebrow text-gold mb-10">In every cabin</div>
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-px bg-border rounded-2xl overflow-hidden">
+            {amenities.map((a) => (
+              <div key={a.label} className="bg-background p-8 text-center">
+                <a.icon className="size-7 text-gold mx-auto stroke-[1.2]" />
+                <div className="mt-3 text-sm">{a.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <CTA />
+    </>
+  );
+}
