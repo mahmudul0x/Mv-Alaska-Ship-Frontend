@@ -6,6 +6,7 @@ import { SectionHeader } from "@/components/site/SectionHeader";
 import { CTA } from "@/components/site/CTA";
 import { ItineraryMap, type Stop } from "@/components/site/ItineraryMap";
 import { usePackages } from "@/hooks/queries/usePackages";
+import { parseLocalDate } from "@/lib/dates";
 import { formatBDT } from "@/lib/money";
 import type { Package } from "@/lib/api/types";
 import deck from "@/assets/deck-sunset.jpg";
@@ -176,7 +177,7 @@ function PackagesPage() {
         {packages?.map((pkg, i) => {
           const tpl = templateFor(pkg);
           const title = pkg.marketing_title || `${pkg.ship.name} Voyage`;
-          const dateRange = `${new Date(pkg.start_date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${new Date(pkg.end_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
+          const dateRange = `${parseLocalDate(pkg.start_date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${parseLocalDate(pkg.end_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
           return (
             <div key={pkg.id} className="container-luxe">
               <motion.article

@@ -37,6 +37,7 @@ import {
   togglePackageBooking,
   updateStaffPackage,
 } from "@/lib/api/staff";
+import { parseLocalDate } from "@/lib/dates";
 import { formatBDT, parseMoney } from "@/lib/money";
 import type { PackageStatus, StaffPackage, StaffPackageWrite } from "@/lib/api/staffTypes";
 
@@ -47,12 +48,12 @@ export const Route = createFileRoute("/staff/packages")({
 const PACKAGE_STATUSES: PackageStatus[] = ["draft", "open", "closed", "completed", "cancelled"];
 
 function nightsBetween(start: string, end: string): number {
-  const ms = new Date(end).getTime() - new Date(start).getTime();
+  const ms = parseLocalDate(end).getTime() - parseLocalDate(start).getTime();
   return Math.max(0, Math.round(ms / 86400000));
 }
 
 function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
+  return parseLocalDate(iso).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",

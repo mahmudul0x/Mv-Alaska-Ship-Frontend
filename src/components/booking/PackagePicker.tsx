@@ -1,6 +1,7 @@
 import { ArrowRight, CalendarDays, Check, Clock, MapPin, Moon } from "lucide-react";
 
 import { usePackages } from "@/hooks/queries/usePackages";
+import { parseLocalDate } from "@/lib/dates";
 import { formatBDT } from "@/lib/money";
 import type { Package } from "@/lib/api/types";
 import fallbackImg from "@/assets/110.jpeg";
@@ -11,8 +12,8 @@ type Props = {
 };
 
 function formatRange(start: string, end: string) {
-  const s = new Date(start);
-  const e = new Date(end);
+  const s = parseLocalDate(start);
+  const e = parseLocalDate(end);
   const sameMonth = s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear();
   const startFmt = s.toLocaleDateString("en-GB", {
     day: "numeric",

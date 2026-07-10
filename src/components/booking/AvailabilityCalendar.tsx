@@ -14,6 +14,7 @@ import {
 import { Anchor, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
 import { useCalendar } from "@/hooks/queries/useCalendar";
+import { parseLocalDate } from "@/lib/dates";
 import type { CalendarPackageEntry } from "@/lib/api/types";
 
 type Props = {
@@ -31,12 +32,14 @@ function toDateKey(date: Date) {
 }
 
 export function AvailabilityCalendar({ onSelectPackage, selectedPackageId, initialMonth }: Props) {
-  const [month, setMonth] = useState(() => (initialMonth ? new Date(initialMonth) : new Date()));
+  const [month, setMonth] = useState(() =>
+    initialMonth ? parseLocalDate(initialMonth) : new Date(),
+  );
 
   // When the caller supplies/changes the target month (e.g. after choosing a
   // package), jump the calendar to that month.
   useEffect(() => {
-    if (initialMonth) setMonth(new Date(initialMonth));
+    if (initialMonth) setMonth(parseLocalDate(initialMonth));
   }, [initialMonth]);
 
   const year = month.getFullYear();
@@ -151,7 +154,7 @@ export function AvailabilityCalendar({ onSelectPackage, selectedPackageId, initi
                 onClick={() => handleDayClick(date)}
                 title={
                   bookable
-                    ? `${bookable.ship_name} — departs ${format(new Date(bookable.start_date), "d MMM")}`
+                    ? `${bookable.ship_name} — departs ${format(parseLocalDate(bookable.start_date), "d MMM")}`
                     : isClosed
                       ? "Sold out / booking closed"
                       : undefined

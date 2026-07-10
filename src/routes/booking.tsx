@@ -38,6 +38,7 @@ import { initiatePayment } from "@/lib/api/bookings";
 import { usePackage } from "@/hooks/queries/usePackages";
 import { useBookingQuote } from "@/hooks/queries/useBookingQuote";
 import { useCreateBooking } from "@/hooks/queries/useCreateBooking";
+import { parseLocalDate } from "@/lib/dates";
 import { formatBDT } from "@/lib/money";
 import { bookingContactSchema, type BookingContactValues } from "@/lib/validation/bookingForm";
 import type { ApiError, BookingPublic, PackageRoom } from "@/lib/api/types";
@@ -484,7 +485,7 @@ function SummaryCard({
   quote: import("@/lib/api/types").PriceBreakdown | undefined;
   quoting: boolean;
 }) {
-  const dates = `${new Date(selectedPackage.start_date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${new Date(selectedPackage.end_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
+  const dates = `${parseLocalDate(selectedPackage.start_date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${parseLocalDate(selectedPackage.end_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
 
   const rows = [
     {
@@ -685,8 +686,8 @@ function StepVoyage({ data, update }: StepProps) {
   const { data: selectedPackage } = usePackage(data.packageId);
 
   const nights = selectedPackage ? Math.max(0, selectedPackage.nights - 1) : 0;
-  const startDate = selectedPackage ? new Date(selectedPackage.start_date) : null;
-  const endDate = selectedPackage ? new Date(selectedPackage.end_date) : null;
+  const startDate = selectedPackage ? parseLocalDate(selectedPackage.start_date) : null;
+  const endDate = selectedPackage ? parseLocalDate(selectedPackage.end_date) : null;
 
   return (
     <div>
@@ -1208,7 +1209,7 @@ function StepPayment({
               <div className="px-5 pt-4 flex items-center justify-between gap-3">
                 <div>
                   <div className="font-display text-lg leading-none text-foreground whitespace-nowrap">
-                    {new Date(selectedPackage.start_date).toLocaleDateString("en-GB", {
+                    {parseLocalDate(selectedPackage.start_date).toLocaleDateString("en-GB", {
                       day: "2-digit",
                       month: "short",
                     })}
@@ -1233,7 +1234,7 @@ function StepPayment({
 
                 <div className="text-right">
                   <div className="font-display text-lg leading-none text-foreground whitespace-nowrap">
-                    {new Date(selectedPackage.end_date).toLocaleDateString("en-GB", {
+                    {parseLocalDate(selectedPackage.end_date).toLocaleDateString("en-GB", {
                       day: "2-digit",
                       month: "short",
                     })}
