@@ -491,14 +491,29 @@ function RowAction({
   );
 }
 
-/** ISO datetime → value for <input type="datetime-local"> (local, no seconds). */
-function toLocalInput(iso: string | null | undefined): string {
+/** The cutoff is a Bangladesh business rule ("noon the day before departure"),
+ * so the editor is pinned to Asia/Dhaka — a fixed UTC+6 zone with no DST —
+ * instead of the staff browser's timezone. Browser-local rendering showed a
+ * Dhaka-noon cutoff as "01:00" to a traveling admin, and re-parsing during a
+ * DST fall-back hour shifted the stored instant by an hour on an untouched
+ * save. Both helpers share this constant so display and parse can't disagree. */
+const DHAKA_UTC_OFFSET_MIN = 6 * 60;
+
+/** ISO datetime → Dhaka wall time for <input type="datetime-local"> (no seconds). */
+function toDhakaInput(iso: string | null | undefined): string {
   if (!iso) return "";
-  const d = new Date(iso);
+  const d = new Date(new Date(iso).getTime() + DHAKA_UTC_OFFSET_MIN * 60000);
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
-    d.getHours(),
-  )}:${pad(d.getMinutes())}`;
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(
+    d.getUTCHours(),
+  )}:${pad(d.getUTCMinutes())}`;
+}
+
+/** Inverse: datetime-local value (Dhaka wall time) → UTC ISO instant. */
+function fromDhakaInput(value: string): string {
+  // datetime-local yields "YYYY-MM-DDTHH:mm" (or with ":ss" in some browsers).
+  const seconds = value.length === 16 ? ":00" : "";
+  return new Date(`${value}${seconds}+06:00`).toISOString();
 }
 
 function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose: () => void }) {
@@ -562,22 +577,22 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
           Booking open (manual override)
         </label>
 
-        <StaffField label="Booking cutoff">
+        <StaffField label="Booking cutoff — Bangladesh time (UTC+6)">
           <input
             type="datetime-local"
-            value={toLocalInput(form.booking_cutoff_datetime)}
+            value={toDhakaInput(form.booking_cutoff_datetime)}
             onChange={(e) =>
               set({
                 booking_cutoff_datetime: e.target.value
-                  ? new Date(e.target.value).toISOString()
+                  ? fromDhakaInput(e.target.value)
                   : null,
               })
             }
             className={staffInputClass}
           />
           <span className="text-[10px] text-muted-foreground mt-1 block">
-            Bookings close at this time. Leave blank to auto-set to noon the day before
-            departure.
+            Bookings close at this time (Bangladesh clock, wherever you are). Leave blank
+            to auto-set to noon the day before departure.
           </span>
         </StaffField>
 
