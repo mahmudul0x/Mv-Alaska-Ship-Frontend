@@ -150,6 +150,9 @@ export interface BookingCreateRequest extends BookingQuoteRequest {
   customer_name: string;
   phone: string;
   email: string;
+  // Optional free-text note (dietary, accessibility, etc.). Capped at 1000
+  // chars server-side.
+  special_requests?: string;
 }
 
 export type BookingStatus =
@@ -175,6 +178,7 @@ export interface BookingPublic {
   email: string;
   adult_count: number;
   kid_details: KidDetail[];
+  special_requests: string;
   total_amount: Money;
   paid_amount: Money;
   due_amount: Money;

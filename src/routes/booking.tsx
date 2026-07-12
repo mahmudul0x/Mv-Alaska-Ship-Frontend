@@ -142,6 +142,9 @@ function Booking() {
         customer_name: contact.name,
         phone: contact.phone,
         email: contact.email,
+        // Free-text note from the wizard — only sent when the customer typed
+        // something, so an empty box stays an empty string server-side.
+        ...(data.requests.trim() ? { special_requests: data.requests.trim() } : {}),
       });
       // Industry checkout flow: booking created → straight to the SSLCommerz
       // gateway. The confirmation screen is only a fallback if the gateway
@@ -1059,6 +1062,7 @@ function GuestsCards({ data, update }: StepProps) {
           </label>
           <textarea
             rows={2}
+            maxLength={1000}
             placeholder="Dietary requirements, anniversary arrangement, accessibility needs…"
             value={data.requests}
             onChange={(e) => update({ requests: e.target.value })}
@@ -1488,8 +1492,14 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
   const handlePrint = () => {
     const win = window.open("", "_blank");
     if (!win) return;
+    // Escape values before writing them into the receipt HTML — special_requests
+    // is free-form customer text and must never inject markup into the document.
+    const esc = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const rows = (pairs: [string, string][]) =>
-      pairs.map(([k, v]) => `<div class="row"><span>${k}</span><span>${v}</span></div>`).join("");
+      pairs
+        .map(([k, v]) => `<div class="row"><span>${k}</span><span>${esc(v)}</span></div>`)
+        .join("");
     win.document.write(`
       <!DOCTYPE html><html><head>
       <meta charset="utf-8"/>
@@ -1530,6 +1540,9 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
             ["Return", booking.package.end_date],
             ["Adults", String(booking.adult_count)],
             ["Kids", String(booking.kid_details.length)],
+            ...(booking.special_requests
+              ? ([["Special requests", booking.special_requests]] as [string, string][])
+              : []),
           ])}
         </div>
         <div class="section">

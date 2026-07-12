@@ -15,6 +15,7 @@ import type {
   StaffPackageWrite,
   StaffPayment,
   StaffRoom,
+  StaffShip,
 } from "./staffTypes";
 
 // ── Auth ──────────────────────────────────────────────────────────────────
@@ -175,6 +176,21 @@ export async function openInvoicePdf(id: number) {
   window.open(url, "_blank", "noopener");
   // Give the new tab time to load before releasing the object URL.
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+// ── Ships (settings) ──────────────────────────────────────────────────────
+export async function getStaffShips(): Promise<StaffShip[]> {
+  const { data } = await staffClient.get<StaffShip[] | Paginated<StaffShip>>("/staff/ships/");
+  // The endpoint is unpaginated, but tolerate a paginated shape too.
+  return Array.isArray(data) ? data : data.results;
+}
+
+export async function updateStaffShip(
+  id: number,
+  payload: { authority_phones: string },
+): Promise<StaffShip> {
+  const { data } = await staffClient.patch(`/staff/ships/${id}/`, payload);
+  return data;
 }
 
 // ── Settings resources ────────────────────────────────────────────────────

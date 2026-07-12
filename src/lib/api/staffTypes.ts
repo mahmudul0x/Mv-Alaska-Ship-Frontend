@@ -7,6 +7,16 @@ export interface Paginated<T> {
   results: T[];
 }
 
+export interface StaffShip {
+  id: number;
+  name: string;
+  status: string;
+  /** Helpline numbers as stored (comma-separated); "" means use the default. */
+  authority_phones: string;
+  /** Resolved list actually printed on the PDFs (ship's, or system default). */
+  authority_phone_list: string[];
+}
+
 export type PackageStatus = "draft" | "open" | "closed" | "completed" | "cancelled";
 
 export interface StaffPackage {
@@ -76,6 +86,9 @@ export interface StaffBooking {
   adult_count: number;
   kid_details: KidDetail[];
   total_pax: number;
+  /** Customer's free-text note from the booking wizard (dietary, accessibility,
+   * anniversary, etc.). Empty string when none was given. */
+  special_requests: string;
   total_amount: Money;
   paid_amount: Money;
   due_amount: Money;
