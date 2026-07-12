@@ -80,6 +80,11 @@ export interface StaffBooking {
   paid_amount: Money;
   due_amount: Money;
   status: BookingStatus;
+  /** Money is owed back to this customer (cancelled with a deposit, or a
+   * payment settled on a dead session). Refunds are manual — staff clear
+   * the flag once the customer has been paid back. */
+  refund_required: boolean;
+  refund_note: string;
   created_at: string;
 }
 
@@ -90,9 +95,13 @@ export interface StaffBookingDetail extends StaffBooking {
 
 export interface StaffBookingSummary {
   count: number;
+  /** Active bookings only — cancelled money is reported separately. */
   total_amount: Money;
   paid_amount: Money;
   due_amount: Money;
+  /** Deposits sitting on cancelled bookings (the refund conversation). */
+  cancelled_paid_amount: Money;
+  refunds_owed_count: number;
   fully_paid_rate: string;
   by_status: Record<BookingStatus, number>;
 }
@@ -166,10 +175,20 @@ export interface StaffFoodMenuItemWrite {
 
 export interface StaffInvoice {
   id: number;
+  /** Issued number, e.g. "INV-2026-00042" — stored, gapless, unique. */
+  number: string;
   booking: number;
   booking_code: string;
+  payment: number | null;
+  /** The money this invoice states, frozen when it was issued. The booking's
+   *  live totals move as the customer pays; the invoice does not. */
+  total_amount: string;
+  paid_amount: string;
+  due_amount: string;
+  booking_status: string;
   sent_via: string;
   sent_at: string | null;
+  /** Authenticated API route — fetch via openInvoicePdf(), not a bare href. */
   pdf_url: string | null;
   created_at: string;
 }
@@ -224,6 +243,9 @@ export interface StaffOverview {
   total_revenue_expected: Money;
   collection_rate: string;
   pending_payment_bookings: number;
+  /** Refunds-owed queue: money the company owes back to customers. */
+  refunds_owed_count: number;
+  refunds_owed_paid_total: Money;
   bookings_today: number;
   bookings_this_week: number;
   bookings_by_status: Record<BookingStatus, number>;

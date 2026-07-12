@@ -89,6 +89,8 @@ export interface BookingFilters {
   package?: number;
   status?: string;
   search?: string;
+  /** "true" narrows to the refunds-owed queue (cancelled with money on it). */
+  refund_required?: "true" | "false";
 }
 
 export async function getStaffBookings(
@@ -112,7 +114,12 @@ export async function getStaffBooking(id: number): Promise<StaffBookingDetail> {
 
 export async function updateStaffBooking(
   id: number,
-  payload: Partial<Pick<StaffBooking, "status" | "customer_name" | "phone" | "email">>,
+  payload: Partial<
+    Pick<
+      StaffBooking,
+      "status" | "customer_name" | "phone" | "email" | "refund_required" | "refund_note"
+    >
+  >,
 ): Promise<StaffBookingDetail> {
   const { data } = await staffClient.patch(`/staff/bookings/${id}/`, payload);
   return data;
@@ -152,6 +159,22 @@ export async function getStaffInvoices(booking?: number): Promise<Paginated<Staf
 
 export async function resendInvoice(id: number) {
   await staffClient.post(`/staff/invoices/${id}/resend/`);
+}
+
+/** Open an invoice PDF in a new tab.
+ *
+ * The PDF is served by an authenticated endpoint, so it must be fetched
+ * through staffClient (which carries the JWT) — a plain <a href> sends no
+ * Authorization header and would 401. Previously the link pointed straight at
+ * the media file, which was served with no access check at all. */
+export async function openInvoicePdf(id: number) {
+  const { data } = await staffClient.get(`/staff/invoices/${id}/pdf/`, {
+    responseType: "blob",
+  });
+  const url = URL.createObjectURL(data as Blob);
+  window.open(url, "_blank", "noopener");
+  // Give the new tab time to load before releasing the object URL.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 // ── Settings resources ────────────────────────────────────────────────────

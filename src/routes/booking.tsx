@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -34,7 +35,7 @@ import img109 from "@/assets/109.jpeg";
 import { AvailabilityCalendar } from "@/components/booking/AvailabilityCalendar";
 import { PackagePicker } from "@/components/booking/PackagePicker";
 import { RoomPicker } from "@/components/booking/RoomPicker";
-import { initiatePayment } from "@/lib/api/bookings";
+import { getBookingInvoices, initiatePayment } from "@/lib/api/bookings";
 import { usePackage } from "@/hooks/queries/usePackages";
 import { useBookingQuote } from "@/hooks/queries/useBookingQuote";
 import { useCreateBooking } from "@/hooks/queries/useCreateBooking";
@@ -1459,6 +1460,16 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
   const breakdown = booking.price_breakdown;
   const hasDue = booking.due_amount !== "0.00";
 
+  // The official invoice PDF, if one has been issued (i.e. money has been
+  // received). Until now the customer had no way to obtain it at all — the
+  // "Download Receipt" button below only ever opened a browser print dialog on
+  // an HTML card, which is not the sealed invoice they were emailed.
+  const { data: invoices } = useQuery({
+    queryKey: ["booking-invoices", booking.booking_code],
+    queryFn: () => getBookingInvoices(booking.booking_code),
+  });
+  const latestInvoice = invoices?.[0];
+
   const waMessage = encodeURIComponent(
     `🚢 *MV Alaska Cruise — Booking Confirmed*\n\n` +
       `Ref: *${booking.booking_code}*\n` +
@@ -1692,13 +1703,28 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
             <MessageCircle className="size-5" />
             Send via WhatsApp
           </a>
-          <button
-            onClick={handlePrint}
-            className="flex items-center justify-center gap-3 py-4 rounded-2xl border border-border bg-card text-foreground hover:border-gold hover:text-gold font-semibold text-sm transition-colors hover-lift"
-          >
-            <Download className="size-5" />
-            Download Receipt (PDF)
-          </button>
+          {latestInvoice ? (
+            // The real, sealed invoice PDF — authorised by its own token.
+            <a
+              href={latestInvoice.download_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-3 py-4 rounded-2xl border border-border bg-card text-foreground hover:border-gold hover:text-gold font-semibold text-sm transition-colors hover-lift"
+            >
+              <Download className="size-5" />
+              Download Invoice ({latestInvoice.number})
+            </a>
+          ) : (
+            // No invoice is issued until a payment settles, so before then the
+            // best we can offer is a printable summary of the booking.
+            <button
+              onClick={handlePrint}
+              className="flex items-center justify-center gap-3 py-4 rounded-2xl border border-border bg-card text-foreground hover:border-gold hover:text-gold font-semibold text-sm transition-colors hover-lift"
+            >
+              <Download className="size-5" />
+              Print Booking Summary
+            </button>
+          )}
         </motion.div>
 
         {/* Receipt card */}

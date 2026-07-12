@@ -9,6 +9,7 @@ import {
   Receipt,
   Ship,
   TrendingUp,
+  Undo2,
   Wallet,
 } from "lucide-react";
 import {
@@ -116,6 +117,16 @@ function OverviewPage() {
       value: String(data.pending_payment_bookings),
       icon: Receipt,
       hint: "Pending bookings",
+    },
+    {
+      label: "Refunds owed",
+      value: String(data.refunds_owed_count),
+      icon: Undo2,
+      tone: "destructive" as const,
+      hint:
+        data.refunds_owed_count > 0
+          ? `${formatBDT(data.refunds_owed_paid_total)} to return — call the customers`
+          : "No refunds pending",
     },
   ];
 

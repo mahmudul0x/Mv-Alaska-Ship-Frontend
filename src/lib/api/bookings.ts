@@ -1,6 +1,7 @@
 import { apiClient } from "./client";
 import type {
   BookingCreateRequest,
+  BookingInvoice,
   BookingPublic,
   BookingQuoteRequest,
   PaymentInitiateRequest,
@@ -30,6 +31,17 @@ export async function initiatePayment(
   const { data } = await apiClient.post<PaymentInitiateResponse>(
     `/bookings/${bookingCode}/pay/`,
     payload,
+  );
+  return data;
+}
+
+/** The customer's own invoices for a booking, newest first.
+ *
+ * Each carries a download_url bearing that invoice's capability token, so a
+ * booking code never exposes anyone else's invoice. */
+export async function getBookingInvoices(bookingCode: string): Promise<BookingInvoice[]> {
+  const { data } = await apiClient.get<BookingInvoice[]>(
+    `/bookings/${bookingCode}/invoices/`,
   );
   return data;
 }

@@ -61,9 +61,10 @@ function Policy() {
                 <div className="font-display text-xl mb-2">50% advance to confirm</div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   To confirm your booking, pay at least <strong>50% of the total price</strong> in
-                  advance. The remaining balance must be settled <strong>before the journey</strong>.
-                  You can pay the full amount up front, or clear the due later from your booking
-                  page.
+                  advance. The remaining balance can be settled any time{" "}
+                  <strong>before the journey</strong> — pay the full amount up front, clear the due
+                  later from your booking page, or pay it to our guide when you board. Your cabin
+                  stays reserved for you.
                 </p>
               </div>
             </div>

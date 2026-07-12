@@ -48,10 +48,18 @@ function BookingConfirmationPage() {
     booking.due_amount !== "0.00";
 
   const dueAmount = booking ? parseMoney(booking.due_amount) : 0;
+  // Backend-computed deposit floor (UX mirror only — the API re-validates).
+  // Applies to the first payment; top-ups can be any positive amount.
+  const minPayment = booking
+    ? Math.min(parseMoney(booking.min_first_payment ?? "0"), dueAmount)
+    : 0;
   const partialNumber = Number.parseFloat(partialAmount || "0");
   const partialInvalid =
     paymentType === "partial" &&
-    (!partialAmount || partialNumber <= 0 || partialNumber > dueAmount);
+    (!partialAmount ||
+      partialNumber <= 0 ||
+      partialNumber > dueAmount ||
+      partialNumber < minPayment);
   const payingNow = paymentType === "partial" && partialNumber > 0 ? partialNumber : dueAmount;
 
   return (
@@ -150,7 +158,10 @@ function BookingConfirmationPage() {
             {paymentType === "partial" && (
               <div className="p-4 rounded-xl bg-ocean/3 border border-border space-y-3">
                 <label className="eyebrow text-muted-foreground text-[10px] block">
-                  Amount to pay now — max {formatBDT(booking!.due_amount)}
+                  Amount to pay now —{" "}
+                  {minPayment > 1
+                    ? `min ${formatBDT(String(minPayment))}, max ${formatBDT(booking!.due_amount)}`
+                    : `max ${formatBDT(booking!.due_amount)}`}
                 </label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
@@ -158,7 +169,7 @@ function BookingConfirmationPage() {
                   </span>
                   <input
                     type="number"
-                    min={0}
+                    min={minPayment || 0}
                     max={dueAmount || undefined}
                     value={partialAmount}
                     onChange={(e) => setPartialAmount(e.target.value)}
@@ -168,23 +179,37 @@ function BookingConfirmationPage() {
                 </div>
                 {dueAmount > 0 && (
                   <div className="flex gap-2">
-                    {[25, 50, 75].map((pct) => (
-                      <button
-                        key={pct}
-                        type="button"
-                        onClick={() =>
-                          setPartialAmount(String(Math.round((dueAmount * pct) / 100)))
-                        }
-                        className="flex-1 rounded-lg border border-border py-1.5 text-[11px] font-semibold text-muted-foreground hover:border-gold hover:text-gold transition-colors"
-                      >
-                        {pct}%
-                      </button>
-                    ))}
+                    {[25, 50, 75].map((pct) => {
+                      // Never quick-fill below the required deposit floor.
+                      const amount = Math.max(
+                        Math.round((dueAmount * pct) / 100),
+                        Math.ceil(minPayment),
+                      );
+                      return (
+                        <button
+                          key={pct}
+                          type="button"
+                          onClick={() => setPartialAmount(String(amount))}
+                          className="flex-1 rounded-lg border border-border py-1.5 text-[11px] font-semibold text-muted-foreground hover:border-gold hover:text-gold transition-colors"
+                        >
+                          {pct}%
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {minPayment > 1 && (
+                  <div className="text-[11px] text-muted-foreground">
+                    Booking confirmation requires a{" "}
+                    <strong>{formatBDT(String(minPayment))}</strong> minimum first
+                    payment; the remaining balance must be settled before the journey.
                   </div>
                 )}
                 {partialAmount && partialInvalid && (
                   <div className="text-xs text-destructive">
-                    Enter an amount between 1 and the outstanding balance.
+                    {minPayment > 1 && partialNumber < minPayment
+                      ? `The first payment must be at least ${formatBDT(String(minPayment))}.`
+                      : "Enter an amount between 1 and the outstanding balance."}
                   </div>
                 )}
               </div>

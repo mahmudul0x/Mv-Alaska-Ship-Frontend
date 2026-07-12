@@ -36,6 +36,7 @@ import {
   getStaffPackages,
   resendInvoice,
   getStaffInvoices,
+  openInvoicePdf,
   updateStaffBooking,
 } from "@/lib/api/staff";
 import { getPackageRooms } from "@/lib/api/packages";
@@ -171,6 +172,7 @@ function BookingsPage() {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [dueOnly, setDueOnly] = useState(false);
+  const [refundsOnly, setRefundsOnly] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("created");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [detailId, setDetailId] = useState<number | null>(null);
@@ -180,6 +182,7 @@ function BookingsPage() {
     package: packageFilter,
     status: statusFilter || undefined,
     search: search || undefined,
+    refund_required: refundsOnly ? ("true" as const) : undefined,
   };
 
   const { data, isLoading } = useQuery({
@@ -215,7 +218,13 @@ function BookingsPage() {
     });
   }, [data?.results, dueOnly, sortKey, sortDir]);
 
-  const filtersActive = !!(packageFilter || statusFilter || search || dueOnly);
+  const filtersActive = !!(
+    packageFilter ||
+    statusFilter ||
+    search ||
+    dueOnly ||
+    refundsOnly
+  );
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -232,6 +241,7 @@ function BookingsPage() {
     setSearch("");
     setSearchInput("");
     setDueOnly(false);
+    setRefundsOnly(false);
     setPage(1);
   }
 
@@ -335,6 +345,25 @@ function BookingsPage() {
             </span>
           </button>
         ))}
+        {/* Refunds-owed queue — money the company owes back; keep it loud. */}
+        <button
+          onClick={() => {
+            setPage(1);
+            setRefundsOnly((v) => !v);
+          }}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+            refundsOnly
+              ? "border-destructive bg-destructive/10 text-destructive"
+              : (summary?.refunds_owed_count ?? 0) > 0
+                ? "border-destructive/50 text-destructive hover:bg-destructive/5"
+                : "border-border text-muted-foreground hover:border-gold/50"
+          }`}
+        >
+          Refunds owed
+          <span className="ml-1.5 text-[10px] opacity-80">
+            {summary?.refunds_owed_count ?? 0}
+          </span>
+        </button>
       </div>
 
       {/* Filters */}
@@ -475,7 +504,17 @@ function BookingsPage() {
                   {formatBDT(b.due_amount)}
                 </td>
                 <td className="px-4 py-3">
-                  <StatusBadge status={b.status} />
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <StatusBadge status={b.status} />
+                    {b.refund_required && (
+                      <span
+                        title={b.refund_note || "Refund owed — call the customer"}
+                        className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-[10px] font-semibold uppercase tracking-wide"
+                      >
+                        Refund owed
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
                   {timeAgo(b.created_at)}
@@ -596,6 +635,19 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
     onError: (err) => toast.error(errorText(err)),
   });
 
+  const markRefundedMutation = useMutation({
+    mutationFn: (note: string) =>
+      updateStaffBooking(bookingId, {
+        refund_required: false,
+        refund_note: note,
+      }),
+    onSuccess: () => {
+      toast.success("Marked as refunded.");
+      invalidate();
+    },
+    onError: (err) => toast.error(errorText(err)),
+  });
+
   const resendMutation = useMutation({
     mutationFn: (invoiceId: number) => resendInvoice(invoiceId),
     onSuccess: () => toast.success("Invoice email resent."),
@@ -681,6 +733,42 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
             </div>
           </div>
 
+          {/* Refund owed — manual process; the flag is the admin's only nudge */}
+          {booking.refund_required && (
+            <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 space-y-3">
+              <div className="eyebrow text-destructive text-[10px]">
+                Refund owed — {formatBDT(booking.paid_amount)} paid on this booking
+              </div>
+              {booking.refund_note && (
+                <p className="text-xs text-muted-foreground whitespace-pre-line">
+                  {booking.refund_note}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Refunds are settled manually (phone/bKash). Once the customer has
+                been paid back, record how and clear the flag.
+              </p>
+              <button
+                disabled={markRefundedMutation.isPending}
+                onClick={() => {
+                  const note = prompt(
+                    "How was the refund settled? (e.g. \"Refunded 5000 BDT via bKash, 11 Jul\")",
+                  );
+                  if (note === null) return;
+                  const stamp = `Resolved: ${note || "refunded"}`;
+                  markRefundedMutation.mutate(
+                    booking.refund_note
+                      ? `${booking.refund_note}\n${stamp}`
+                      : stamp,
+                  );
+                }}
+                className="px-4 py-2 rounded-full border border-destructive/50 text-destructive text-xs font-semibold hover:bg-destructive/10 transition-colors disabled:opacity-40"
+              >
+                {markRefundedMutation.isPending ? "Saving…" : "Mark refunded"}
+              </button>
+            </div>
+          )}
+
           {/* Status change */}
           <div className="rounded-xl border border-border p-4">
             <div className="eyebrow text-muted-foreground text-[10px] mb-3">Change status</div>
@@ -763,13 +851,22 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
                 {invoices.results.map((inv) => (
                   <div key={inv.id} className="px-4 py-2.5 flex items-center justify-between gap-2">
                     <div className="text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">{inv.number}</span>
+                      {" · "}
                       {inv.sent_at ? `Sent ${new Date(inv.sent_at).toLocaleString()}` : "Not sent"}
+                      {" · "}
+                      Due {inv.due_amount} BDT
                     </div>
                     <div className="flex items-center gap-3">
                       {inv.pdf_url && (
-                        <a href={inv.pdf_url} target="_blank" rel="noreferrer" className="text-xs text-gold hover:underline">
+                        // Fetched through the API (JWT); the PDF endpoint is
+                        // authenticated, so a bare href would 401.
+                        <button
+                          onClick={() => openInvoicePdf(inv.id)}
+                          className="text-xs text-gold hover:underline"
+                        >
                           PDF
-                        </a>
+                        </button>
                       )}
                       <button
                         onClick={() => resendMutation.mutate(inv.id)}

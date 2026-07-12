@@ -197,10 +197,16 @@ export function StatCard({
   icon: LucideIcon;
   hint?: React.ReactNode;
   highlight?: boolean;
-  tone?: "default" | "gold" | "emerald";
+  tone?: "default" | "gold" | "emerald" | "destructive";
 }) {
   const valueTone =
-    tone === "gold" ? "text-gold" : tone === "emerald" ? "text-emerald-600" : "";
+    tone === "gold"
+      ? "text-gold"
+      : tone === "emerald"
+        ? "text-emerald-600"
+        : tone === "destructive"
+          ? "text-destructive"
+          : "";
   return (
     <div
       className={`group rounded-2xl border p-5 transition-shadow hover:shadow-luxe ${

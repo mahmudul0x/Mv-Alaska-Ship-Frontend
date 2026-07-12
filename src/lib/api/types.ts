@@ -178,8 +178,25 @@ export interface BookingPublic {
   total_amount: Money;
   paid_amount: Money;
   due_amount: Money;
+  // Server-computed floor for the FIRST payment (Package.min_deposit_percent
+  // of the total). "0.01" once a deposit exists — top-ups have no floor.
+  min_first_payment: Money;
   // Only present on the create (201) response — absent on GET retrieve.
   price_breakdown?: PriceBreakdown;
+}
+
+/** An issued invoice. The figures are what the invoice STATES — frozen when it
+ *  was issued — not the booking's live totals, which keep moving as the
+ *  customer pays. */
+export interface BookingInvoice {
+  number: string;
+  total_amount: Money;
+  paid_amount: Money;
+  due_amount: Money;
+  sent_at: string | null;
+  created_at: string;
+  /** Bears this invoice's capability token; no auth header needed. */
+  download_url: string;
 }
 
 export type PaymentType = "full" | "partial";
