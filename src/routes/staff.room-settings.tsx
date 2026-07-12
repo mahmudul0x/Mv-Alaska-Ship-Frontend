@@ -2,10 +2,24 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Baby, BedDouble, Gift, Info, Loader2, Save, Ticket, UserRound, Users } from "lucide-react";
+import {
+  Baby,
+  BedDouble,
+  Gift,
+  Info,
+  Loader2,
+  Plus,
+  Save,
+  Ticket,
+  Trash2,
+  UserRound,
+  Users,
+} from "lucide-react";
 
 import { PageHeader, errorText, staffInputClass } from "@/components/staff/ui";
 import {
+  createStaffKidRule,
+  deleteStaffKidRule,
   getStaffKidRules,
   getStaffRoomTypes,
   updateStaffKidRule,
@@ -255,6 +269,10 @@ function KidPricingSection() {
     queryFn: getStaffKidRules,
   });
   const [savingId, setSavingId] = useState<number | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ["staff", "kid-rules"] });
 
   const mutation = useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: Partial<StaffKidRule> }) => {
@@ -263,10 +281,29 @@ function KidPricingSection() {
     },
     onSuccess: () => {
       toast.success("Kid pricing rule updated.");
-      queryClient.invalidateQueries({ queryKey: ["staff", "kid-rules"] });
+      invalidate();
     },
     onError: (err) => toast.error(errorText(err)),
     onSettled: () => setSavingId(null),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: createStaffKidRule,
+    onSuccess: () => {
+      toast.success("Kid pricing rule added.");
+      setShowAdd(false);
+      invalidate();
+    },
+    onError: (err) => toast.error(errorText(err)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteStaffKidRule,
+    onSuccess: () => {
+      toast.success("Kid pricing rule deleted.");
+      invalidate();
+    },
+    onError: (err) => toast.error(errorText(err)),
   });
 
   return (
@@ -289,19 +326,162 @@ function KidPricingSection() {
 
           {data && data.length > 0 && <AgeTimeline rules={data} />}
 
+          <div className="flex items-center justify-between">
+            <span className="eyebrow text-muted-foreground text-[10px]">
+              {data?.length ?? 0} rule(s)
+            </span>
+            <button
+              onClick={() => setShowAdd((v) => !v)}
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-gold"
+            >
+              <Plus className="size-3.5" />
+              Add rule
+            </button>
+          </div>
+
+          {showAdd && (
+            <AddKidRuleForm
+              saving={createMutation.isPending}
+              onCancel={() => setShowAdd(false)}
+              onCreate={(payload) => createMutation.mutate(payload)}
+            />
+          )}
+
+          {(!data || data.length === 0) && !showAdd && (
+            <div className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+              No kid pricing rules yet. Bookings with children will fail until you add
+              rules covering their ages. Click <strong>Add rule</strong> to start.
+            </div>
+          )}
+
           <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
             {data?.map((rule) => (
               <KidRuleCard
                 key={rule.id}
                 rule={rule}
                 saving={savingId === rule.id && mutation.isPending}
+                deleting={deleteMutation.isPending && deleteMutation.variables === rule.id}
                 onSave={(payload) => mutation.mutate({ id: rule.id, payload })}
+                onDelete={() => {
+                  if (confirm("Delete this kid pricing rule?")) deleteMutation.mutate(rule.id);
+                }}
               />
             ))}
           </div>
         </div>
       )}
     </section>
+  );
+}
+
+/** Form to add a new kid pricing rule. Charge type drives whether an amount is
+ * required (fixed only) — mirrors the backend serializer's validation. */
+function AddKidRuleForm({
+  onCreate,
+  onCancel,
+  saving,
+}: {
+  onCreate: (payload: Omit<StaffKidRule, "id">) => void;
+  onCancel: () => void;
+  saving: boolean;
+}) {
+  const [minAge, setMinAge] = useState(0);
+  const [maxAge, setMaxAge] = useState(3);
+  const [chargeType, setChargeType] = useState<KidChargeType>("free");
+  const [amount, setAmount] = useState("");
+  const isFixed = chargeType === "fixed";
+  const valid = maxAge > minAge && (!isFixed || amount !== "");
+
+  return (
+    <div className="rounded-2xl border border-gold/50 bg-card shadow-gold p-5 space-y-4">
+      <div className="font-display text-base">New kid pricing rule</div>
+
+      <div className="grid sm:grid-cols-2 gap-3">
+        <label className="block">
+          <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
+            Age from (incl.)
+          </span>
+          <input
+            type="number"
+            min={0}
+            value={minAge}
+            onChange={(e) => setMinAge(Number(e.target.value))}
+            className={staffInputClass}
+          />
+        </label>
+        <label className="block">
+          <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
+            Age to (excl.)
+          </span>
+          <input
+            type="number"
+            min={1}
+            value={maxAge}
+            onChange={(e) => setMaxAge(Number(e.target.value))}
+            className={staffInputClass}
+          />
+        </label>
+      </div>
+
+      <label className="block">
+        <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
+          Charge type
+        </span>
+        <select
+          value={chargeType}
+          onChange={(e) => setChargeType(e.target.value as KidChargeType)}
+          className={staffInputClass}
+        >
+          <option value="free">Free — no charge</option>
+          <option value="fixed">Fixed charge — flat amount per kid</option>
+          <option value="full_adult">Full adult fare</option>
+        </select>
+      </label>
+
+      {isFixed && (
+        <label className="block">
+          <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
+            Charge per kid
+          </span>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+              ৳
+            </span>
+            <input
+              type="number"
+              min={0}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className={`${staffInputClass} pl-8`}
+            />
+          </div>
+        </label>
+      )}
+
+      <div className="flex gap-3">
+        <button
+          onClick={onCancel}
+          className="flex-1 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold border border-border text-muted-foreground"
+        >
+          Cancel
+        </button>
+        <button
+          disabled={!valid || saving}
+          onClick={() =>
+            onCreate({
+              min_age: minAge,
+              max_age: maxAge,
+              charge_type: chargeType,
+              amount: isFixed ? amount : null,
+            })
+          }
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-gold disabled:opacity-30 disabled:shadow-none"
+        >
+          {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
+          Add rule
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -402,11 +582,15 @@ function AgeTimeline({ rules }: { rules: StaffKidRule[] }) {
 function KidRuleCard({
   rule,
   onSave,
+  onDelete,
   saving,
+  deleting,
 }: {
   rule: StaffKidRule;
   onSave: (payload: Partial<StaffKidRule>) => void;
+  onDelete: () => void;
   saving: boolean;
+  deleting: boolean;
 }) {
   const [minAge, setMinAge] = useState(rule.min_age);
   const [maxAge, setMaxAge] = useState(rule.max_age);
@@ -434,6 +618,18 @@ function KidRuleCard({
         <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${meta.badge}`}>
           {minAge}–{maxAge} yrs
         </span>
+        <button
+          onClick={onDelete}
+          disabled={deleting}
+          title="Delete rule"
+          className="size-7 grid place-items-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-40"
+        >
+          {deleting ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <Trash2 className="size-3.5" />
+          )}
+        </button>
       </div>
 
       <div className="p-5 space-y-4">

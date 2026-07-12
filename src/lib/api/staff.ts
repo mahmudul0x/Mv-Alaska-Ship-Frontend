@@ -219,6 +219,17 @@ export async function updateStaffKidRule(id: number, payload: Partial<StaffKidRu
   return data;
 }
 
+export async function createStaffKidRule(
+  payload: Omit<StaffKidRule, "id">,
+): Promise<StaffKidRule> {
+  const { data } = await staffClient.post("/staff/kid-pricing-rules/", payload);
+  return data;
+}
+
+export async function deleteStaffKidRule(id: number) {
+  await staffClient.delete(`/staff/kid-pricing-rules/${id}/`);
+}
+
 export async function getStaffFoodMenuItems(): Promise<StaffFoodMenuItem[]> {
   const { data } = await staffClient.get("/staff/food-menu-items/");
   return data;
