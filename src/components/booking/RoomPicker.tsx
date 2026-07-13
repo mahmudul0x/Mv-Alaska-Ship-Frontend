@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { usePackageRooms } from "@/hooks/queries/usePackageRooms";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { formatBDT } from "@/lib/money";
 import type { PackageRoom, RoomAvailability } from "@/lib/api/types";
 
@@ -122,6 +123,10 @@ const SHIP_DECK_PLANS: DeckPlan[] = [
 /* One grid unit of the plan, in px. */
 const ROW_H = 64;
 const ROW_GAP = 6;
+/* Narrowest a cabin tile may get before the deck scrolls instead. Sized to fit
+ * a 3-digit room number plus the capacity/price line, and to clear the 44px
+ * minimum touch target. */
+const MIN_CELL_W = 64;
 const cellSize = (span = 1) => span * ROW_H + (span - 1) * ROW_GAP;
 
 /* Wooden deck planking — seams run along the ship's axis. */
@@ -151,17 +156,38 @@ function autoDeckPlan(floor: number | null, floorRooms: PackageRoom[]): DeckPlan
   };
 }
 
-/* ── Skeleton: hull outlines while rooms load ── */
-function RoomsSkeleton() {
+/* ── Skeleton: hull outlines while rooms load ──
+ *
+ * Heights mirror what the real deck will occupy, so the page doesn't lurch when
+ * rooms arrive. The mobile hull in particular is ~920px tall (a 9-cell column
+ * plus bow, aft block and stern label) — the old 560px placeholder shifted the
+ * layout ~360px on load. */
+const MOBILE_DECK_H =
+  112 + // bow padding (pt-28)
+  9 * ROW_H +
+  8 * ROW_GAP + // tallest cabin column
+  8 +
+  80 + // aft block + gap
+  40 + // stern label
+  24; // pb-6
+
+function RoomsSkeleton({ mobile }: { mobile: boolean }) {
   return (
     <div className="space-y-6 animate-pulse">
       <div className="h-3 w-40 rounded bg-muted" />
-      {[0, 1].map((i) => (
-        <div key={i}>
-          <div className="hidden md:block h-52 rounded-[40px_50%_50%_40px/40px_50%_50%_40px] border border-border bg-muted/40" />
-          <div className="md:hidden mx-auto h-140 w-full max-w-80 rounded-[50%_50%_56px_56px/120px_120px_56px_56px] border border-border bg-muted/40" />
-        </div>
-      ))}
+      {mobile ? (
+        <div
+          style={{ height: MOBILE_DECK_H }}
+          className="mx-auto w-full max-w-80 rounded-[50%_50%_56px_56px/120px_120px_56px_56px] border border-border bg-muted/40"
+        />
+      ) : (
+        [0, 1].map((i) => (
+          <div
+            key={i}
+            className="h-60 rounded-[40px_50%_50%_40px/40px_50%_50%_40px] border border-border bg-muted/40"
+          />
+        ))
+      )}
     </div>
   );
 }
@@ -267,11 +293,15 @@ function Deck({
   roomsByNumber,
   selectedRoomId,
   onSelectRoom,
+  vertical,
 }: {
   plan: DeckPlan;
   roomsByNumber: Map<string, PackageRoom>;
   selectedRoomId?: number;
   onSelectRoom: (room: PackageRoom) => void;
+  /** Draw the ship bow-up (mobile) rather than bow-right. Only the chosen hull
+   * is rendered — the other must not be left in the DOM. */
+  vertical: boolean;
 }) {
   const deckRooms = [...plan.port, ...plan.starboard]
     .filter((c): c is Extract<PlanCell, { kind: "room" }> => c.kind === "room")
@@ -279,6 +309,19 @@ function Deck({
     .filter((r): r is PackageRoom => !!r);
   const availableCount = deckRooms.filter((r) => r.availability === "available").length;
   const columns = Math.max(rowUnits(plan.port), rowUnits(plan.starboard), 1);
+
+  /* Width at which every cabin still clears MIN_CELL_W, derived from the hull's
+   * fixed furniture rather than hardcoded — a ship with more cabins per deck
+   * (or no aft block) gets the right number without code changes. */
+  const HULL_CHROME =
+    8 * 2 + // hull p-2
+    16 + // deck pl-4
+    112 + // deck pr-28 (bow)
+    14 + // stern label
+    8 + // flex gap
+    (plan.aft ? 80 + 8 : 0); // aft block + gap
+  const hullMinWidth =
+    HULL_CHROME + columns * MIN_CELL_W + (columns - 1) * ROW_GAP;
 
   const renderCell = (cell: PlanCell, i: number, vertical: boolean) => {
     if (cell.kind === "feature") {
@@ -312,11 +355,21 @@ function Deck({
     );
   };
 
-  /* Horizontal (md+): cells run aft → bow, left → right. */
+  /* Horizontal (md+): cells run aft → bow, left → right.
+   *
+   * The floor of MIN_CELL_W is load-bearing: with `minmax(0, 1fr)` the cabins
+   * absorbed every pixel the hull's fixed furniture (stern label, aft block,
+   * bow) didn't leave them, collapsing to ~18px at 1024px — narrower than the
+   * room number they must show, so the numbers overlapped illegibly. Cells now
+   * refuse to shrink past a readable, tappable width and the hull scrolls
+   * instead (see the overflow-x wrapper below). */
   const renderRow = (cells: PlanCell[]) => (
     <div
       className="grid"
-      style={{ gap: ROW_GAP, gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+      style={{
+        gap: ROW_GAP,
+        gridTemplateColumns: `repeat(${columns}, minmax(${MIN_CELL_W}px, 1fr))`,
+      }}
     >
       {cells.map((cell, i) => renderCell(cell, i, false))}
     </div>
@@ -369,7 +422,10 @@ function Deck({
   );
 
   return (
-    <div>
+    /* min-w-0: without it this box takes its content's min-width (the hull's),
+     * which propagates out to the page and scrolls the whole document sideways
+     * instead of scrolling the deck. */
+    <div className="min-w-0">
       {/* Deck header */}
       <div className="flex items-baseline justify-between px-2 mb-2">
         <span className="eyebrow text-[10px] text-ocean flex items-center gap-1.5">
@@ -382,15 +438,22 @@ function Deck({
         </span>
       </div>
 
-      {/* ── md+: horizontal ship on water — stern left, bow right ── */}
-      <div className="hidden md:block relative rounded-[36px] bg-linear-to-b from-sky-200/60 via-sky-100/50 to-sky-300/45 p-4 lg:p-6 overflow-hidden">
+      {/* ── md+: horizontal ship on water — stern left, bow right ──
+       * The hull scrolls horizontally on narrow desktops/tablets rather than
+       * crushing the cabins: HULL_MIN_W is the width at which every tile still
+       * meets MIN_CELL_W, so below that the deck pans instead of collapsing. */}
+      {!vertical && (
+      <div className="relative rounded-[36px] bg-linear-to-b from-sky-200/60 via-sky-100/50 to-sky-300/45 p-4 lg:p-6 overflow-x-auto overflow-y-hidden">
         {waves}
 
         {/* White hull */}
-        <div className="relative rounded-[52px_150px_150px_52px/52px_50%_50%_52px] border border-slate-300/80 bg-linear-to-b from-white via-slate-50 to-slate-200 shadow-[0_18px_40px_-18px_rgba(15,45,60,0.5)] p-2">
+        <div
+          className="relative rounded-[52px_150px_150px_52px/52px_50%_50%_52px] border border-slate-300/80 bg-linear-to-b from-white via-slate-50 to-slate-200 shadow-[0_18px_40px_-18px_rgba(15,45,60,0.5)] p-2"
+          style={{ minWidth: hullMinWidth }}
+        >
           {/* Wooden deck */}
           <div
-            className="relative rounded-[44px_140px_140px_44px/44px_50%_50%_44px] p-3 pl-4 pr-32"
+            className="relative rounded-[44px_140px_140px_44px/44px_50%_50%_44px] p-3 pl-4 pr-28"
             style={{ background: woodDeck("h") }}
           >
             <div className="flex items-stretch gap-2">
@@ -418,15 +481,17 @@ function Deck({
             </div>
 
             {/* Bow: compass rose on open deck */}
-            <div className="absolute right-10 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5">
+            <div className="absolute right-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5">
               {compassRose}
             </div>
           </div>
         </div>
       </div>
+      )}
 
       {/* ── Mobile: vertical ship on water — bow top, stern bottom ── */}
-      <div className="md:hidden relative rounded-[32px] bg-linear-to-b from-sky-200/60 via-sky-100/50 to-sky-300/45 p-4 overflow-hidden">
+      {vertical && (
+      <div className="relative rounded-[32px] bg-linear-to-b from-sky-200/60 via-sky-100/50 to-sky-300/45 p-4 overflow-hidden">
         {waves}
 
         {/* White hull */}
@@ -471,6 +536,7 @@ function Deck({
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
@@ -478,6 +544,9 @@ function Deck({
 export function RoomPicker({ packageId, selectedRoomId, onSelectRoom }: Props) {
   const { data: rooms, isLoading, isError } = usePackageRooms(packageId);
   const [activeFloor, setActiveFloor] = useState<number | null>(null);
+  // Matches the md breakpoint the deck layouts are keyed to — used to mount one
+  // deck rather than render both and hide one.
+  const isMobile = useIsMobile();
 
   if (!packageId) {
     return (
@@ -487,7 +556,7 @@ export function RoomPicker({ packageId, selectedRoomId, onSelectRoom }: Props) {
     );
   }
   if (isLoading) {
-    return <RoomsSkeleton />;
+    return <RoomsSkeleton mobile={isMobile} />;
   }
   if (isError || !rooms) {
     return (
@@ -552,21 +621,30 @@ export function RoomPicker({ packageId, selectedRoomId, onSelectRoom }: Props) {
         </div>
       </div>
 
+      {/* Only the deck for the current breakpoint is mounted. Rendering both and
+       * hiding one with CSS put every room in the DOM ~3× — including live radio
+       * inputs on offscreen tiles, which keyboard and screen-reader users could
+       * still reach. */}
+
       {/* md+: both decks stacked, upper deck first */}
-      <div className="hidden md:block space-y-8">
-        {[...decks].reverse().map((plan) => (
-          <Deck
-            key={`${plan.name}-${plan.floor}`}
-            plan={plan}
-            roomsByNumber={roomsByNumber}
-            selectedRoomId={selectedRoomId}
-            onSelectRoom={onSelectRoom}
-          />
-        ))}
-      </div>
+      {!isMobile && (
+        <div className="min-w-0 space-y-8">
+          {[...decks].reverse().map((plan) => (
+            <Deck
+              key={`${plan.name}-${plan.floor}`}
+              plan={plan}
+              roomsByNumber={roomsByNumber}
+              selectedRoomId={selectedRoomId}
+              onSelectRoom={onSelectRoom}
+              vertical={false}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Mobile: floor tabs + the active deck only, so no long scrolling */}
-      <div className="md:hidden space-y-5">
+      {isMobile && (
+      <div className="space-y-5">
         <div className="flex flex-wrap items-center gap-2">
           {decks.map((plan) => {
             const active = plan.floor === activeDeck?.floor;
@@ -575,7 +653,7 @@ export function RoomPicker({ packageId, selectedRoomId, onSelectRoom }: Props) {
                 type="button"
                 key={`${plan.name}-${plan.floor}`}
                 onClick={() => setActiveFloor(plan.floor)}
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
+                className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
                   active
                     ? "bg-ocean text-background shadow-luxe"
                     : "border border-border bg-card text-muted-foreground hover:border-gold/60 hover:text-foreground cursor-pointer"
@@ -600,9 +678,11 @@ export function RoomPicker({ packageId, selectedRoomId, onSelectRoom }: Props) {
             roomsByNumber={roomsByNumber}
             selectedRoomId={selectedRoomId}
             onSelectRoom={onSelectRoom}
+            vertical
           />
         )}
       </div>
+      )}
 
       {/* Selected room recap */}
       {selectedRoom && (

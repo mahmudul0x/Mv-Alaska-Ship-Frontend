@@ -5,6 +5,8 @@ import {
   Utensils, Footprints, Link2, Check,
 } from "lucide-react";
 
+import { copyToClipboard } from "@/lib/clipboard";
+
 export type StopType = "wildlife" | "canal" | "dining" | "excursion" | "anchor";
 
 export type Stop = {
@@ -90,12 +92,9 @@ export function ItineraryMap({
   const tipType = inferType(tip);
 
   const copyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
+    if (await copyToClipboard(window.location.href)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
-    } catch {
-      /* noop */
     }
   };
 

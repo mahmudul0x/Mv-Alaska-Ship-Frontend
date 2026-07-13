@@ -190,7 +190,7 @@ function BookingConfirmationPage() {
                           key={pct}
                           type="button"
                           onClick={() => setPartialAmount(String(amount))}
-                          className="flex-1 rounded-lg border border-border py-1.5 text-[11px] font-semibold text-muted-foreground hover:border-gold hover:text-gold transition-colors"
+                          className="flex-1 min-h-11 rounded-lg border border-border py-1.5 text-[11px] font-semibold text-muted-foreground hover:border-gold hover:text-gold transition-colors"
                         >
                           {pct}%
                         </button>

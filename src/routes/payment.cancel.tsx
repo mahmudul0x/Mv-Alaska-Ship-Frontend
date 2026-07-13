@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Ban, Clock } from "lucide-react";
+import { Ban, Clock, Loader2 } from "lucide-react";
 
+import { BookingLoadError } from "@/components/booking/BookingLoadError";
 import { BookingStatusCard } from "@/components/booking/BookingStatusCard";
 import { ResultShell } from "@/components/booking/ResultShell";
 import { useBooking } from "@/hooks/queries/useBooking";
@@ -15,7 +16,9 @@ export const Route = createFileRoute("/payment/cancel")({
 
 function PaymentCancelPage() {
   const { booking: bookingCode } = Route.useSearch();
-  const { data: booking } = useBooking(bookingCode);
+  // The cancel headline holds regardless of the fetch; only the status card
+  // below depends on it, so a failed load must say so rather than vanish.
+  const { data: booking, isLoading, isError, refetch, isRefetching } = useBooking(bookingCode);
 
   return (
     <ResultShell
@@ -25,6 +28,18 @@ function PaymentCancelPage() {
       title="No charge was made"
       subtitle="You cancelled the payment. Your booking is still reserved — you can complete payment anytime before departure."
     >
+      {bookingCode && isLoading && (
+        <div className="rounded-2xl border border-border bg-card shadow-luxe p-12 flex items-center justify-center gap-3 text-muted-foreground">
+          <Loader2 className="size-5 animate-spin text-gold" /> Loading your booking…
+        </div>
+      )}
+      {bookingCode && isError && (
+        <BookingLoadError
+          bookingCode={bookingCode}
+          onRetry={() => refetch()}
+          retrying={isRefetching}
+        />
+      )}
       {booking && <BookingStatusCard booking={booking} />}
 
       <div className="rounded-2xl border border-border bg-card px-5 py-4 flex items-start gap-3 text-sm text-muted-foreground">

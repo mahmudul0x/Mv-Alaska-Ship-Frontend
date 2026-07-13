@@ -183,6 +183,11 @@ function Booking() {
   // On the final (payment) step the sidebar is hidden — the payment step lays
   // out its own summary + payment columns full-width.
   const isPaymentStep = step === steps.length - 1;
+  // The deck plan needs every pixel it can get: with the sidebar taking 5/12 of
+  // the row, the hull was narrower at lg than it had been at md. The room step
+  // therefore goes full-width too, and the sidebar's totals live in the sticky
+  // bar / the payment step instead.
+  const isWideStep = isPaymentStep || step === STEP_ROOM;
   const canContinue = isStepComplete(step, data);
   const goBack = () => setStep((s) => Math.max(0, s - 1));
   const goNext = () => canContinue && setStep((s) => Math.min(steps.length - 1, s + 1));
@@ -248,7 +253,12 @@ function Booking() {
       <div className="container-luxe pt-12 pb-28 lg:pt-16 lg:pb-20">
         <div className="grid lg:grid-cols-12 gap-12 xl:gap-16">
           {/* ── Left: step content ── */}
-          <div className={isPaymentStep ? "lg:col-span-12" : "lg:col-span-7 xl:col-span-8"}>
+          {/* min-w-0 lets the deck plan's scroll container actually scroll —
+              a grid item defaults to min-width:auto and would otherwise widen
+              the whole page to fit the hull. */}
+          <div
+            className={`min-w-0 ${isWideStep ? "lg:col-span-12" : "lg:col-span-7 xl:col-span-8"}`}
+          >
             <AnimatePresence mode="wait">
               <motion.div
                 key={step}
@@ -307,7 +317,7 @@ function Booking() {
           </div>
 
           {/* ── Right: sticky summary sidebar (hidden on payment step) ── */}
-          {selectedPackage && !isPaymentStep && (
+          {selectedPackage && !isWideStep && (
             <aside className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-40 lg:self-start">
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
@@ -351,7 +361,7 @@ function Booking() {
             <button
               onClick={goNext}
               disabled={!canContinue}
-              className="shrink-0 inline-flex items-center gap-2 px-7 py-3 rounded-full gradient-gold text-ocean text-[11px] uppercase tracking-[0.18em] font-semibold shadow-gold disabled:opacity-40 disabled:pointer-events-none"
+              className="shrink-0 inline-flex min-h-11 items-center gap-2 px-7 py-3 rounded-full gradient-gold text-ocean text-[11px] uppercase tracking-[0.18em] font-semibold shadow-gold disabled:opacity-40 disabled:pointer-events-none"
             >
               Continue <ArrowRight className="size-3.5" />
             </button>
@@ -891,13 +901,13 @@ function Counter({
   incLabel: string;
 }) {
   return (
-    <div className="flex items-center gap-2.5 shrink-0">
+    <div className="flex items-center gap-1.5 shrink-0">
       <button
         type="button"
         onClick={() => onChange(value - 1)}
         disabled={value <= min}
         aria-label={decLabel}
-        className="size-8 rounded-full border border-border grid place-items-center hover:border-gold hover:text-gold transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
+        className="size-11 rounded-full border border-border grid place-items-center hover:border-gold hover:text-gold transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
       >
         <Minus className="size-3.5" />
       </button>
@@ -909,7 +919,7 @@ function Counter({
         onClick={() => onChange(value + 1)}
         disabled={value >= max}
         aria-label={incLabel}
-        className="size-8 rounded-full border border-border grid place-items-center hover:border-gold hover:text-gold transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
+        className="size-11 rounded-full border border-border grid place-items-center hover:border-gold hover:text-gold transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
       >
         <Plus className="size-3.5" />
       </button>
@@ -1010,7 +1020,7 @@ function GuestsCards({ data, update }: StepProps) {
                             onClick={() => setKidAge(i, age - 1)}
                             disabled={age <= 0}
                             aria-label="Younger"
-                            className="size-7 rounded-lg border border-border bg-card grid place-items-center hover:border-gold hover:text-gold transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
+                            className="size-11 rounded-lg border border-border bg-card grid place-items-center hover:border-gold hover:text-gold transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
                           >
                             <Minus className="size-3" />
                           </button>
@@ -1030,17 +1040,19 @@ function GuestsCards({ data, update }: StepProps) {
                             onClick={() => setKidAge(i, age + 1)}
                             disabled={age >= 17}
                             aria-label="Older"
-                            className="size-7 rounded-lg border border-border bg-card grid place-items-center hover:border-gold hover:text-gold transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
+                            className="size-11 rounded-lg border border-border bg-card grid place-items-center hover:border-gold hover:text-gold transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
                           >
                             <Plus className="size-3" />
                           </button>
+                          {/* Kept clear of the ± pair: at 28px and 4px apart, a
+                              mis-tap on the age stepper used to delete the kid. */}
                           <button
                             type="button"
                             onClick={() => removeKid(i)}
                             aria-label={`Remove kid ${i + 1}`}
-                            className="size-7 rounded-lg grid place-items-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors cursor-pointer"
+                            className="size-11 ml-2 rounded-lg grid place-items-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors cursor-pointer"
                           >
-                            <X className="size-3" />
+                            <X className="size-3.5" />
                           </button>
                         </div>
                       </div>
@@ -1394,7 +1406,7 @@ function StepPayment({
                           onClick={() =>
                             update({ partialAmount: String(Math.round((dueAmount * pct) / 100)) })
                           }
-                          className="flex-1 rounded-lg border border-border py-1.5 text-[11px] font-semibold text-muted-foreground hover:border-gold hover:text-gold transition-colors"
+                          className="flex-1 min-h-11 rounded-lg border border-border py-1.5 text-[11px] font-semibold text-muted-foreground hover:border-gold hover:text-gold transition-colors"
                         >
                           {pct}%
                         </button>

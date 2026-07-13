@@ -40,6 +40,7 @@ import {
   updateStaffBooking,
 } from "@/lib/api/staff";
 import { getPackageRooms } from "@/lib/api/packages";
+import { copyToClipboard } from "@/lib/clipboard";
 import { formatBDT, parseMoney } from "@/lib/money";
 import type { BookingStatus } from "@/lib/api/types";
 import type { StaffBooking } from "@/lib/api/staffTypes";
@@ -84,12 +85,14 @@ function CopyButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <button
-      onClick={() => {
-        navigator.clipboard.writeText(value).then(() => {
+      onClick={async () => {
+        if (await copyToClipboard(value)) {
           setCopied(true);
           toast.success(`${label} copied`);
           setTimeout(() => setCopied(false), 1500);
-        });
+        } else {
+          toast.error(`Couldn't copy ${label.toLowerCase()} — copy it manually.`);
+        }
       }}
       title={`Copy ${label.toLowerCase()}`}
       className="text-muted-foreground hover:text-gold transition-colors"
