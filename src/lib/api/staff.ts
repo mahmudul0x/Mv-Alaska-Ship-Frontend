@@ -15,6 +15,7 @@ import type {
   StaffPackageWrite,
   StaffPayment,
   StaffRoom,
+  StaffRoomImage,
   StaffShip,
 } from "./staffTypes";
 
@@ -207,6 +208,44 @@ export async function updateStaffRoomType(id: number, payload: Partial<RoomType>
 export async function getStaffRooms(page = 1): Promise<Paginated<StaffRoom>> {
   const { data } = await staffClient.get("/staff/rooms/", { params: { page, page_size: 100 } });
   return data;
+}
+
+// ── Room gallery photos ───────────────────────────────────────────────────
+export async function getStaffRoomImages(room?: number): Promise<StaffRoomImage[]> {
+  const { data } = await staffClient.get("/staff/room-images/", { params: { room } });
+  return data;
+}
+
+export async function uploadStaffRoomImage(payload: {
+  room: number;
+  file: File;
+  caption?: string;
+  sort_order?: number;
+}): Promise<StaffRoomImage> {
+  const form = new FormData();
+  form.append("room", String(payload.room));
+  form.append("image", payload.file);
+  if (payload.caption) form.append("caption", payload.caption);
+  if (payload.sort_order !== undefined) form.append("sort_order", String(payload.sort_order));
+  // staffClient defaults to Content-Type: application/json, which would mangle
+  // a FormData body — declare multipart so axios lets the browser set the
+  // real boundary header.
+  const { data } = await staffClient.post("/staff/room-images/", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+export async function updateStaffRoomImage(
+  id: number,
+  payload: Partial<Pick<StaffRoomImage, "caption" | "sort_order">>,
+): Promise<StaffRoomImage> {
+  const { data } = await staffClient.patch(`/staff/room-images/${id}/`, payload);
+  return data;
+}
+
+export async function deleteStaffRoomImage(id: number) {
+  await staffClient.delete(`/staff/room-images/${id}/`);
 }
 
 export async function getStaffKidRules(): Promise<StaffKidRule[]> {

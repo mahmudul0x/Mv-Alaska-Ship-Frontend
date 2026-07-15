@@ -128,6 +128,16 @@ export interface StaffRoom {
   floor_number: number | null;
 }
 
+export interface StaffRoomImage {
+  id: number;
+  room: number;
+  room_number: string;
+  /** Storage URL (Cloudinary CDN in production) — the upload field itself is write-only. */
+  image_url: string;
+  caption: string;
+  sort_order: number;
+}
+
 export type RoomAvailability = "available" | "booked" | "unavailable";
 
 export interface StaffPackageRoomBooking {

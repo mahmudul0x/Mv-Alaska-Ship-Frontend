@@ -16,15 +16,22 @@ export function DialogShell({
   title,
   onClose,
   children,
+  wide = false,
 }: {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
+  /** Wider body for media-heavy dialogs (photo galleries etc.). */
+  wide?: boolean;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-ocean/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-card rounded-2xl shadow-luxe w-full max-w-xl max-h-[85vh] overflow-y-auto">
+      <div
+        className={`relative bg-card rounded-2xl shadow-luxe w-full max-h-[85vh] overflow-y-auto ${
+          wide ? "max-w-3xl" : "max-w-xl"
+        }`}
+      >
         <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between z-10">
           <h2 className="font-display text-xl">{title}</h2>
           <button onClick={onClose} className="size-8 rounded-full grid place-items-center hover:bg-muted">

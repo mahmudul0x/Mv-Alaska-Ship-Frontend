@@ -1,11 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   Baby,
   BedDouble,
+  ChevronLeft,
+  ChevronRight,
   Gift,
+  ImagePlus,
+  Images,
   Info,
   Loader2,
   Plus,
@@ -16,17 +20,22 @@ import {
   Users,
 } from "lucide-react";
 
-import { PageHeader, errorText, staffInputClass } from "@/components/staff/ui";
+import { DialogShell, PageHeader, errorText, staffInputClass } from "@/components/staff/ui";
 import {
   createStaffKidRule,
   deleteStaffKidRule,
+  deleteStaffRoomImage,
   getStaffKidRules,
+  getStaffRoomImages,
+  getStaffRooms,
   getStaffRoomTypes,
   updateStaffKidRule,
+  updateStaffRoomImage,
   updateStaffRoomType,
+  uploadStaffRoomImage,
 } from "@/lib/api/staff";
 import { formatBDT } from "@/lib/money";
-import type { StaffKidRule } from "@/lib/api/staffTypes";
+import type { StaffKidRule, StaffRoom, StaffRoomImage } from "@/lib/api/staffTypes";
 import type { KidChargeType, RoomType } from "@/lib/api/types";
 
 export const Route = createFileRoute("/staff/room-settings")({
@@ -36,6 +45,7 @@ export const Route = createFileRoute("/staff/room-settings")({
 const TABS = [
   { key: "room-types", label: "Room Types", hint: "Prices & pax limits", icon: BedDouble },
   { key: "kid-pricing", label: "Kid Pricing", hint: "Age-based fares", icon: Baby },
+  { key: "room-photos", label: "Room Photos", hint: "Per-room gallery", icon: Images },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -74,7 +84,13 @@ function RoomSettingsPage() {
         })}
       </div>
 
-      {activeTab === "room-types" ? <RoomTypesSection /> : <KidPricingSection />}
+      {activeTab === "room-types" ? (
+        <RoomTypesSection />
+      ) : activeTab === "kid-pricing" ? (
+        <KidPricingSection />
+      ) : (
+        <RoomPhotosSection />
+      )}
     </div>
   );
 }
@@ -482,6 +498,381 @@ function AddKidRuleForm({
         </button>
       </div>
     </div>
+  );
+}
+
+/* ── Room photos ──────────────────────────────────────────────────────────── */
+
+function RoomPhotosSection() {
+  const queryClient = useQueryClient();
+  const { data: roomsData, isLoading: roomsLoading } = useQuery({
+    queryKey: ["staff", "rooms"],
+    queryFn: () => getStaffRooms(1),
+  });
+  const { data: images, isLoading: imagesLoading } = useQuery({
+    queryKey: ["staff", "room-images"],
+    queryFn: () => getStaffRoomImages(),
+  });
+  const [search, setSearch] = useState("");
+  const [openRoomId, setOpenRoomId] = useState<number | null>(null);
+
+  const byRoom = useMemo(() => {
+    const map = new Map<number, StaffRoomImage[]>();
+    for (const img of images ?? []) {
+      const list = map.get(img.room);
+      if (list) list.push(img);
+      else map.set(img.room, [img]);
+    }
+    return map;
+  }, [images]);
+
+  const floors = useMemo(() => {
+    const all = roomsData?.results ?? [];
+    const q = search.trim().toLowerCase();
+    const filtered = q ? all.filter((r) => r.room_number.toLowerCase().includes(q)) : all;
+    const grouped = new Map<number | null, StaffRoom[]>();
+    for (const room of filtered) {
+      const list = grouped.get(room.floor_number);
+      if (list) list.push(room);
+      else grouped.set(room.floor_number, [room]);
+    }
+    return [...grouped.entries()].sort(
+      (a, b) => (a[0] === null ? 1 : 0) - (b[0] === null ? 1 : 0) || (a[0] ?? 0) - (b[0] ?? 0),
+    );
+  }, [roomsData, search]);
+
+  const openRoom = (roomsData?.results ?? []).find((r) => r.id === openRoomId) ?? null;
+
+  if (roomsLoading || imagesLoading) {
+    return (
+      <div className="p-16 flex items-center justify-center gap-3 text-muted-foreground">
+        <Loader2 className="size-5 animate-spin text-gold" /> Loading room photos…
+      </div>
+    );
+  }
+
+  return (
+    <section className="space-y-5 pt-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Find room number…"
+          className={`${staffInputClass} max-w-xs`}
+        />
+        <div className="flex items-start gap-2 text-[11px] text-muted-foreground max-w-md">
+          <Info className="size-3.5 text-gold shrink-0 mt-0.5" />
+          <p>
+            Photos show on the customer room picker. Keep files under ~1 MB
+            (hard limit 10 MB). Click a room to manage its gallery.
+          </p>
+        </div>
+      </div>
+
+      {floors.map(([floor, floorRooms]) => {
+        const photoCount = floorRooms.reduce(
+          (sum, r) => sum + (byRoom.get(r.id)?.length ?? 0),
+          0,
+        );
+        return (
+          <div key={floor ?? "none"} className="space-y-3">
+            <div className="flex items-baseline justify-between border-b border-border pb-2">
+              <span className="eyebrow text-muted-foreground text-[10px]">
+                {floor === null ? "Unassigned floor" : `Floor ${floor}`}
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                {floorRooms.length} room(s) · {photoCount} photo(s)
+              </span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
+              {floorRooms.map((room) => (
+                <RoomPhotoTile
+                  key={room.id}
+                  room={room}
+                  images={byRoom.get(room.id) ?? []}
+                  onOpen={() => setOpenRoomId(room.id)}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      {floors.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+          No rooms match "{search}".
+        </div>
+      )}
+
+      {openRoom && (
+        <RoomGalleryDialog
+          room={openRoom}
+          images={byRoom.get(openRoom.id) ?? []}
+          onClose={() => setOpenRoomId(null)}
+          invalidate={() =>
+            queryClient.invalidateQueries({ queryKey: ["staff", "room-images"] })
+          }
+        />
+      )}
+    </section>
+  );
+}
+
+/** Compact grid tile: cover photo (or placeholder), room number, photo count.
+ * All management happens in the dialog — the grid stays scannable. */
+function RoomPhotoTile({
+  room,
+  images,
+  onOpen,
+}: {
+  room: StaffRoom;
+  images: StaffRoomImage[];
+  onOpen: () => void;
+}) {
+  const cover = images[0];
+  return (
+    <button
+      onClick={onOpen}
+      className="group text-left rounded-2xl border border-border bg-card overflow-hidden transition-all hover:border-gold/50 hover:shadow-luxe focus:outline-none focus-visible:border-gold"
+    >
+      <div className="relative h-28 bg-ocean/5">
+        {cover ? (
+          <img
+            src={cover.image_url}
+            alt={`Room ${room.room_number}`}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            loading="lazy"
+          />
+        ) : (
+          <div className="h-full grid place-items-center text-ocean/25">
+            <Images className="size-7" />
+          </div>
+        )}
+        <span
+          className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] font-semibold ${
+            images.length
+              ? "bg-black/55 text-white"
+              : "bg-amber-100/95 text-amber-700"
+          }`}
+        >
+          {images.length ? `${images.length} photo${images.length > 1 ? "s" : ""}` : "No photos"}
+        </span>
+        <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity grid place-items-center">
+          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 text-ocean text-[10px] font-semibold uppercase tracking-[0.12em]">
+            <ImagePlus className="size-3" /> Manage
+          </span>
+        </div>
+      </div>
+      <div className="px-3.5 py-2.5">
+        <div className="font-display text-base leading-none">Room {room.room_number}</div>
+        <div className="text-[10px] text-muted-foreground mt-1 truncate">
+          {room.room_type_name}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/** Full gallery editor for one room, in a dialog: upload, reorder, caption, delete. */
+function RoomGalleryDialog({
+  room,
+  images,
+  onClose,
+  invalidate,
+}: {
+  room: StaffRoom;
+  images: StaffRoomImage[];
+  onClose: () => void;
+  invalidate: () => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const uploadMutation = useMutation({
+    mutationFn: async (files: File[]) => {
+      setUploading(true);
+      const nextOrder = images.length
+        ? Math.max(...images.map((i) => i.sort_order)) + 1
+        : 0;
+      // Sequential, so sort_order stays deterministic and one failure
+      // doesn't abort the files already uploaded.
+      for (const [i, file] of files.entries()) {
+        await uploadStaffRoomImage({ room: room.id, file, sort_order: nextOrder + i });
+      }
+      return files.length;
+    },
+    onSuccess: (count) => {
+      toast.success(`${count} photo(s) added to room ${room.room_number}.`);
+      invalidate();
+    },
+    onError: (err) => {
+      toast.error(errorText(err));
+      invalidate(); // some files may have landed before the failure
+    },
+    onSettled: () => setUploading(false),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteStaffRoomImage,
+    onSuccess: () => {
+      toast.success("Photo deleted.");
+      invalidate();
+    },
+    onError: (err) => toast.error(errorText(err)),
+  });
+
+  const captionMutation = useMutation({
+    mutationFn: ({ id, caption }: { id: number; caption: string }) =>
+      updateStaffRoomImage(id, { caption }),
+    onSuccess: () => invalidate(),
+    onError: (err) => toast.error(errorText(err)),
+  });
+
+  const moveMutation = useMutation({
+    // Reassign sequential sort_orders with `index` and its neighbour swapped —
+    // robust even when existing sort_orders are all 0 or have gaps.
+    mutationFn: async ({ index, dir }: { index: number; dir: -1 | 1 }) => {
+      const order = [...images];
+      const target = index + dir;
+      [order[index], order[target]] = [order[target], order[index]];
+      await Promise.all(
+        order
+          .map((img, i) => (img.sort_order === i ? null : updateStaffRoomImage(img.id, { sort_order: i })))
+          .filter(Boolean),
+      );
+    },
+    onSuccess: () => invalidate(),
+    onError: (err) => toast.error(errorText(err)),
+  });
+
+  return (
+    <DialogShell
+      wide
+      title={`Room ${room.room_number} — Photos`}
+      onClose={onClose}
+    >
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-xs text-muted-foreground">
+            {room.room_type_name}
+            {room.floor_number ? ` · Floor ${room.floor_number}` : ""} ·{" "}
+            {images.length} photo(s) — lower order shows first on the customer site.
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              const files = Array.from(e.target.files ?? []);
+              if (files.length) uploadMutation.mutate(files);
+              e.target.value = ""; // allow re-selecting the same file
+            }}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-gold disabled:opacity-40"
+          >
+            {uploading ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <ImagePlus className="size-3.5" />
+            )}
+            Add photos
+          </button>
+        </div>
+
+        {images.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {images.map((img, index) => (
+              <figure key={img.id} className="space-y-1.5">
+                <div className="relative group rounded-xl overflow-hidden border border-border">
+                  <img
+                    src={img.image_url}
+                    alt={img.caption || `Room ${room.room_number} photo`}
+                    className="h-32 w-full object-cover"
+                    loading="lazy"
+                  />
+                  <span className="absolute top-1.5 left-1.5 size-5 grid place-items-center rounded-full bg-black/55 text-white text-[9px] font-semibold">
+                    {index + 1}
+                  </span>
+                  <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                    <button
+                      title="Show earlier"
+                      disabled={index === 0 || moveMutation.isPending}
+                      onClick={() => moveMutation.mutate({ index, dir: -1 })}
+                      className="size-7 grid place-items-center rounded-lg bg-white/90 text-ocean disabled:opacity-40"
+                    >
+                      <ChevronLeft className="size-4" />
+                    </button>
+                    <button
+                      title="Show later"
+                      disabled={index === images.length - 1 || moveMutation.isPending}
+                      onClick={() => moveMutation.mutate({ index, dir: 1 })}
+                      className="size-7 grid place-items-center rounded-lg bg-white/90 text-ocean disabled:opacity-40"
+                    >
+                      <ChevronRight className="size-4" />
+                    </button>
+                    <button
+                      title="Delete photo"
+                      disabled={deleteMutation.isPending}
+                      onClick={() => {
+                        if (confirm("Delete this photo?")) deleteMutation.mutate(img.id);
+                      }}
+                      className="size-7 grid place-items-center rounded-lg bg-white/90 text-destructive disabled:opacity-40"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
+                </div>
+                <CaptionInput
+                  key={`${img.id}-${img.caption}`}
+                  initial={img.caption}
+                  onSave={(caption) => captionMutation.mutate({ id: img.id, caption })}
+                />
+              </figure>
+            ))}
+          </div>
+        ) : (
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full rounded-2xl border-2 border-dashed border-border hover:border-gold/50 transition-colors p-10 text-center text-sm text-muted-foreground"
+          >
+            <Images className="size-8 mx-auto mb-2 text-ocean/25" />
+            No photos yet — customers see this room without a gallery.
+            <span className="block mt-1 text-xs text-gold font-medium">
+              Click to upload the first photo
+            </span>
+          </button>
+        )}
+      </div>
+    </DialogShell>
+  );
+}
+
+/** Uncontrolled-ish caption field: saves on blur/Enter only when changed. */
+function CaptionInput({
+  initial,
+  onSave,
+}: {
+  initial: string;
+  onSave: (caption: string) => void;
+}) {
+  const [value, setValue] = useState(initial);
+  const commit = () => {
+    if (value.trim() !== initial) onSave(value.trim());
+  };
+  return (
+    <input
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+      placeholder="Caption (optional)"
+      className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-[11px] focus:outline-none focus:border-gold"
+    />
   );
 }
 
