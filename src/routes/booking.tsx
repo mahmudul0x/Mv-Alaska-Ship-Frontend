@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import * as React from "react";
+import { useId, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -34,6 +35,7 @@ import logo from "@/assets/logo.png";
 import img109 from "@/assets/109.jpeg";
 import { AvailabilityCalendar } from "@/components/booking/AvailabilityCalendar";
 import { PackagePicker } from "@/components/booking/PackagePicker";
+import { RoomGallery } from "@/components/booking/RoomGallery";
 import { RoomPicker } from "@/components/booking/RoomPicker";
 import { getBookingInvoices, initiatePayment } from "@/lib/api/bookings";
 import { usePackage } from "@/hooks/queries/usePackages";
@@ -292,7 +294,7 @@ function Booking() {
               <button
                 onClick={goBack}
                 disabled={step === 0}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-border text-sm text-foreground hover:border-gold hover:text-gold disabled:opacity-25 disabled:pointer-events-none transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-border text-sm text-foreground hover:border-gold hover:text-gold-text disabled:opacity-25 disabled:pointer-events-none transition-colors"
               >
                 <ArrowLeft className="size-3.5" /> Back
               </button>
@@ -458,7 +460,7 @@ function Stepper({
                       active
                         ? "text-ocean"
                         : done
-                          ? "text-gold group-hover:text-ocean"
+                          ? "text-gold-text group-hover:text-ocean"
                           : "text-muted-foreground/70"
                     }`}
                   >
@@ -478,7 +480,7 @@ function Stepper({
               </div>
             );
           })}
-          <span className="eyebrow text-gold text-[9px] shrink-0 pl-4 ml-2 border-l border-border">
+          <span className="eyebrow text-gold-text text-[9px] shrink-0 pl-4 ml-2 border-l border-border">
             {pct}%
           </span>
         </div>
@@ -515,6 +517,10 @@ function SummaryCard({
         ? `Room ${data.room.room_number} · ${data.room.room_type.name}`
         : "Not selected yet",
       muted: !data.room,
+      // Small peek at the chosen room — opens the full photo lightbox on tap.
+      gallery: data.room?.images?.length
+        ? { images: data.room.images, roomNumber: data.room.room_number }
+        : undefined,
     },
     {
       icon: Users,
@@ -547,7 +553,7 @@ function SummaryCard({
 
       {/* Selection rows */}
       <div className="p-5 space-y-4">
-        {rows.map(({ icon: Icon, label, value, muted }) => (
+        {rows.map(({ icon: Icon, label, value, muted, gallery }) => (
           <div key={label} className="flex items-start gap-3">
             <div className="size-7 rounded-lg bg-ocean/6 grid place-items-center shrink-0 mt-0.5">
               <Icon className="size-3.5 text-gold" />
@@ -560,6 +566,7 @@ function SummaryCard({
                 {value}
               </div>
             </div>
+            {gallery && <RoomGallery variant="thumb" {...gallery} />}
           </div>
         ))}
       </div>
@@ -594,7 +601,7 @@ function SummaryCard({
                 )}
                 <div className="pt-2.5 mt-1 border-t border-dashed border-border flex justify-between items-baseline">
                   <span className="eyebrow text-[10px] text-muted-foreground">Total</span>
-                  <span className="font-display text-2xl text-gold leading-none">
+                  <span className="font-display text-2xl text-gold-text leading-none">
                     {formatBDT(quote.total)}
                   </span>
                 </div>
@@ -620,7 +627,7 @@ function SummaryCard({
 function HelpCard() {
   return (
     <div className="rounded-2xl border border-border bg-card px-5 py-4">
-      <div className="eyebrow text-gold text-[10px] mb-3">Need help booking?</div>
+      <div className="eyebrow text-gold-text text-[10px] mb-3">Need help booking?</div>
       <div className="space-y-2.5 text-sm">
         <a
           href="tel:+8801831694307"
@@ -659,7 +666,7 @@ function StepHeader({
 }) {
   return (
     <div className="max-w-2xl mb-10">
-      <div className="eyebrow text-gold text-[10px] mb-3 flex items-center gap-2">
+      <div className="eyebrow text-gold-text text-[10px] mb-3 flex items-center gap-2">
         <span className="h-px w-8 bg-gold" />
         Step {step + 1} · {steps[step].label}
       </div>
@@ -767,7 +774,7 @@ function StepVoyage({ data, update }: StepProps) {
                     <div className="font-display text-4xl leading-none text-foreground">
                       {startDate?.toLocaleDateString("en-GB", { day: "2-digit" })}
                     </div>
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gold mt-1.5">
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gold-text mt-1.5">
                       {startDate?.toLocaleDateString("en-GB", { month: "short" })}
                     </div>
                     <div className="text-[9px] text-muted-foreground mt-0.5">
@@ -800,7 +807,7 @@ function StepVoyage({ data, update }: StepProps) {
                     <div className="font-display text-4xl leading-none text-foreground">
                       {endDate?.toLocaleDateString("en-GB", { day: "2-digit" })}
                     </div>
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gold mt-1.5">
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gold-text mt-1.5">
                       {endDate?.toLocaleDateString("en-GB", { month: "short" })}
                     </div>
                     <div className="text-[9px] text-muted-foreground mt-0.5">
@@ -907,7 +914,7 @@ function Counter({
         onClick={() => onChange(value - 1)}
         disabled={value <= min}
         aria-label={decLabel}
-        className="size-11 rounded-full border border-border grid place-items-center hover:border-gold hover:text-gold transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
+        className="size-11 rounded-full border border-border grid place-items-center hover:border-gold hover:text-gold-text transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
       >
         <Minus className="size-3.5" />
       </button>
@@ -919,7 +926,7 @@ function Counter({
         onClick={() => onChange(value + 1)}
         disabled={value >= max}
         aria-label={incLabel}
-        className="size-11 rounded-full border border-border grid place-items-center hover:border-gold hover:text-gold transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
+        className="size-11 rounded-full border border-border grid place-items-center hover:border-gold hover:text-gold-text transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
       >
         <Plus className="size-3.5" />
       </button>
@@ -929,6 +936,7 @@ function Counter({
 
 /* ── Guest counters + special requests — rendered inside the final step ── */
 function GuestsCards({ data, update }: StepProps) {
+  const requestsId = useId();
   const maxAdults = data.room?.room_type.max_adults ?? 99;
   const maxKids = data.room?.room_type.max_kids ?? 99;
 
@@ -1020,7 +1028,7 @@ function GuestsCards({ data, update }: StepProps) {
                             onClick={() => setKidAge(i, age - 1)}
                             disabled={age <= 0}
                             aria-label="Younger"
-                            className="size-11 rounded-lg border border-border bg-card grid place-items-center hover:border-gold hover:text-gold transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
+                            className="size-11 rounded-lg border border-border bg-card grid place-items-center hover:border-gold hover:text-gold-text transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
                           >
                             <Minus className="size-3" />
                           </button>
@@ -1030,8 +1038,9 @@ function GuestsCards({ data, update }: StepProps) {
                               min={0}
                               max={17}
                               value={age}
+                              aria-label={`Age of kid ${i + 1} in years`}
                               onChange={(e) => setKidAge(i, Number(e.target.value))}
-                              className="w-6 bg-transparent border-0 text-sm font-semibold text-center focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              className="w-6 bg-transparent border-0 text-sm font-semibold text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ocean rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                             <span className="text-[10px] text-muted-foreground">yrs</span>
                           </div>
@@ -1040,7 +1049,7 @@ function GuestsCards({ data, update }: StepProps) {
                             onClick={() => setKidAge(i, age + 1)}
                             disabled={age >= 17}
                             aria-label="Older"
-                            className="size-11 rounded-lg border border-border bg-card grid place-items-center hover:border-gold hover:text-gold transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
+                            className="size-11 rounded-lg border border-border bg-card grid place-items-center hover:border-gold hover:text-gold-text transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
                           >
                             <Plus className="size-3" />
                           </button>
@@ -1067,12 +1076,18 @@ function GuestsCards({ data, update }: StepProps) {
           </div>
         </div>
 
-        {/* Special requests */}
+        {/* Special requests — the label must be associated, not just adjacent:
+            with no htmlFor the field's accessible name fell back to the
+            placeholder, which also vanishes as soon as the user types. */}
         <div className="rounded-2xl border border-border bg-card shadow-luxe px-5 py-4">
-          <label className="eyebrow text-muted-foreground text-[10px] block mb-2">
+          <label
+            htmlFor={requestsId}
+            className="eyebrow text-muted-foreground text-[10px] block mb-2"
+          >
             Special requests <span className="normal-case font-normal">(optional)</span>
           </label>
           <textarea
+            id={requestsId}
             rows={2}
             maxLength={1000}
             placeholder="Dietary requirements, anniversary arrangement, accessibility needs…"
@@ -1110,6 +1125,8 @@ function StepPayment({
   onConfirm,
   submitting,
 }: StepPaymentProps) {
+  const partialAmountId = useId();
+  const partialErrorId = `${partialAmountId}-error`;
   const {
     register,
     handleSubmit,
@@ -1261,25 +1278,30 @@ function StepPayment({
               </div>
             )}
 
-            {/* Cabin + guests */}
-            <div className="mx-5 mt-3.5 mb-4 rounded-lg bg-ocean/4 border border-border/60 px-3 py-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] font-medium">
-              <span className="inline-flex items-center gap-1">
-                <Bed className="size-3 text-gold" />
-                {data.room ? `Room ${data.room.room_number}` : "—"}
-              </span>
-              <span className="size-1 rounded-full bg-border" />
-              <span className="inline-flex items-center gap-1">
-                <MapPin className="size-3 text-gold" />
-                {data.room?.floor_number != null ? `Floor ${data.room.floor_number}` : "—"}
-              </span>
-              <span className="size-1 rounded-full bg-border" />
-              <span className="inline-flex items-center gap-1">
-                <Users className="size-3 text-gold" />
-                {data.adultCount} Adult{data.adultCount > 1 ? "s" : ""}
-                {data.kidAges.length
-                  ? ` · ${data.kidAges.length} Kid${data.kidAges.length > 1 ? "s" : ""}`
-                  : ""}
-              </span>
+            {/* Cabin + guests, plus every photo of the chosen room (tap to view full size) */}
+            <div className="mx-5 mt-3.5 mb-4 space-y-2">
+              <div className="rounded-lg bg-ocean/4 border border-border/60 px-3 py-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] font-medium">
+                <span className="inline-flex items-center gap-1">
+                  <Bed className="size-3 text-gold" />
+                  {data.room ? `Room ${data.room.room_number}` : "—"}
+                </span>
+                <span className="size-1 rounded-full bg-border" />
+                <span className="inline-flex items-center gap-1">
+                  <MapPin className="size-3 text-gold" />
+                  {data.room?.floor_number != null ? `Floor ${data.room.floor_number}` : "—"}
+                </span>
+                <span className="size-1 rounded-full bg-border" />
+                <span className="inline-flex items-center gap-1">
+                  <Users className="size-3 text-gold" />
+                  {data.adultCount} Adult{data.adultCount > 1 ? "s" : ""}
+                  {data.kidAges.length
+                    ? ` · ${data.kidAges.length} Kid${data.kidAges.length > 1 ? "s" : ""}`
+                    : ""}
+                </span>
+              </div>
+              {data.room && data.room.images?.length > 0 && (
+                <RoomGallery images={data.room.images} roomNumber={data.room.room_number} />
+              )}
             </div>
 
             {/* Perforation */}
@@ -1289,16 +1311,20 @@ function StepPayment({
               <div className="border-t border-dashed border-border" />
             </div>
 
-            {/* Fare summary */}
-            <div className="px-5 pt-3.5 pb-1">
-              <div className="eyebrow text-gold text-[10px] mb-2.5">Fare summary</div>
+            {/* Fare summary — the price is recomputed asynchronously whenever the
+                guest counts change, so the region is announced politely rather
+                than updating silently. The quote failure is an alert: it blocks
+                checkout, so it must interrupt. */}
+            <div className="px-5 pt-3.5 pb-1" aria-live="polite" aria-atomic="false">
+              <div className="eyebrow text-gold-text text-[10px] mb-2.5">Fare summary</div>
               {quoting && (
                 <div className="flex items-center gap-2 text-muted-foreground py-1 text-sm">
-                  <Loader2 className="size-4 animate-spin text-gold" /> Calculating price…
+                  <Loader2 aria-hidden="true" className="size-4 animate-spin text-gold" />{" "}
+                  Calculating price…
                 </div>
               )}
               {quoteError && (
-                <div className="text-destructive text-xs">
+                <div role="alert" className="text-destructive text-xs">
                   {quoteError.fieldErrors
                     ? Object.values(quoteError.fieldErrors).flat().join(" ")
                     : quoteError.detail || "Couldn't calculate a price for this selection."}
@@ -1328,7 +1354,7 @@ function StepPayment({
                   ))}
                   <div className="pt-2.5 mt-1 border-t border-dashed border-border flex justify-between items-baseline">
                     <div className="font-medium text-foreground text-sm">Total amount</div>
-                    <div className="font-display text-xl text-gold">{formatBDT(quote.total)}</div>
+                    <div className="font-display text-xl text-gold-text">{formatBDT(quote.total)}</div>
                   </div>
                 </div>
               )}
@@ -1343,7 +1369,7 @@ function StepPayment({
                   return (
                     <label
                       key={type}
-                      className={`relative rounded-xl border p-3 cursor-pointer transition-all ${checked ? "border-gold bg-ocean/4 shadow-[0_0_0_1px_var(--gold)]" : "border-border hover:border-gold/50"}`}
+                      className={`focus-ring-within relative rounded-xl border p-3 cursor-pointer transition-all ${checked ? "border-gold bg-ocean/4 shadow-[0_0_0_1px_var(--gold)]" : "border-border hover:border-gold/50"}`}
                     >
                       <input
                         type="radio"
@@ -1359,7 +1385,7 @@ function StepPayment({
                           />
                           <span className="text-xs font-bold capitalize truncate">{type}</span>
                           {type === "full" && (
-                            <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-[0.1em] text-gold shrink-0">
+                            <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-[0.1em] text-gold-text shrink-0">
                               Popular
                             </span>
                           )}
@@ -1380,20 +1406,29 @@ function StepPayment({
 
               {data.paymentType === "partial" && (
                 <div className="p-3 rounded-xl bg-ocean/3 border border-border space-y-2.5">
-                  <label className="eyebrow text-muted-foreground text-[10px] block">
+                  <label
+                    htmlFor={partialAmountId}
+                    className="eyebrow text-muted-foreground text-[10px] block"
+                  >
                     Amount to pay now — max {quote ? formatBDT(quote.total) : "—"}
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                    <span
+                      aria-hidden="true"
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground"
+                    >
                       ৳
                     </span>
                     <input
+                      id={partialAmountId}
                       type="number"
                       min={0}
                       max={dueAmount || undefined}
                       value={data.partialAmount}
                       onChange={(e) => update({ partialAmount: e.target.value })}
                       placeholder="5000"
+                      aria-invalid={partialInvalid ? true : undefined}
+                      aria-describedby={partialInvalid ? partialErrorId : undefined}
                       className="w-full bg-background border border-border rounded-lg py-2.5 pl-7 pr-3 text-sm focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/20 transition-all"
                     />
                   </div>
@@ -1406,7 +1441,7 @@ function StepPayment({
                           onClick={() =>
                             update({ partialAmount: String(Math.round((dueAmount * pct) / 100)) })
                           }
-                          className="flex-1 min-h-11 rounded-lg border border-border py-1.5 text-[11px] font-semibold text-muted-foreground hover:border-gold hover:text-gold transition-colors"
+                          className="flex-1 min-h-11 rounded-lg border border-border py-1.5 text-[11px] font-semibold text-muted-foreground hover:border-gold hover:text-gold-text transition-colors"
                         >
                           {pct}%
                         </button>
@@ -1414,7 +1449,7 @@ function StepPayment({
                     </div>
                   )}
                   {partialInvalid && (
-                    <div className="text-xs text-destructive">
+                    <div id={partialErrorId} role="alert" className="text-xs text-destructive">
                       Enter an amount between 1 and the total.
                     </div>
                   )}
@@ -1426,7 +1461,7 @@ function StepPayment({
                 <div className="rounded-xl bg-ocean/5 border border-ocean/10 divide-y divide-border/60">
                   <div className="flex justify-between items-baseline px-3.5 py-2.5">
                     <span className="text-xs text-muted-foreground">Pay now</span>
-                    <span className="font-display text-lg text-gold">
+                    <span className="font-display text-lg text-gold-text">
                       {formatBDT(String(payNow))}
                     </span>
                   </div>
@@ -1644,7 +1679,7 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
           transition={{ delay: 0.55 }}
           className="rounded-2xl border border-border bg-card p-6"
         >
-          <div className="eyebrow text-gold text-[10px] mb-5">What happens next</div>
+          <div className="eyebrow text-gold-text text-[10px] mb-5">What happens next</div>
           <div className="grid sm:grid-cols-3 gap-6">
             {[
               {
@@ -1694,7 +1729,7 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
             className="rounded-2xl border border-gold/40 bg-ocean/5 p-6 flex items-center justify-between gap-4 flex-wrap"
           >
             <div>
-              <div className="eyebrow text-gold text-[9px] mb-1">Balance outstanding</div>
+              <div className="eyebrow text-gold-text text-[9px] mb-1">Balance outstanding</div>
               <div className="font-display text-2xl text-foreground leading-none">
                 {formatBDT(booking.due_amount)}
               </div>
@@ -1734,7 +1769,7 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
               href={latestInvoice.download_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-3 py-4 rounded-2xl border border-border bg-card text-foreground hover:border-gold hover:text-gold font-semibold text-sm transition-colors hover-lift"
+              className="flex items-center justify-center gap-3 py-4 rounded-2xl border border-border bg-card text-foreground hover:border-gold hover:text-gold-text font-semibold text-sm transition-colors hover-lift"
             >
               <Download className="size-5" />
               Download Invoice ({latestInvoice.number})
@@ -1744,7 +1779,7 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
             // best we can offer is a printable summary of the booking.
             <button
               onClick={handlePrint}
-              className="flex items-center justify-center gap-3 py-4 rounded-2xl border border-border bg-card text-foreground hover:border-gold hover:text-gold font-semibold text-sm transition-colors hover-lift"
+              className="flex items-center justify-center gap-3 py-4 rounded-2xl border border-border bg-card text-foreground hover:border-gold hover:text-gold-text font-semibold text-sm transition-colors hover-lift"
             >
               <Download className="size-5" />
               Print Booking Summary
@@ -1765,7 +1800,7 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
               <img src={logo} alt="MV Alaska" className="h-14 w-auto object-contain" />
               <div>
                 <div className="font-display text-2xl tracking-widest">M.V. ALASKA</div>
-                <div className="eyebrow text-gold text-[10px] mt-0.5">Cruise Ship</div>
+                <div className="eyebrow text-gold-text text-[10px] mt-0.5">Cruise Ship</div>
               </div>
             </div>
             <div className="sm:text-right">
@@ -1788,7 +1823,7 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
           {/* Details grid */}
           <div className="px-7 md:px-8 py-6 grid sm:grid-cols-2 gap-8">
             <div className="space-y-4">
-              <div className="eyebrow text-gold text-[10px]">Voyage details</div>
+              <div className="eyebrow text-gold-text text-[10px]">Voyage details</div>
               {[
                 { label: "Room", value: `Room ${booking.room_number}` },
                 { label: "Departure", value: booking.package.start_date },
@@ -1806,7 +1841,7 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
               ))}
             </div>
             <div className="space-y-4">
-              <div className="eyebrow text-gold text-[10px]">Guest &amp; contact</div>
+              <div className="eyebrow text-gold-text text-[10px]">Guest &amp; contact</div>
               {[
                 { label: "Name", value: booking.customer_name || "—" },
                 { label: "Email", value: booking.email || "—" },
@@ -1850,7 +1885,7 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
                     Paid: {formatBDT(booking.paid_amount)}
                   </div>
                 </div>
-                <div className="font-display text-2xl text-gold">
+                <div className="font-display text-2xl text-gold-text">
                   {formatBDT(booking.total_amount)}
                 </div>
               </div>
@@ -1877,7 +1912,7 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
         >
           <Link
             to="/"
-            className="px-8 py-3 rounded-full border border-border text-sm text-foreground hover:border-gold hover:text-gold transition-colors text-center"
+            className="px-8 py-3 rounded-full border border-border text-sm text-foreground hover:border-gold hover:text-gold-text transition-colors text-center"
           >
             ← Return Home
           </Link>
@@ -1893,33 +1928,51 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
   );
 }
 
-/* ── react-hook-form-registered field ── */
-function FormField({
-  label,
-  type = "text",
-  icon: Icon,
-  error,
-  ...props
-}: {
-  label: string;
-  type?: string;
-  icon?: React.ElementType;
-  error?: string;
-} & React.InputHTMLAttributes<HTMLInputElement>) {
+/* ── react-hook-form-registered field ──
+ *
+ * The label must be *associated* with the input, not merely sitting above it:
+ * a bare <label> with no htmlFor leaves the input with an empty accessible
+ * name, so a screen reader announces "edit, blank" instead of "Full name".
+ * The error is likewise wired via aria-describedby + role="alert", so it is
+ * announced on submit rather than only appearing on screen. */
+const FormField = React.forwardRef<
+  HTMLInputElement,
+  {
+    label: string;
+    type?: string;
+    icon?: React.ElementType;
+    error?: string;
+  } & React.InputHTMLAttributes<HTMLInputElement>
+>(function FormField({ label, type = "text", icon: Icon, error, ...props }, ref) {
+  const id = React.useId();
+  const errorId = `${id}-error`;
   return (
     <div>
-      <label className="eyebrow text-muted-foreground text-[10px] block mb-2">{label}</label>
+      <label htmlFor={id} className="eyebrow text-muted-foreground text-[10px] block mb-2">
+        {label}
+      </label>
       <div className="relative">
         {Icon && (
-          <Icon className="size-4 text-gold absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Icon
+            aria-hidden="true"
+            className="size-4 text-gold absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+          />
         )}
         <input
+          id={id}
+          ref={ref}
           type={type}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
           className={`w-full bg-background border rounded-xl py-3 text-sm focus:outline-none focus:border-gold focus:ring-2 focus:ring-gold/20 placeholder:text-muted-foreground/50 transition-all ${Icon ? "pl-10 pr-4" : "px-4"} ${error ? "border-destructive" : "border-border"}`}
           {...props}
         />
       </div>
-      {error && <div className="mt-1 text-xs text-destructive">{error}</div>}
+      {error && (
+        <div id={errorId} role="alert" className="mt-1 text-xs text-destructive">
+          {error}
+        </div>
+      )}
     </div>
   );
-}
+});

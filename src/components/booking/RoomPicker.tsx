@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import type { LucideIcon } from "lucide-react";
 import {
@@ -205,7 +205,19 @@ function RoomCell({
   const selectable = room.availability === "available";
   const capacity =
     room.room_type.max_adults + (room.room_type.max_kids ? `+${room.room_type.max_kids}` : "");
+  /* Spoken name. The tile's visible text ("309", "2+1 · ৳12,000") reads as a
+   * meaningless run of numbers to a screen reader, so state the whole thing. */
+  const label = selectable
+    ? `Room ${room.room_number}, ${room.room_type.name}, up to ${room.room_type.max_adults} adult${
+        room.room_type.max_adults > 1 ? "s" : ""
+      }${room.room_type.max_kids ? ` and ${room.room_type.max_kids} kid${room.room_type.max_kids > 1 ? "s" : ""}` : ""}, ${formatBDT(room.room_type.base_price)}, available`
+    : `Room ${room.room_number}, ${AVAILABILITY_LABEL[room.availability]}`;
   return (
+    /* .focus-ring-within (styles.css): the radio is sr-only (1×1px), so the UA
+     * paints its focus ring on a box clipped to nothing and the *visible* tile
+     * got no focus treatment at all — keyboard users tabbed across 31 rooms with
+     * an invisible cursor. The ring is ocean, not gold, so focus stays
+     * distinguishable from the gold `checked` state. */
     <label
       title={
         selectable
@@ -213,9 +225,9 @@ function RoomCell({
           : `Room ${room.room_number} · ${AVAILABILITY_LABEL[room.availability]}`
       }
       style={{ height: cellSize() }}
-      className={`relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg border shadow-sm px-1 text-center transition-all ${
+      className={`focus-ring-within relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg border shadow-sm px-1 text-center transition-all ${
         !selectable
-          ? "cursor-not-allowed border-red-300/80 bg-red-50/95"
+          ? "cursor-not-allowed border-red-400/80 bg-red-50/95"
           : checked
             ? "cursor-pointer border-gold bg-amber-50 shadow-[0_0_0_1.5px_var(--gold)]"
             : "cursor-pointer border-emerald-500/45 bg-emerald-50/95 hover:border-emerald-600/70 hover:bg-emerald-100 hover:-translate-y-0.5 hover:shadow-luxe"
@@ -225,29 +237,42 @@ function RoomCell({
         type="radio"
         name="room"
         className="sr-only"
+        aria-label={label}
         checked={checked}
         disabled={!selectable}
         onChange={() => selectable && onSelect()}
       />
       {checked && (
-        <span className="absolute top-1 right-1 size-4 rounded-full gradient-gold grid place-items-center shadow-gold">
+        <span
+          aria-hidden="true"
+          className="absolute top-1 right-1 size-4 rounded-full gradient-gold grid place-items-center shadow-gold"
+        >
           <Check className="size-2.5 text-ocean" strokeWidth={3} />
         </span>
       )}
+      {/* aria-hidden: the tile's visual text is a terse duplicate of the radio's
+          aria-label above — announcing both would read the room twice. */}
       <span
-        className={`font-display text-lg leading-none ${!selectable ? "text-red-900/50 line-through decoration-red-400/60" : ""}`}
+        aria-hidden="true"
+        className={`font-display text-lg leading-none ${!selectable ? "text-red-900/70 line-through decoration-red-500/70" : ""}`}
       >
         {room.room_number}
       </span>
       {selectable ? (
-        <span className="flex max-w-full items-center gap-1 text-[9px] text-muted-foreground leading-none">
+        <span
+          aria-hidden="true"
+          className="flex max-w-full items-center gap-1 text-[9px] text-muted-foreground leading-none"
+        >
           <Users className="size-2.5 shrink-0" />
           <span className="truncate">
             {capacity} · {formatBDT(room.room_type.base_price)}
           </span>
         </span>
       ) : (
-        <span className="text-[8px] font-semibold uppercase tracking-[0.14em] text-red-900/45 leading-none">
+        <span
+          aria-hidden="true"
+          className="text-[8px] font-semibold uppercase tracking-[0.14em] text-red-900/70 leading-none"
+        >
           {AVAILABILITY_LABEL[room.availability]}
         </span>
       )}
@@ -303,6 +328,7 @@ function Deck({
    * is rendered — the other must not be left in the DOM. */
   vertical: boolean;
 }) {
+  const deckHeadingId = useId();
   const deckRooms = [...plan.port, ...plan.starboard]
     .filter((c): c is Extract<PlanCell, { kind: "room" }> => c.kind === "room")
     .map((c) => roomsByNumber.get(c.number))
@@ -424,16 +450,24 @@ function Deck({
   return (
     /* min-w-0: without it this box takes its content's min-width (the hull's),
      * which propagates out to the page and scrolls the whole document sideways
-     * instead of scrolling the deck. */
-    <div className="min-w-0">
+     * instead of scrolling the deck.
+     *
+     * role=radiogroup + aria-labelledby: the room radios share a `name` but had
+     * no grouping element, so a screen reader announced "radio button, 1 of 31"
+     * with no statement of what was being chosen or which deck it was on. */
+    <div
+      className="min-w-0"
+      role="radiogroup"
+      aria-labelledby={deckHeadingId}
+    >
       {/* Deck header */}
       <div className="flex items-baseline justify-between px-2 mb-2">
-        <span className="eyebrow text-[10px] text-ocean flex items-center gap-1.5">
-          <BedDouble className="size-3 text-gold" />
+        <span id={deckHeadingId} className="eyebrow text-[10px] text-ocean flex items-center gap-1.5">
+          <BedDouble aria-hidden="true" className="size-3 text-gold" />
           {plan.name} · {ordinal(plan.floor)} Floor
         </span>
         <span className="text-[10px] text-muted-foreground">
-          <span className="font-semibold text-emerald-600">{availableCount}</span> of{" "}
+          <span className="font-semibold text-emerald-700">{availableCount}</span> of{" "}
           {deckRooms.length} rooms available
         </span>
       </div>
@@ -707,7 +741,7 @@ export function RoomPicker({ packageId, selectedRoomId, onSelectRoom }: Props) {
           </div>
           <div className="text-right">
             <div className="eyebrow text-[9px] text-muted-foreground">Room base</div>
-            <div className="font-display text-xl text-gold leading-none mt-0.5">
+            <div className="font-display text-xl text-gold-text leading-none mt-0.5">
               {formatBDT(selectedRoom.room_type.base_price)}
             </div>
           </div>

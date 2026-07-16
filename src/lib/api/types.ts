@@ -49,11 +49,19 @@ export interface RoomType {
 
 export type RoomAvailability = "available" | "booked" | "unavailable";
 
+export interface RoomImage {
+  id: number;
+  image: string;
+  caption: string;
+  sort_order: number;
+}
+
 export interface PackageRoom {
   id: number;
   room_number: string;
   floor_number: number | null;
   room_type: RoomType;
+  images: RoomImage[];
   availability: RoomAvailability;
 }
 

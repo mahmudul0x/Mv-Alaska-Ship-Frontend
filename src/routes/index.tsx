@@ -5,6 +5,7 @@ import { Experience } from "@/components/site/Experience";
 import { Wildlife } from "@/components/site/Wildlife";
 import { Packages } from "@/components/site/Packages";
 import { Stats } from "@/components/site/Stats";
+import { UpcomingDepartures } from "@/components/site/UpcomingDepartures";
 import { Testimonials } from "@/components/site/Testimonials";
 import { CTA } from "@/components/site/CTA";
 
@@ -26,6 +27,7 @@ function Index() {
   return (
     <>
       <Hero />
+      <UpcomingDepartures />
       <Stats />
       <WhyChoose />
       <Experience />

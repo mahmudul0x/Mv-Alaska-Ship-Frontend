@@ -182,7 +182,7 @@ export function PackagePicker({ selectedPackageId, onSelectPackage }: Props) {
                 <div className="mt-auto flex items-end justify-between border-t border-dashed border-border pt-3.5">
                   <div>
                     <div className="eyebrow text-[9px] text-muted-foreground">From / adult</div>
-                    <div className="font-display text-xl text-gold leading-none mt-1">
+                    <div className="font-display text-xl text-gold-text leading-none mt-1">
                       {formatBDT(pkg.adult_price)}
                     </div>
                   </div>

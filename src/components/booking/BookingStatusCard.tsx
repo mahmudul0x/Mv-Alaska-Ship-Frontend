@@ -61,7 +61,7 @@ export function BookingStatusCard({
         <div>
           <div className="flex items-center justify-between text-[10px] mb-2">
             <span className="eyebrow text-muted-foreground">Payment progress</span>
-            <span className="font-semibold text-gold">{paidPct}% paid</span>
+            <span className="font-semibold text-gold-text">{paidPct}% paid</span>
           </div>
           <div className="h-2 rounded-full bg-muted overflow-hidden">
             <div

@@ -47,6 +47,7 @@
   --color-ring: var(--ring);
   --color-gold: var(--gold);
   --color-gold-soft: var(--gold-soft);
+  --color-gold-text: var(--gold-text);
   --color-mangrove: var(--mangrove);
   --color-teal: var(--teal);
   --color-sunset: var(--sunset);
@@ -63,8 +64,16 @@
   --ocean: oklch(0.32 0.07 162);          /* #064e3b deep emerald */
   --midnight: oklch(0.24 0.055 162);      /* darker emerald */
   --mangrove: oklch(0.50 0.10 162);       /* #0d7a5f mid emerald */
-  --gold: oklch(0.76 0.13 85);            /* #c9a84c luxury gold */
+  --gold: oklch(0.76 0.13 85);            /* #c9a84c luxury gold — FILLS ONLY */
   --gold-soft: oklch(0.88 0.10 88);       /* #f0d78c soft gold */
+  /* Gold as *text on a light surface*. --gold itself is far too light to read:
+   * 2.16:1 on white and 1.92:1 on the cream background, against WCAG AA's 4.5.
+   * This darker gold clears AA on every light surface in the app (5.5:1 on the
+   * white card, 4.9:1 on the cream background, and still ~4.6:1 on the faintly
+   * tinted card headers) while keeping chroma high enough to read as gold
+   * rather than brown. Keep using --gold for gradients, fills, borders and
+   * icons; use this only where gold is the colour of *text*. */
+  --gold-text: oklch(0.52 0.13 85);
   --sand: oklch(0.95 0.035 88);           /* #f5f0e0 cream */
   --teal: oklch(0.62 0.09 168);           /* emerald glow */
   --sunset: oklch(0.74 0.15 70);          /* warm amber */
@@ -93,6 +102,9 @@
 .dark {
   --background: var(--ocean);
   --foreground: oklch(0.98 0.008 80);
+  /* On the dark hull the bright gold is the *readable* one (8.5:1); darkening
+   * it as we do on light surfaces would make it disappear. */
+  --gold-text: var(--gold);
   --card: var(--midnight);
   --card-foreground: oklch(0.98 0.008 80);
   --popover: var(--midnight);
@@ -120,11 +132,49 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
+
   h1, h2, h3, h4, .font-display { font-family: var(--font-display); letter-spacing: -0.01em; }
   ::selection { background: var(--gold); color: var(--ocean); }
 }
 
 @layer utilities {
+  /* ── Keyboard focus (WCAG 2.4.7 Focus Visible) ──
+   *
+   * The app previously shipped NO :focus-visible rule of its own — the only ones
+   * in the compiled CSS belonged to the toast library — so controls that
+   * suppress the UA outline left keyboard users with no indicator at all.
+   *
+   * These live in `utilities`, not `base`: Tailwind's reset sets
+   * `outline-width: 0` from a later cascade layer, which beats anything in
+   * `base` no matter its specificity.
+   *
+   * Ocean, not gold: gold already means "selected" on room tiles and payment
+   * options, and gold-on-white is too low-contrast to serve as an indicator
+   * (see --gold-text). :focus-visible means mouse users never see the ring, and
+   * :where() keeps specificity at 0 so components can still override. */
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--ocean);
+    outline-offset: 2px;
+    border-radius: var(--radius);
+  }
+  .dark :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline-color: var(--gold);
+  }
+
+  /* Room tiles and payment options wrap a visually-hidden (sr-only, 1×1px)
+   * radio, so the UA paints its ring on a box clipped to nothing while the tile
+   * the user is actually looking at gets none. Hoist the ring onto the tile.
+   *
+   * transition-property: the tiles carry `transition-all`, which animates
+   * outline-width from 0 — the ring faded in over 150ms and lagged the
+   * keystroke. The focus indicator must be instant. */
+  .focus-ring-within:has(:focus-visible) {
+    outline: 3px solid var(--ocean);
+    outline-offset: 2px;
+    z-index: 10;
+    transition-property: color, background-color, border-color, box-shadow, transform;
+  }
+
   .gradient-hero {
     background: linear-gradient(180deg,
       color-mix(in oklab, var(--ocean) 30%, transparent) 0%,

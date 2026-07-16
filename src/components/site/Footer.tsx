@@ -19,20 +19,27 @@ export function Footer() {
             The premium brand for river cruising. Bangladesh's most luxurious
             government-approved Sundarbans cruise — where adventure meets elegance.
           </p>
+          {/* Icon-only links carry no text, so each needs an explicit accessible
+              name — without one a screen reader announces only "link". */}
           <div className="mt-6 flex gap-3">
             {[
-              { Icon: Facebook, href: "https://www.facebook.com/profile.php?id=100093297079777" },
-              { Icon: Instagram, href: "#" },
-              { Icon: Youtube, href: "#" },
-            ].map(({ Icon, href }, i) => (
+              {
+                Icon: Facebook,
+                href: "https://www.facebook.com/profile.php?id=100093297079777",
+                label: "MV Alaska on Facebook",
+              },
+              { Icon: Instagram, href: "#", label: "MV Alaska on Instagram" },
+              { Icon: Youtube, href: "#", label: "MV Alaska on YouTube" },
+            ].map(({ Icon, href, label }) => (
               <a
-                key={i}
+                key={label}
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label={label}
                 className="size-10 rounded-full border border-white/15 grid place-items-center hover:border-gold hover:text-gold transition-colors"
               >
-                <Icon className="size-4" />
+                <Icon aria-hidden="true" className="size-4" />
               </a>
             ))}
           </div>

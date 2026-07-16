@@ -90,8 +90,16 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      {/* Skip link: the navbar is 12 tab stops, repeated on every page, before a
+          keyboard user reaches any page content. Hidden until focused. */}
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-100 focus:rounded-full focus:bg-ocean focus:px-5 focus:py-3 focus:text-sm focus:font-semibold focus:text-background focus:shadow-luxe"
+      >
+        Skip to content
+      </a>
       {!isStaffArea && <Navbar />}
-      <main className="min-h-screen">
+      <main id="main" className="min-h-screen">
         <Outlet />
       </main>
       {!isStaffArea && <Footer />}
