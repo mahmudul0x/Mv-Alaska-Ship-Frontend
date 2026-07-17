@@ -25,10 +25,10 @@ function Counter({ to, suffix = "" }: { to: number; suffix?: string }) {
 const stats = [
   {
     icon: Waves,
-    value: 12,
+    value: 6,
     suffix: "+",
     label: "Years on the River",
-    desc: "A decade of mastering the Sundarbans delta",
+    desc: "Years of mastering the Sundarbans delta",
   },
   {
     icon: Compass,
@@ -39,14 +39,14 @@ const stats = [
   },
   {
     icon: BedDouble,
-    value: 24,
+    value: 31,
     suffix: "",
     label: "Luxury Cabin Suites",
     desc: "Private balconies, river views, bespoke comfort",
   },
   {
     icon: Users,
-    value: 6500,
+    value: 35000,
     suffix: "+",
     label: "Guests Hosted",
     desc: "Travellers who chose the finest way to explore",
@@ -83,7 +83,7 @@ export function Stats() {
             <span className="h-px w-12 bg-gradient-to-l from-transparent to-gold" />
           </div>
           <h2 className="font-display text-3xl md:text-4xl font-light text-ocean">
-            A Legacy of <em className="not-italic text-gradient-gold">Excellence</em>
+            A Legacy of <em className="not-italic">Excellence</em>
           </h2>
         </motion.div>
 
@@ -104,7 +104,7 @@ export function Stats() {
               </div>
 
               {/* Number */}
-              <div className="font-display text-[clamp(3rem,6vw,4.5rem)] leading-none font-light text-gradient-gold tabular-nums">
+              <div className="font-display text-[clamp(3rem,6vw,4.5rem)] leading-none font-light tabular-nums">
                 <Counter to={s.value} suffix={s.suffix} />
               </div>
 

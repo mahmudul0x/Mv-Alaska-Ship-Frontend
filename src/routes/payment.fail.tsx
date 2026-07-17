@@ -67,7 +67,7 @@ function PaymentFailPage() {
           <Link
             to="/booking/confirmation/$code"
             params={{ code: bookingCode }}
-            className="px-8 py-3 rounded-full gradient-gold text-ocean text-sm font-semibold text-center shadow-gold hover-lift"
+            className="px-8 py-3 rounded-full gradient-gold text-ocean text-sm font-semibold text-center shadow-luxe hover-lift"
           >
             Try Payment Again
           </Link>

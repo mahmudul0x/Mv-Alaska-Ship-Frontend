@@ -251,7 +251,7 @@ function CabinDetail() {
               <div className="p-6 space-y-3">
                 <Link
                   to="/booking"
-                  className="block w-full py-4 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.2em] font-semibold text-center shadow-gold hover-lift"
+                  className="block w-full py-4 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.2em] font-semibold text-center shadow-luxe hover-lift"
                 >
                   Reserve This Cabin
                 </Link>

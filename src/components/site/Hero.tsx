@@ -1,18 +1,35 @@
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import heroImg from "@/assets/hero-cruise.jpg";
 import img21 from "@/assets/21.jpeg";
 import img23 from "@/assets/23.jpeg";
 import tigerImg from "@/assets/wildlife-tiger.jpg";
+import canalImg from "@/assets/canal-mangrove.jpg";
+import shipVideo from "@/assets/MvalaskaVideo.mp4";
 
-const slides = [
+type Slide = {
+  img: string;
+  video?: string;
+  eyebrow: string;
+  title: ReactNode;
+  sub: string;
+};
+
+const slides: Slide[] = [
   {
-    img: heroImg,
+    img: canalImg,
+    video: shipVideo,
     eyebrow: "◆ The Premium Brand For River Cruising",
     title: <>Luxury <em className="not-italic text-gradient-gold font-normal">Sundarbans</em><br />Cruise Experience</>,
     sub: "Explore the world's largest mangrove forest aboard Bangladesh's most luxurious government-approved cruise ship.",
+  },
+  {
+    img: heroImg,
+    eyebrow: "◆ Aboard M.V. Alaska",
+    title: <>Your home <em className="not-italic text-gradient-gold font-normal">on</em><br />the river.</>,
+    sub: "Three decks of comfort in motion — watch Alaska glide through the delta.",
   },
   {
     img: img21,
@@ -46,9 +63,11 @@ export function Hero() {
 
   useEffect(() => {
     if (paused) return;
-    const t = setInterval(() => setIdx((i) => (i + 1) % slides.length), 6000);
-    return () => clearInterval(t);
-  }, [paused]);
+    // Give the video slide extra time on screen before auto-advancing.
+    const dur = slides[idx].video ? 12000 : 6000;
+    const t = setTimeout(() => setIdx((i) => (i + 1) % slides.length), dur);
+    return () => clearTimeout(t);
+  }, [paused, idx]);
 
   const go = (dir: number) => setIdx((i) => (i + dir + slides.length) % slides.length);
   const slide = slides[idx];
@@ -63,22 +82,48 @@ export function Hero() {
       {/* Slider images with crossfade + parallax */}
       <motion.div style={{ y, scale }} className="absolute inset-0">
         <AnimatePresence mode="sync">
-          <motion.img
-            key={idx}
-            src={slide.img}
-            alt=""
-            initial={{ opacity: 0, scale: 1.08 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ opacity: { duration: 1.4 }, scale: { duration: 7, ease: "linear" } }}
-            className="absolute inset-0 h-full w-full object-cover"
-          />
+          {slide.video ? (
+            <motion.video
+              key={idx}
+              src={slide.video}
+              poster={slide.img}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ opacity: { duration: 1.4 } }}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
+            <motion.img
+              key={idx}
+              src={slide.img}
+              alt=""
+              initial={{ opacity: 0, scale: 1.08 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ opacity: { duration: 1.4 }, scale: { duration: 7, ease: "linear" } }}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          )}
         </AnimatePresence>
       </motion.div>
 
       {/* Cinematic overlays */}
       <div className="absolute inset-0 gradient-hero" />
-      <div className="absolute inset-0 bg-gradient-to-r from-ocean/70 via-transparent to-ocean/40" />
+      <div className="absolute inset-0 bg-gradient-to-r from-ocean/50 via-transparent to-ocean/30" />
+      <div className="absolute inset-0 hero-scrim" />
+      {/* Extra shade for the video slide only — footage is brighter and busier
+       * than the stills, so the copy needs more contrast behind it. */}
+      <div
+        className={`absolute inset-0 bg-ocean/35 transition-opacity duration-1000 ${
+          slide.video ? "opacity-100" : "opacity-0"
+        }`}
+      />
 
       <motion.div
         initial={{ opacity: 0, scaleX: 0 }}

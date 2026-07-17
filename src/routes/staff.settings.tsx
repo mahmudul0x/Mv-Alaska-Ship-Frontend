@@ -138,7 +138,7 @@ function ShipHelplineCard({
   return (
     <div
       className={`rounded-2xl border bg-card overflow-hidden transition-all ${
-        dirty ? "border-gold/50 shadow-gold" : "border-border"
+        dirty ? "border-gold/50 shadow-luxe" : "border-border"
       }`}
     >
       <div className="px-5 py-4 border-b border-border flex items-center gap-3">
@@ -183,7 +183,7 @@ function ShipHelplineCard({
         <button
           disabled={!dirty || saving}
           onClick={() => onSave(value)}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-gold disabled:opacity-30 disabled:shadow-none"
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
         >
           {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
           {dirty ? "Save changes" : "Saved"}

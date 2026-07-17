@@ -101,7 +101,7 @@ export function PackagePicker({ selectedPackageId, onSelectPackage }: Props) {
                 disabled
                   ? "cursor-not-allowed opacity-55 border-border grayscale-35"
                   : selected
-                    ? "border-gold shadow-gold ring-1 ring-gold cursor-pointer"
+                    ? "border-gold shadow-luxe ring-1 ring-gold cursor-pointer"
                     : "border-border hover:border-gold/60 hover:shadow-luxe hover:-translate-y-1 cursor-pointer"
               }`}
             >
@@ -131,7 +131,7 @@ export function PackagePicker({ selectedPackageId, onSelectPackage }: Props) {
 
                 {/* Selected check */}
                 {selected && (
-                  <div className="absolute top-3 right-3 size-7 rounded-full gradient-gold grid place-items-center shadow-gold">
+                  <div className="absolute top-3 right-3 size-7 rounded-full gradient-gold grid place-items-center shadow-luxe">
                     <Check className="size-4 text-ocean" strokeWidth={3} />
                   </div>
                 )}
@@ -191,7 +191,7 @@ export function PackagePicker({ selectedPackageId, onSelectPackage }: Props) {
                       disabled
                         ? "bg-muted text-muted-foreground"
                         : selected
-                          ? "gradient-gold text-ocean shadow-gold"
+                          ? "gradient-gold text-ocean shadow-luxe"
                           : "bg-ocean/8 text-ocean group-hover:bg-ocean group-hover:text-background"
                     }`}
                   >

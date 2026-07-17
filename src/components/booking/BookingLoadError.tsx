@@ -48,7 +48,7 @@ export function BookingLoadError({
             type="button"
             onClick={onRetry}
             disabled={retrying}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 min-h-11 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.18em] font-semibold shadow-gold disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 min-h-11 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.18em] font-semibold shadow-luxe disabled:opacity-50"
           >
             <RotateCw className={`size-3.5 ${retrying ? "animate-spin" : ""}`} />
             {retrying ? "Checking…" : "Try again"}

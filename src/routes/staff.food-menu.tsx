@@ -479,7 +479,7 @@ function CopyDayDialog({
         <button
           disabled={source.length === 0 || mutation.isPending}
           onClick={() => mutation.mutate()}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-gold disabled:opacity-30 disabled:shadow-none"
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
         >
           {mutation.isPending ? (
             <Loader2 className="size-3.5 animate-spin" />
@@ -536,7 +536,7 @@ function AddItemDialog({
             shipId &&
             mutation.mutate({ ship: shipId, day, meal_type: mealType, name: name.trim() })
           }
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-gold disabled:opacity-30 disabled:shadow-none"
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
         >
           {mutation.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
           Add item
@@ -582,7 +582,7 @@ function EditItemDialog({
         <button
           disabled={!name.trim() || name === item.name || mutation.isPending}
           onClick={() => mutation.mutate({ name: name.trim() })}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-gold disabled:opacity-30 disabled:shadow-none"
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
         >
           {mutation.isPending ? <Loader2 className="size-3.5 animate-spin" /> : null}
           Save changes

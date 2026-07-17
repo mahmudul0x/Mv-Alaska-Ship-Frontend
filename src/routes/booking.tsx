@@ -221,7 +221,7 @@ function Booking() {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="font-display text-background text-[clamp(1.9rem,4.5vw,3.4rem)] font-light leading-[1.05]"
             >
-              Begin your <em className="not-italic text-gradient-gold">voyage.</em>
+              Begin your <em className="not-italic">voyage.</em>
             </motion.h1>
             <motion.div
               initial={{ opacity: 0, y: 12 }}
@@ -309,7 +309,7 @@ function Booking() {
                   <button
                     onClick={goNext}
                     disabled={!canContinue}
-                    className="inline-flex items-center gap-2.5 px-9 py-3.5 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.2em] font-semibold shadow-gold hover-lift disabled:opacity-40 disabled:pointer-events-none"
+                    className="inline-flex items-center gap-2.5 px-9 py-3.5 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.2em] font-semibold shadow-luxe hover-lift disabled:opacity-40 disabled:pointer-events-none"
                   >
                     Continue <ArrowRight className="size-3.5" />
                   </button>
@@ -363,7 +363,7 @@ function Booking() {
             <button
               onClick={goNext}
               disabled={!canContinue}
-              className="shrink-0 inline-flex min-h-11 items-center gap-2 px-7 py-3 rounded-full gradient-gold text-ocean text-[11px] uppercase tracking-[0.18em] font-semibold shadow-gold disabled:opacity-40 disabled:pointer-events-none"
+              className="shrink-0 inline-flex min-h-11 items-center gap-2 px-7 py-3 rounded-full gradient-gold text-ocean text-[11px] uppercase tracking-[0.18em] font-semibold shadow-luxe disabled:opacity-40 disabled:pointer-events-none"
             >
               Continue <ArrowRight className="size-3.5" />
             </button>
@@ -441,7 +441,7 @@ function Stepper({
                   <div
                     className={`size-8 rounded-full grid place-items-center shrink-0 transition-all duration-500 ${
                       done
-                        ? "gradient-gold shadow-gold group-hover:scale-105"
+                        ? "gradient-gold shadow-luxe group-hover:scale-105"
                         : active
                           ? "bg-ocean shadow-luxe ring-4 ring-ocean/10"
                           : "bg-muted"
@@ -671,7 +671,7 @@ function StepHeader({
         Step {step + 1} · {steps[step].label}
       </div>
       <h2 className="font-display text-[clamp(1.9rem,4vw,2.75rem)] font-light leading-[1.08]">
-        {title} <em className="not-italic text-gradient-gold">{highlight}</em>
+        {title} <em className="not-italic">{highlight}</em>
       </h2>
       <p className="mt-3 text-muted-foreground leading-relaxed">{description}</p>
     </div>
@@ -790,7 +790,7 @@ function StepVoyage({ data, update }: StepProps) {
                     <div className="relative w-full flex items-center">
                       <span className="size-2 rounded-full ring-1 ring-gold bg-background shrink-0" />
                       <span className="flex-1 border-t border-dashed border-gold/60" />
-                      <span className="mx-1.5 grid place-items-center size-7 rounded-full gradient-gold shadow-gold shrink-0">
+                      <span className="mx-1.5 grid place-items-center size-7 rounded-full gradient-gold shadow-luxe shrink-0">
                         <Anchor className="size-3.5 text-ocean" />
                       </span>
                       <span className="flex-1 border-t border-dashed border-gold/60" />
@@ -843,7 +843,7 @@ function StepVoyage({ data, update }: StepProps) {
                       per person · incl. tax
                     </div>
                   </div>
-                  <span className="font-display text-2xl text-gradient-gold leading-none">
+                  <span className="font-display text-2xl leading-none">
                     {formatBDT(selectedPackage.adult_price)}
                   </span>
                 </div>
@@ -1231,7 +1231,7 @@ function StepPayment({
                   <span className="font-display text-base text-background leading-tight truncate">
                     {voyageTitle}
                   </span>
-                  <span className="font-display text-3xl text-gradient-gold leading-none shrink-0">
+                  <span className="font-display text-3xl leading-none shrink-0">
                     {quote ? formatBDT(quote.total) : "—"}
                   </span>
                 </div>
@@ -1255,7 +1255,7 @@ function StepPayment({
                   <div className="relative w-full flex items-center">
                     <span className="size-1.5 rounded-full ring-1 ring-gold bg-background shrink-0" />
                     <span className="flex-1 border-t border-dashed border-gold/60" />
-                    <span className="mx-1 grid place-items-center size-5 rounded-full gradient-gold shadow-gold shrink-0">
+                    <span className="mx-1 grid place-items-center size-5 rounded-full gradient-gold shadow-luxe shrink-0">
                       <Anchor className="size-2.5 text-ocean" />
                     </span>
                     <span className="flex-1 border-t border-dashed border-gold/60" />
@@ -1479,7 +1479,7 @@ function StepPayment({
               <button
                 type="submit"
                 disabled={submitting || !quote || partialInvalid}
-                className="w-full flex items-center justify-center gap-2 px-8 py-3.5 rounded-full gradient-gold text-ocean text-[11px] uppercase tracking-[0.2em] font-semibold shadow-gold hover-lift disabled:opacity-40 disabled:pointer-events-none"
+                className="w-full flex items-center justify-center gap-2 px-8 py-3.5 rounded-full gradient-gold text-ocean text-[11px] uppercase tracking-[0.2em] font-semibold shadow-luxe hover-lift disabled:opacity-40 disabled:pointer-events-none"
               >
                 {submitting ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -1553,23 +1553,23 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
       <title>Booking Receipt — ${booking.booking_code}</title>
       <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:Georgia,serif;background:#fff;color:#1a2e25;padding:48px;max-width:700px;margin:auto}
-        .header{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #c9a84c;padding-bottom:20px;margin-bottom:28px}
-        .brand h1{font-size:22px;letter-spacing:4px;color:#064e3b}
-        .brand p{font-size:10px;letter-spacing:3px;color:#c9a84c;text-transform:uppercase;margin-top:2px}
+        body{font-family:Georgia,serif;background:#fff;color:#16303b;padding:48px;max-width:700px;margin:auto}
+        .header{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #2ba6d9;padding-bottom:20px;margin-bottom:28px}
+        .brand h1{font-size:22px;letter-spacing:4px;color:#0b3c4d}
+        .brand p{font-size:10px;letter-spacing:3px;color:#1b7ba8;text-transform:uppercase;margin-top:2px}
         .issued{font-size:11px;color:#888;text-align:right}
-        .ref{background:#064e3b;color:#fff;padding:10px 20px;border-radius:8px;display:inline-block;margin-bottom:8px}
+        .ref{background:#0b3c4d;color:#fff;padding:10px 20px;border-radius:8px;display:inline-block;margin-bottom:8px}
         .ref span{font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.7}
         .ref strong{display:block;font-size:20px;letter-spacing:3px;margin-top:2px}
-        .badge{display:inline-block;background:#f0f9f6;border:1px solid #c9a84c;color:#064e3b;padding:4px 12px;border-radius:20px;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin:0 0 24px 12px;vertical-align:top}
+        .badge{display:inline-block;background:#eaf6fc;border:1px solid #2ba6d9;color:#0b3c4d;padding:4px 12px;border-radius:20px;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin:0 0 24px 12px;vertical-align:top}
         .section{margin-bottom:24px}
-        .section-title{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#c9a84c;margin-bottom:10px;border-bottom:1px solid #e5e0d0;padding-bottom:4px}
-        .row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #f0ece0}
-        .row span:first-child{color:#5a7a6a}
+        .section-title{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#1b7ba8;margin-bottom:10px;border-bottom:1px solid #d9e7ef;padding-bottom:4px}
+        .row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #e8f1f6}
+        .row span:first-child{color:#55707e}
         .row span:last-child{font-weight:600}
-        .total-row{display:flex;justify-content:space-between;padding:14px 0 6px;font-size:18px;border-top:2px solid #c9a84c;margin-top:8px}
-        .total-row span:last-child{color:#c9a84c;font-size:22px}
-        .footer{margin-top:40px;border-top:1px solid #e5e0d0;padding-top:16px;font-size:11px;color:#888;text-align:center}
+        .total-row{display:flex;justify-content:space-between;padding:14px 0 6px;font-size:18px;border-top:2px solid #2ba6d9;margin-top:8px}
+        .total-row span:last-child{color:#1b7ba8;font-size:22px}
+        .footer{margin-top:40px;border-top:1px solid #d9e7ef;padding-top:16px;font-size:11px;color:#888;text-align:center}
         @media print{body{padding:24px}}
       </style>
       </head><body>
@@ -1648,7 +1648,7 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
             initial={{ scale: 0.5, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.6, type: "spring" }}
-            className="size-16 rounded-full gradient-gold grid place-items-center shadow-gold mb-4"
+            className="size-16 rounded-full gradient-gold grid place-items-center shadow-luxe mb-4"
           >
             <Check className="size-8 text-ocean" strokeWidth={2.5} />
           </motion.div>
@@ -1740,7 +1740,7 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
             <Link
               to="/booking/confirmation/$code"
               params={{ code: booking.booking_code }}
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.2em] font-semibold shadow-gold hover-lift"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.2em] font-semibold shadow-luxe hover-lift"
             >
               Pay Now <ArrowRight className="size-3.5" />
             </Link>

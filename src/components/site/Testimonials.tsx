@@ -29,7 +29,7 @@ export function Testimonials() {
           light
           align="center"
           eyebrow="Guest Stories"
-          title={<>What our travellers <em className="not-italic text-gradient-gold">remember</em>.</>}
+          title={<>What our travellers <em className="not-italic">remember</em>.</>}
         />
 
         <div className="mt-16 grid md:grid-cols-3 gap-6">

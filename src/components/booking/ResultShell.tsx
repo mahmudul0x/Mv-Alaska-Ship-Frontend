@@ -6,7 +6,7 @@ import img109 from "@/assets/109.jpeg";
 type Tone = "success" | "error" | "neutral";
 
 const toneStyles: Record<Tone, string> = {
-  success: "gradient-gold text-ocean shadow-gold",
+  success: "gradient-gold text-ocean shadow-luxe",
   error: "bg-destructive/15 text-red-200 ring-1 ring-destructive/40 backdrop-blur-md",
   neutral: "bg-white/10 text-background ring-1 ring-white/20 backdrop-blur-md",
 };

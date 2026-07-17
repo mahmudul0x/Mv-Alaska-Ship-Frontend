@@ -278,7 +278,7 @@ function BookingsPage() {
         </button>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.15em] font-semibold shadow-gold"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.15em] font-semibold shadow-luxe"
         >
           <Plus className="size-4" /> New booking
         </button>
@@ -1038,7 +1038,7 @@ function CreateBookingDialog({ onClose }: { onClose: () => void }) {
         <button
           disabled={!canSubmit || createMutation.isPending}
           onClick={() => createMutation.mutate()}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.15em] font-semibold shadow-gold disabled:opacity-40"
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.15em] font-semibold shadow-luxe disabled:opacity-40"
         >
           {createMutation.isPending && <Loader2 className="size-4 animate-spin" />}
           Create booking

@@ -48,11 +48,11 @@ function PaymentSuccessPage() {
       title={
         unconfirmed ? (
           <>
-            We couldn't <em className="not-italic text-gradient-gold">confirm</em> this.
+            We couldn't <em className="not-italic">confirm</em> this.
           </>
         ) : (
           <>
-            Thank you — <em className="not-italic text-gradient-gold">all set.</em>
+            Thank you — <em className="not-italic">all set.</em>
           </>
         )
       }
@@ -124,7 +124,7 @@ function PaymentSuccessPage() {
           <Link
             to="/booking/confirmation/$code"
             params={{ code: bookingCode }}
-            className="px-8 py-3 rounded-full gradient-gold text-ocean text-sm font-semibold text-center shadow-gold hover-lift"
+            className="px-8 py-3 rounded-full gradient-gold text-ocean text-sm font-semibold text-center shadow-luxe hover-lift"
           >
             View Booking
           </Link>

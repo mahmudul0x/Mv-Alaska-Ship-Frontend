@@ -245,7 +245,7 @@ function RoomCell({
       {checked && (
         <span
           aria-hidden="true"
-          className="absolute top-1 right-1 size-4 rounded-full gradient-gold grid place-items-center shadow-gold"
+          className="absolute top-1 right-1 size-4 rounded-full gradient-gold grid place-items-center shadow-luxe"
         >
           <Check className="size-2.5 text-ocean" strokeWidth={3} />
         </span>
@@ -722,7 +722,7 @@ export function RoomPicker({ packageId, selectedRoomId, onSelectRoom }: Props) {
       {selectedRoom && (
         <div className="rounded-2xl border border-gold/40 bg-ocean/4 px-5 py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl gradient-gold grid place-items-center shrink-0 shadow-gold">
+            <div className="size-10 rounded-xl gradient-gold grid place-items-center shrink-0 shadow-luxe">
               <BedDouble className="size-4.5 text-ocean" />
             </div>
             <div>

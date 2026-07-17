@@ -19,7 +19,7 @@ function WildlifePage() {
     <>
       <PageHero
         eyebrow="The Wild"
-        title={<>The <em className="not-italic text-gradient-gold">last great</em> mangrove on earth.</>}
+        title={<>The <em className="not-italic">last great</em> mangrove on earth.</>}
         subtitle="Documentary-grade encounters with tigers, deer, crocodiles, and 300+ bird species — guided by Bangladesh's most experienced naturalists."
         image={tiger}
       />

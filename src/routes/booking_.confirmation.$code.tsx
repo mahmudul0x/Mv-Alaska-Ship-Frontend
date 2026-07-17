@@ -69,7 +69,7 @@ function BookingConfirmationPage() {
       eyebrow="Your reservation"
       title={
         <>
-          Booking <em className="not-italic text-gradient-gold">{code}</em>
+          Booking <em className="not-italic">{code}</em>
         </>
       }
       subtitle="Review your booking status below — and settle any outstanding balance in seconds."
@@ -218,7 +218,7 @@ function BookingConfirmationPage() {
             <button
               onClick={payNow}
               disabled={initiatePayment.isPending || partialInvalid}
-              className="w-full flex items-center justify-center gap-2 px-8 py-4 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.2em] font-semibold shadow-gold hover-lift disabled:opacity-40 disabled:pointer-events-none"
+              className="w-full flex items-center justify-center gap-2 px-8 py-4 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.2em] font-semibold shadow-luxe hover-lift disabled:opacity-40 disabled:pointer-events-none"
             >
               {initiatePayment.isPending ? (
                 <Loader2 className="size-4 animate-spin" />

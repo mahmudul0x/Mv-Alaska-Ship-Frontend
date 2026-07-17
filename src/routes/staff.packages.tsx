@@ -159,7 +159,7 @@ function PackagesPage() {
       >
         <button
           onClick={() => setCreating(true)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.15em] font-semibold shadow-gold"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.15em] font-semibold shadow-luxe"
         >
           <Plus className="size-4" /> New package
         </button>
@@ -618,7 +618,7 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
         <button
           disabled={!canSubmit || saveMutation.isPending}
           onClick={() => saveMutation.mutate()}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.15em] font-semibold shadow-gold disabled:opacity-40"
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.15em] font-semibold shadow-luxe disabled:opacity-40"
         >
           {saveMutation.isPending && <Loader2 className="size-4 animate-spin" />}
           {pkg ? "Save changes" : "Create package"}

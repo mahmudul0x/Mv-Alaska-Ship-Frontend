@@ -165,7 +165,7 @@ function RoomTypeCard({
   return (
     <div
       className={`rounded-2xl border bg-card overflow-hidden transition-all hover:shadow-luxe ${
-        dirty ? "border-gold/50 shadow-gold" : "border-border"
+        dirty ? "border-gold/50 shadow-luxe" : "border-border"
       }`}
     >
       <div className="px-5 py-4 border-b border-border flex items-center gap-3">
@@ -242,7 +242,7 @@ function RoomTypeCard({
         <button
           disabled={!dirty || saving}
           onClick={() => onSave({ base_price: basePrice, max_adults: maxAdults, max_kids: maxKids })}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-gold disabled:opacity-30 disabled:shadow-none"
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
         >
           {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
           {dirty ? "Save changes" : "Saved"}
@@ -348,7 +348,7 @@ function KidPricingSection() {
             </span>
             <button
               onClick={() => setShowAdd((v) => !v)}
-              className="flex items-center gap-2 px-4 py-2 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-gold"
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe"
             >
               <Plus className="size-3.5" />
               Add rule
@@ -409,7 +409,7 @@ function AddKidRuleForm({
   const valid = maxAge > minAge && (!isFixed || amount !== "");
 
   return (
-    <div className="rounded-2xl border border-gold/50 bg-card shadow-gold p-5 space-y-4">
+    <div className="rounded-2xl border border-gold/50 bg-card shadow-luxe p-5 space-y-4">
       <div className="font-display text-base">New kid pricing rule</div>
 
       <div className="grid sm:grid-cols-2 gap-3">
@@ -491,7 +491,7 @@ function AddKidRuleForm({
               amount: isFixed ? amount : null,
             })
           }
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-gold disabled:opacity-30 disabled:shadow-none"
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
         >
           {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
           Add rule
@@ -773,7 +773,7 @@ function RoomGalleryDialog({
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-gold disabled:opacity-40"
+            className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-40"
           >
             {uploading ? (
               <Loader2 className="size-3.5 animate-spin" />
@@ -995,7 +995,7 @@ function KidRuleCard({
   return (
     <div
       className={`rounded-2xl border bg-card overflow-hidden transition-all hover:shadow-luxe ${
-        dirty ? "border-gold/50 shadow-gold" : "border-border"
+        dirty ? "border-gold/50 shadow-luxe" : "border-border"
       }`}
     >
       <div className="px-5 py-4 border-b border-border flex items-center gap-3">
@@ -1076,7 +1076,7 @@ function KidRuleCard({
           onClick={() =>
             onSave({ min_age: minAge, max_age: maxAge, ...(isFixed ? { amount: String(amount) } : {}) })
           }
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-gold disabled:opacity-30 disabled:shadow-none"
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
         >
           {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
           {dirty ? "Save changes" : "Saved"}

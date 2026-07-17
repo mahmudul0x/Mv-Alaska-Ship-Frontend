@@ -42,7 +42,7 @@ function Gallery() {
     <>
       <PageHero
         eyebrow="The Gallery"
-        title={<>Stories the <em className="not-italic text-gradient-gold">camera</em> remembered.</>}
+        title={<>Stories the <em className="not-italic">camera</em> remembered.</>}
         subtitle="A cinematic archive from voyages aboard MV Alaska."
         image={canal}
       />

@@ -89,7 +89,7 @@ function CruiseExp() {
     <>
       <PageHero
         eyebrow="Onboard"
-        title={<>The <em className="not-italic text-gradient-gold">ship</em>, in detail.</>}
+        title={<>The <em className="not-italic">ship</em>, in detail.</>}
         subtitle="Every facility, every detail — engineered for slow, immersive luxury."
         image={deck}
       />
@@ -99,7 +99,7 @@ function CruiseExp() {
           <SectionHeader
             align="center"
             eyebrow="Facilities & Amenities"
-            title={<>Everything you'd expect — <em className="not-italic text-gradient-gold">and more</em>.</>}
+            title={<>Everything you'd expect — <em className="not-italic">and more</em>.</>}
           />
 
           <div className="mt-16 grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border rounded-2xl overflow-hidden">
@@ -127,7 +127,7 @@ function CruiseExp() {
           <SectionHeader
             align="center"
             eyebrow="Onboard Dining"
-            title={<>Three days. <em className="not-italic text-gradient-gold">A feast every stop.</em></>}
+            title={<>Three days. <em className="not-italic">A feast every stop.</em></>}
             description="A day-by-day look at what our chef prepares onboard — the exact spread varies by sailing as the chef selects from these dishes."
           />
           <div className="mt-16">
@@ -142,7 +142,7 @@ function CruiseExp() {
           <SectionHeader
             align="center"
             eyebrow="The Journey"
-            title={<>Three days. Eight stops. <em className="not-italic text-gradient-gold">One cinematic arc.</em></>}
+            title={<>Three days. Eight stops. <em className="not-italic">One cinematic arc.</em></>}
             description="A guided walk through every moment aboard MV Alaska — from the champagne welcome at Khulna to the wild Bay of Bengal coastline at Jamtola. Tap any node on the map, hover for context, or share a single stop with a friend."
           />
           <div className="mt-16">
@@ -159,7 +159,7 @@ function CruiseExp() {
           <div className="eyebrow text-gold-soft mb-5">◆ The Ship</div>
           <h2 className="font-display text-4xl md:text-5xl font-light leading-tight">A floating five-star hotel — not a boat.</h2>
           <p className="mt-6 text-background/75 leading-relaxed">
-            MV Alaska is engineered like a luxury hotel that happens to navigate. Three full decks, twenty-four suites, two restaurants, a pool, a conference suite, and a crew trained in five-star hospitality.
+            MV Alaska is engineered like a luxury hotel that happens to navigate. Three full decks, thirty-one suites, two restaurants, a pool, a conference suite, and a crew trained in five-star hospitality.
           </p>
         </div>
         <div className="bg-mangrove text-background p-12 md:p-20 flex flex-col justify-center md:order-3">
@@ -216,7 +216,7 @@ function FoodMenuSection() {
             onClick={() => setActiveDay(i)}
             className={`px-5 py-2.5 rounded-full text-sm font-medium tracking-wide transition-colors border ${
               i === activeDay
-                ? "gradient-gold text-ocean border-transparent shadow-gold"
+                ? "bg-ocean text-primary-foreground border-transparent"
                 : "border-border text-muted-foreground hover:text-foreground"
             }`}
           >

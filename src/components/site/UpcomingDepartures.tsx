@@ -24,7 +24,7 @@ export function UpcomingDepartures() {
             eyebrow="Now boarding"
             title={
               <>
-                Upcoming <em className="not-italic text-gradient-gold">departures.</em>
+                Upcoming <em className="not-italic">departures.</em>
               </>
             }
             description="Real sailing dates, open for booking right now — pick one and reserve your room in minutes."
@@ -99,7 +99,7 @@ export function UpcomingDepartures() {
                     <Link
                       to="/booking"
                       search={{ package: pkg.id }}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full gradient-gold text-ocean text-[10px] uppercase tracking-[0.2em] font-semibold shadow-gold"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-ocean/35 text-ocean text-[10px] uppercase tracking-[0.2em] font-semibold hover:bg-ocean hover:text-primary-foreground transition-colors"
                     >
                       Reserve <ArrowUpRight className="size-3" />
                     </Link>

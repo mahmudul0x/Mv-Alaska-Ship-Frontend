@@ -60,61 +60,63 @@
 
 :root {
   --radius: 0.25rem;
-  /* Emerald Prestige palette */
-  --ocean: oklch(0.32 0.07 162);          /* #064e3b deep emerald */
-  --midnight: oklch(0.24 0.055 162);      /* darker emerald */
-  --mangrove: oklch(0.50 0.10 162);       /* #0d7a5f mid emerald */
-  --gold: oklch(0.76 0.13 85);            /* #c9a84c luxury gold — FILLS ONLY */
-  --gold-soft: oklch(0.88 0.10 88);       /* #f0d78c soft gold */
-  /* Gold as *text on a light surface*. --gold itself is far too light to read:
-   * 2.16:1 on white and 1.92:1 on the cream background, against WCAG AA's 4.5.
-   * This darker gold clears AA on every light surface in the app (5.5:1 on the
-   * white card, 4.9:1 on the cream background, and still ~4.6:1 on the faintly
-   * tinted card headers) while keeping chroma high enough to read as gold
-   * rather than brown. Keep using --gold for gradients, fills, borders and
-   * icons; use this only where gold is the colour of *text*. */
-  --gold-text: oklch(0.52 0.13 85);
-  --sand: oklch(0.95 0.035 88);           /* #f5f0e0 cream */
-  --teal: oklch(0.62 0.09 168);           /* emerald glow */
-  --sunset: oklch(0.74 0.15 70);          /* warm amber */
+  /* Alaska Teal palette — matched to the client logo & ship hull.
+   * Variable names are kept from the previous Emerald/Gold theme so no
+   * component changes: "--gold" is now the bright cyan ACCENT, "--ocean"
+   * the deep navy-teal, "--sand" an ice-tinted off-white. */
+  --ocean: oklch(0.33 0.06 230);          /* #0b3c4d deep navy-teal (logo dark) */
+  --midnight: oklch(0.26 0.05 230);       /* darker navy-teal */
+  --mangrove: oklch(0.50 0.09 230);       /* mid navy-teal */
+  --gold: oklch(0.70 0.13 233);           /* #2ba6d9 bright cyan accent — FILLS ONLY */
+  --gold-soft: oklch(0.82 0.10 230);      /* #5bc6f0 light cyan */
+  /* Accent as *text on a light surface*. --gold (bright cyan) is too light to
+   * read: ~2.5:1 on white against WCAG AA's 4.5. This darker cyan clears AA on
+   * every light surface in the app (~5:1 on the white card, ~4.7:1 on the ice
+   * background) while keeping chroma high enough to read as the brand cyan.
+   * Keep using --gold for gradients, fills, borders and icons; use this only
+   * where the accent is the colour of *text*. */
+  --gold-text: oklch(0.50 0.12 238);
+  --sand: oklch(0.95 0.015 220);          /* ice-tinted off-white */
+  --teal: oklch(0.64 0.10 215);           /* teal glow */
+  --sunset: oklch(0.60 0.14 245);         /* deep sea blue (gradient endpoint) */
 
-  --background: oklch(0.96 0.025 88);     /* cream #f5f0e0 */
-  --foreground: oklch(0.22 0.05 162);
+  --background: oklch(0.97 0.01 220);     /* ice white */
+  --foreground: oklch(0.23 0.04 230);
   --card: oklch(1 0 0);
   --card-foreground: var(--foreground);
   --popover: oklch(1 0 0);
   --popover-foreground: var(--foreground);
   --primary: var(--ocean);
-  --primary-foreground: oklch(0.98 0.008 80);
+  --primary-foreground: oklch(0.98 0.005 220);
   --secondary: var(--sand);
   --secondary-foreground: var(--ocean);
-  --muted: oklch(0.92 0.025 88);
-  --muted-foreground: oklch(0.42 0.04 162);
+  --muted: oklch(0.93 0.012 220);
+  --muted-foreground: oklch(0.44 0.035 230);
   --accent: var(--gold);
   --accent-foreground: var(--ocean);
   --destructive: oklch(0.55 0.22 27);
   --destructive-foreground: oklch(0.98 0.003 247);
-  --border: oklch(0.86 0.025 88);
-  --input: oklch(0.86 0.025 88);
+  --border: oklch(0.87 0.015 220);
+  --input: oklch(0.87 0.015 220);
   --ring: var(--gold);
 }
 
 .dark {
   --background: var(--ocean);
-  --foreground: oklch(0.98 0.008 80);
-  /* On the dark hull the bright gold is the *readable* one (8.5:1); darkening
-   * it as we do on light surfaces would make it disappear. */
+  --foreground: oklch(0.98 0.005 220);
+  /* On the dark hull the bright cyan is the *readable* one; darkening it as
+   * we do on light surfaces would make it disappear. */
   --gold-text: var(--gold);
   --card: var(--midnight);
-  --card-foreground: oklch(0.98 0.008 80);
+  --card-foreground: oklch(0.98 0.005 220);
   --popover: var(--midnight);
-  --popover-foreground: oklch(0.98 0.008 80);
+  --popover-foreground: oklch(0.98 0.005 220);
   --primary: var(--gold);
   --primary-foreground: var(--ocean);
   --secondary: oklch(0.30 0.045 245);
-  --secondary-foreground: oklch(0.98 0.008 80);
+  --secondary-foreground: oklch(0.98 0.005 220);
   --muted: oklch(0.30 0.045 245);
-  --muted-foreground: oklch(0.75 0.015 80);
+  --muted-foreground: oklch(0.75 0.015 220);
   --accent: var(--gold);
   --accent-foreground: var(--ocean);
   --border: oklch(1 0 0 / 12%);
@@ -177,18 +179,32 @@
 
   .gradient-hero {
     background: linear-gradient(180deg,
-      color-mix(in oklab, var(--ocean) 30%, transparent) 0%,
-      color-mix(in oklab, var(--ocean) 55%, transparent) 50%,
-      var(--ocean) 100%);
+      color-mix(in oklab, var(--ocean) 22%, transparent) 0%,
+      color-mix(in oklab, var(--ocean) 42%, transparent) 50%,
+      color-mix(in oklab, var(--ocean) 82%, transparent) 100%);
   }
+  /* Soft pool of shade behind the hero copy only — keeps the slide images
+   * bright at the edges while the centered text stays readable. */
+  .hero-scrim {
+    background: radial-gradient(ellipse 62% 52% at 50% 42%,
+      color-mix(in oklab, var(--midnight) 48%, transparent) 0%,
+      color-mix(in oklab, var(--midnight) 26%, transparent) 50%,
+      transparent 78%);
+  }
+  /* Primary-CTA fill. Deliberately near-solid: the old tri-stop
+   * accent/soft/accent gradient read as shiny "foil" — flashy, not premium. */
   .gradient-gold {
-    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-soft) 50%, var(--gold) 100%);
+    background: linear-gradient(135deg,
+      var(--gold) 0%,
+      color-mix(in oklab, var(--gold) 82%, white) 100%);
   }
   .gradient-ocean {
     background: linear-gradient(180deg, var(--ocean) 0%, var(--midnight) 100%);
   }
+  /* Hero-only accent word. Two calm stops — the old three-colour sweep
+   * (soft → accent → sunset) was doing too much. */
   .text-gradient-gold {
-    background: linear-gradient(135deg, var(--gold-soft) 0%, var(--gold) 50%, var(--sunset) 100%);
+    background: linear-gradient(135deg, var(--gold-soft) 0%, var(--gold) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -210,8 +226,10 @@
       0 1px 2px color-mix(in oklab, var(--ocean) 8%, transparent),
       0 30px 60px -20px color-mix(in oklab, var(--ocean) 35%, transparent);
   }
+  /* Reserved for the primary "Book" CTAs only — everything else uses the
+   * neutral shadow-luxe. */
   .shadow-gold {
-    box-shadow: 0 20px 50px -15px color-mix(in oklab, var(--gold) 50%, transparent);
+    box-shadow: 0 16px 40px -14px color-mix(in oklab, var(--gold) 38%, transparent);
   }
   .hover-lift {
     transition: transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 600ms;
@@ -238,19 +256,6 @@
     50% { transform: translateY(-10px); }
   }
   .animate-float { animation: float 6s ease-in-out infinite; }
-
-  @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-  }
-  .shimmer-text {
-    background: linear-gradient(90deg, var(--gold-soft), white, var(--gold-soft));
-    background-size: 200% 100%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: shimmer 4s linear infinite;
-  }
 
   .eyebrow {
     font-family: var(--font-sans);

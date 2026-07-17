@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Anchor, Shield, Wifi, Compass, Sparkles, Crown } from "lucide-react";
+import { Anchor, Shield, Wifi, Compass, Sparkles, Crown, Presentation, Waves } from "lucide-react";
 import { SectionHeader } from "./SectionHeader";
 import img104 from "@/assets/104.jpeg";
 
@@ -16,7 +16,7 @@ const features = [
   },
   {
     icon: Sparkles,
-    title: "Five-Star Dining",
+    title: "Five-Star Quality Dining",
     desc: "Buffet halls, BBQ deck nights, and curated Bengali seafood by master chefs.",
   },
   {
@@ -33,6 +33,16 @@ const features = [
     icon: Compass,
     title: "Expert Naturalists",
     desc: "Decades of Sundarbans experience guiding wildlife sightings and storytelling.",
+  },
+  {
+    icon: Presentation,
+    title: "Corporate Meetings & Events",
+    desc: "A dedicated onboard conference suite for corporate retreats, meetings and celebrations — in the heart of the wild.",
+  },
+  {
+    icon: Waves,
+    title: "Pool & Open Sky Deck",
+    desc: "Swim above the river, then unwind under the stars on the open-air sky deck.",
   },
 ];
 

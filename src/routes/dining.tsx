@@ -29,7 +29,7 @@ function Dining() {
     <>
       <PageHero
         eyebrow="The Table"
-        title={<>Dinner under <em className="not-italic text-gradient-gold">a thousand</em> stars.</>}
+        title={<>Dinner under <em className="not-italic">a thousand</em> stars.</>}
         subtitle="Master-chef curated menus combining coastal Bengali tradition with international refinement."
         image={img110}
       />
@@ -39,7 +39,7 @@ function Dining() {
           <div className="lg:col-span-5 lg:sticky lg:top-32 space-y-8">
             <SectionHeader
               eyebrow="The Experience"
-              title={<>From the river. <em className="not-italic text-gradient-gold">To your plate.</em></>}
+              title={<>From the river. <em className="not-italic">To your plate.</em></>}
               description="Our chefs source fresh catch and seasonal produce daily. Every meal is a slow ritual — set against the backdrop of the world's wildest delta."
             />
             <div className="relative aspect-4/3 rounded-2xl overflow-hidden shadow-luxe">

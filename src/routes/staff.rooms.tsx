@@ -375,7 +375,7 @@ function RoomCard({
   const base =
     "rounded-xl border p-3.5 text-left transition-all w-full h-full flex flex-col gap-2 hover:-translate-y-0.5";
   const look = booked
-    ? "border-gold/50 bg-gold/8 hover:border-gold hover:shadow-gold cursor-pointer"
+    ? "border-gold/50 bg-gold/8 hover:border-gold hover:shadow-luxe cursor-pointer"
     : unavailable
       ? "border-dashed border-border bg-muted/30 opacity-70"
       : "border-emerald-500/30 bg-emerald-500/4";

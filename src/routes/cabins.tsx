@@ -36,7 +36,7 @@ function Cabins() {
     <>
       <PageHero
         eyebrow="Cabins & Suites"
-        title={<>Your private <em className="not-italic text-gradient-gold">river</em> sanctuary.</>}
+        title={<>Your private <em className="not-italic">river</em> sanctuary.</>}
         subtitle="Wood-clad interiors, floor-to-ceiling glass, and the Sundarbans as your view."
         image={img109}
       />
@@ -46,7 +46,7 @@ function Cabins() {
           <SectionHeader
             align="center"
             eyebrow="Accommodations"
-            title={<>Three categories. <em className="not-italic text-gradient-gold">One standard.</em></>}
+            title={<>Three categories. <em className="not-italic">One standard.</em></>}
             description="Every cabin features private en-suite, premium bedding, ambient lighting, and uninterrupted river views."
           />
 

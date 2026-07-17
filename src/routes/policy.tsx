@@ -36,7 +36,7 @@ function Policy() {
         title={
           <>
             Payment &{" "}
-            <em className="not-italic text-gradient-gold">cancellation</em> policy.
+            <em className="not-italic">cancellation</em> policy.
           </>
         }
         subtitle="Clear, fair terms — so the only surprises on your voyage are the ones the Sundarbans provides."
@@ -54,7 +54,7 @@ function Policy() {
           </div>
           <div className="lg:col-span-7 space-y-6">
             <div className="rounded-2xl border border-border bg-card shadow-luxe p-7 flex gap-5">
-              <div className="size-11 rounded-xl gradient-gold grid place-items-center shrink-0">
+              <div className="size-11 rounded-xl bg-gold/15 grid place-items-center shrink-0">
                 <Banknote className="size-5 text-ocean" />
               </div>
               <div>
@@ -69,7 +69,7 @@ function Policy() {
               </div>
             </div>
             <div className="rounded-2xl border border-border bg-card shadow-luxe p-7 flex gap-5">
-              <div className="size-11 rounded-xl gradient-gold grid place-items-center shrink-0">
+              <div className="size-11 rounded-xl bg-gold/15 grid place-items-center shrink-0">
                 <ShieldCheck className="size-5 text-ocean" />
               </div>
               <div>
@@ -82,7 +82,7 @@ function Policy() {
               </div>
             </div>
             <div className="rounded-2xl border border-border bg-card shadow-luxe p-7 flex gap-5">
-              <div className="size-11 rounded-xl gradient-gold grid place-items-center shrink-0">
+              <div className="size-11 rounded-xl bg-gold/15 grid place-items-center shrink-0">
                 <ReceiptText className="size-5 text-ocean" />
               </div>
               <div>
@@ -107,7 +107,7 @@ function Policy() {
               eyebrow="Cancellation Policy"
               title={
                 <>
-                  If plans <em className="not-italic text-gradient-gold">change</em>.
+                  If plans <em className="not-italic">change</em>.
                 </>
               }
               description="Cancellation charges are deducted from the total booking amount, based on how close to departure you cancel."
@@ -160,7 +160,7 @@ function Policy() {
           </div>
           <div className="lg:col-span-7 space-y-6">
             <div className="rounded-2xl border border-border bg-card shadow-luxe p-7 flex gap-5">
-              <div className="size-11 rounded-xl gradient-gold grid place-items-center shrink-0">
+              <div className="size-11 rounded-xl bg-gold/15 grid place-items-center shrink-0">
                 <AlertTriangle className="size-5 text-ocean" />
               </div>
               <div>
@@ -176,7 +176,7 @@ function Policy() {
               </div>
             </div>
             <div className="rounded-2xl border border-border bg-card shadow-luxe p-7 flex gap-5">
-              <div className="size-11 rounded-xl gradient-gold grid place-items-center shrink-0">
+              <div className="size-11 rounded-xl bg-gold/15 grid place-items-center shrink-0">
                 <CalendarX className="size-5 text-ocean" />
               </div>
               <div>
@@ -197,7 +197,7 @@ function Policy() {
         <div className="container-luxe text-center">
           <Link
             to="/booking"
-            className="inline-flex items-center gap-2 px-10 py-4 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.2em] font-semibold shadow-gold hover-lift"
+            className="inline-flex items-center gap-2 px-10 py-4 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.2em] font-semibold shadow-luxe hover-lift"
           >
             Book Your Voyage <ArrowRight className="size-3.5" />
           </Link>

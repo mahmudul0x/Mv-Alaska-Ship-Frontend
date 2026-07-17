@@ -71,7 +71,7 @@ export function Navbar() {
             </a>
             <Link
               to="/booking"
-              className="px-5 py-2.5 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.18em] font-semibold hover-lift shadow-gold"
+              className="px-5 py-2.5 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.18em] font-semibold hover-lift shadow-luxe"
             >
               Book Now
             </Link>

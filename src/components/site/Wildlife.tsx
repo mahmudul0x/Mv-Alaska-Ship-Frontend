@@ -1,9 +1,9 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 import { SectionHeader } from "./SectionHeader";
-import tiger from "@/assets/wildlife-tiger.jpg";
-import deer from "@/assets/wildlife-deer.jpg";
-import bird from "@/assets/wildlife-bird.jpg";
+import tiger from "@/assets/Royal_Bengal_Tiger_on_riverbank_202607171043.jpeg";
+import deer from "@/assets/Deer_on_muddy_riverbank_202607171039.jpeg";
+import bird from "@/assets/Passenger_on_ship_looking_at_202607171050.jpeg";
 
 const stories = [
   {
@@ -41,7 +41,7 @@ export function Wildlife() {
         <SectionHeader
           align="center"
           eyebrow="Wildlife Storytelling"
-          title={<>Where the wild still <em className="not-italic text-gradient-gold">writes the rules</em>.</>}
+          title={<>Where the wild still <em className="not-italic">writes the rules</em>.</>}
           description="A documentary-style expedition through the world's largest mangrove ecosystem — guided, narrated, photographed."
         />
 

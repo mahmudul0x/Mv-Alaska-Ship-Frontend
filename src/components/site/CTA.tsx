@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight } from "lucide-react";
-import hero from "@/assets/hero-cruise.jpg";
+import hero from "@/assets/M.V._ALASKA_cruising_Sundarbans_202607171057.jpeg";
 
 export function CTA() {
   return (
@@ -19,7 +19,7 @@ export function CTA() {
           <div className="relative p-10 md:p-20 max-w-2xl">
             <div className="eyebrow text-gold-soft mb-5">◆ Begin Your Voyage</div>
             <h2 className="font-display text-background text-4xl md:text-6xl font-light leading-[1.05]">
-              The river is waiting. <em className="not-italic text-gradient-gold">So is Alaska.</em>
+              The river is waiting. <em className="not-italic">So is Alaska.</em>
             </h2>
             <p className="mt-6 text-background/75 text-base md:text-lg leading-relaxed">
               Reserve your suite for the next departure. Limited cabins each season — our most luxurious experiences sell out months in advance.
@@ -27,7 +27,7 @@ export function CTA() {
             <div className="mt-10 flex flex-wrap gap-4">
               <Link
                 to="/booking"
-                className="px-8 py-4 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.2em] font-semibold shadow-gold hover-lift inline-flex items-center gap-2"
+                className="px-8 py-4 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.2em] font-semibold shadow-luxe hover-lift inline-flex items-center gap-2"
               >
                 Reserve Now <ArrowUpRight className="size-4" />
               </Link>

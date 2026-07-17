@@ -4,11 +4,22 @@ import { Link } from "@tanstack/react-router";
 import { ArrowUpRight } from "lucide-react";
 import { SectionHeader } from "./SectionHeader";
 import deck from "@/assets/deck-sunset.jpg";
-import cabin from "@/assets/cabin-luxury.jpg";
+import cabin from "@/assets/103.jpeg";
 import dining from "@/assets/dining-bbq.jpg";
 import canal from "@/assets/canal-mangrove.jpg";
+import shipVideo from "@/assets/MvalaskaVideo.mp4";
 
-const experiences = [
+type ExperienceItem = {
+  img: string;
+  video?: string;
+  eyebrow: string;
+  title: string;
+  desc: string;
+  href: string;
+  span?: string;
+};
+
+const experiences: ExperienceItem[] = [
   {
     img: cabin,
     eyebrow: "01 — Sanctuary",
@@ -35,6 +46,7 @@ const experiences = [
   },
   {
     img: canal,
+    video: shipVideo,
     eyebrow: "04 — Wild",
     title: "Hidden Mangrove Canals",
     desc: "Glide through corridors only Alaska can navigate.",
@@ -59,7 +71,7 @@ export function Experience() {
           <SectionHeader
             light
             eyebrow="The Experience"
-            title={<>A floating five-star <em className="not-italic text-gradient-gold">private world</em>.</>}
+            title={<>A floating five-star <em className="not-italic">private world</em>.</>}
             description="Every corner of MV Alaska is designed for slow, sensory immersion — from the wood-clad cabins to the open sky lounge."
           />
           <Link
@@ -70,7 +82,7 @@ export function Experience() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 auto-rows-[280px] md:auto-rows-[340px]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 auto-rows-[280px] md:auto-rows-[340px] lg:grid-rows-[340px_340px_500px]">
           {experiences.map((e, i) => (
             <motion.div
               key={e.title}
@@ -81,12 +93,25 @@ export function Experience() {
               className={`group relative overflow-hidden rounded-2xl ${e.span ?? ""}`}
             >
               <Link to={e.href} className="absolute inset-0 z-10" aria-label={e.title} />
-              <img
-                src={e.img}
-                alt={e.title}
-                loading="lazy"
-                className="image-zoom absolute inset-0 h-full w-full object-cover"
-              />
+              {e.video ? (
+                <video
+                  src={e.video}
+                  poster={e.img}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              ) : (
+                <img
+                  src={e.img}
+                  alt={e.title}
+                  loading="lazy"
+                  className="image-zoom absolute inset-0 h-full w-full object-cover"
+                />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-ocean via-ocean/40 to-transparent" />
               <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-2xl" />
               <div className="relative h-full flex flex-col justify-end p-7 md:p-8">

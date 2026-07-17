@@ -45,7 +45,7 @@ function StaffLoginPage() {
     <div className="min-h-screen bg-linear-to-br from-ocean via-ocean to-midnight flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="size-14 rounded-2xl gradient-gold grid place-items-center mx-auto mb-4 shadow-gold">
+          <div className="size-14 rounded-2xl gradient-gold grid place-items-center mx-auto mb-4 shadow-luxe">
             <Anchor className="size-7 text-ocean" />
           </div>
           <h1 className="font-display text-3xl text-background">MV Alaska</h1>
@@ -89,7 +89,7 @@ function StaffLoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.2em] font-semibold shadow-gold disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.2em] font-semibold shadow-luxe disabled:opacity-50"
           >
             {submitting && <Loader2 className="size-4 animate-spin" />}
             Sign in

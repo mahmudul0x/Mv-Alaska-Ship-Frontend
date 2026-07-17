@@ -20,7 +20,7 @@ function Contact() {
     <>
       <PageHero
         eyebrow="Reservations"
-        title={<>Let's plan your <em className="not-italic text-gradient-gold">voyage</em>.</>}
+        title={<>Let's plan your <em className="not-italic">voyage</em>.</>}
         subtitle="Our concierge team responds within hours, in English or Bangla."
         image={canal}
       />
@@ -28,7 +28,7 @@ function Contact() {
       <section className="py-28 bg-background">
         <div className="container-luxe grid lg:grid-cols-12 gap-12">
           <div className="lg:col-span-5 space-y-8">
-            <SectionHeader eyebrow="Get in touch" title={<>Speak to our <em className="not-italic text-gradient-gold">concierge</em>.</>} />
+            <SectionHeader eyebrow="Get in touch" title={<>Speak to our <em className="not-italic">concierge</em>.</>} />
 
             <div className="space-y-6">
               {[
@@ -73,7 +73,7 @@ function Contact() {
               <label className="eyebrow text-muted-foreground text-[10px] block mb-2">Message</label>
               <textarea name="message" rows={5} className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-gold" />
             </div>
-            <button className="w-full md:w-auto px-10 py-4 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.2em] font-semibold shadow-gold hover-lift">
+            <button className="w-full md:w-auto px-10 py-4 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.2em] font-semibold shadow-luxe hover-lift">
               Send Inquiry
             </button>
           </motion.form>

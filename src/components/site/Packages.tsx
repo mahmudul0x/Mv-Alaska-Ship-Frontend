@@ -43,7 +43,7 @@ export function Packages() {
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-16">
           <SectionHeader
             eyebrow="Curated Voyages"
-            title={<>Three nights, <em className="not-italic text-gradient-gold">a thousand</em> memories.</>}
+            title={<>Three nights, <em className="not-italic">a thousand</em> memories.</>}
             description="Hand-crafted itineraries through the most cinematic corners of Sundarbans — Andharmanik, Kotka, Hiron Point, Dublar Char."
           />
           <Link

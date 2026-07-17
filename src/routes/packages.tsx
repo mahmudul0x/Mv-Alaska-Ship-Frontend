@@ -140,7 +140,7 @@ function PackagesPage() {
     <>
       <PageHero
         eyebrow="Curated Voyages"
-        title={<>Choose your <em className="not-italic text-gradient-gold">cinematic</em> 3 days.</>}
+        title={<>Choose your <em className="not-italic">cinematic</em> 3 days.</>}
         subtitle="Hand-crafted itineraries through the most iconic corners of Sundarbans — each with an interactive day-by-day route map, on real upcoming sailing dates."
         image={deck}
       />
@@ -220,7 +220,7 @@ function PackagesPage() {
                       <Link
                         to="/booking"
                         search={{ package: pkg.id }}
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-full gradient-gold text-ocean text-[10px] uppercase tracking-[0.2em] font-semibold shadow-gold"
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-ocean/35 text-ocean text-[10px] uppercase tracking-[0.2em] font-semibold hover:bg-ocean hover:text-primary-foreground transition-colors"
                       >
                         Reserve <ArrowUpRight className="size-3" />
                       </Link>
@@ -236,7 +236,7 @@ function PackagesPage() {
               <div className="mt-12">
                 <SectionHeader
                   eyebrow="Day-by-day route"
-                  title={<>Tap any stop. <em className="not-italic text-gradient-gold">See the day unfold.</em></>}
+                  title={<>Tap any stop. <em className="not-italic">See the day unfold.</em></>}
                 />
                 <div className="mt-10">
                   <ItineraryMap stops={tpl.itinerary} title={title} paramKey={PKG_KEYS[i] ?? `pkg${i}`} />

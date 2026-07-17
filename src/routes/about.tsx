@@ -21,7 +21,7 @@ function About() {
     <>
       <PageHero
         eyebrow="The Brand"
-        title={<>A floating <em className="not-italic text-gradient-gold">five-star</em> sanctuary.</>}
+        title={<>A floating <em className="not-italic">five-star</em> sanctuary.</>}
         subtitle="MV Alaska was conceived as Bangladesh's answer to the world's great river expedition vessels — uncompromising in comfort, devoted to the wild."
         image={deck}
       />
@@ -54,7 +54,7 @@ function About() {
             <SectionHeader
               light
               eyebrow="Our Mission"
-              title={<>To make the wild <em className="not-italic text-gradient-gold">accessible</em> — without diminishing it.</>}
+              title={<>To make the wild <em className="not-italic">accessible</em> — without diminishing it.</>}
               description="Sustainable cruising practices, low-impact mooring, and a deep partnership with the Forest Department keep the Sundarbans wild for the next generation."
             />
           </div>

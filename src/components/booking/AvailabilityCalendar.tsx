@@ -183,7 +183,7 @@ export function AvailabilityCalendar({ onSelectPackage, selectedPackageId, initi
                   className={`relative z-10 grid place-items-center size-9 rounded-full text-sm tabular-nums transition-all
                     ${
                       isSelectedVoyage && isEndpoint
-                        ? "gradient-gold text-ocean font-bold shadow-gold"
+                        ? "gradient-gold text-ocean font-bold shadow-luxe"
                         : isSelectedVoyage
                           ? "font-semibold text-foreground"
                           : isOpen && inMonth
