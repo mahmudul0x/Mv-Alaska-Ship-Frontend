@@ -27,6 +27,7 @@ import { Route as StaffSettingsRouteImport } from './routes/staff.settings'
 import { Route as StaffRoomsRouteImport } from './routes/staff.rooms'
 import { Route as StaffRoomSettingsRouteImport } from './routes/staff.room-settings'
 import { Route as StaffPackagesRouteImport } from './routes/staff.packages'
+import { Route as StaffGalleryRouteImport } from './routes/staff.gallery'
 import { Route as StaffFoodMenuRouteImport } from './routes/staff.food-menu'
 import { Route as StaffCabinsRouteImport } from './routes/staff.cabins'
 import { Route as StaffBookingsRouteImport } from './routes/staff.bookings'
@@ -126,6 +127,11 @@ const StaffPackagesRoute = StaffPackagesRouteImport.update({
   path: '/packages',
   getParentRoute: () => StaffRoute,
 } as any)
+const StaffGalleryRoute = StaffGalleryRouteImport.update({
+  id: '/gallery',
+  path: '/gallery',
+  getParentRoute: () => StaffRoute,
+} as any)
 const StaffFoodMenuRoute = StaffFoodMenuRouteImport.update({
   id: '/food-menu',
   path: '/food-menu',
@@ -187,6 +193,7 @@ export interface FileRoutesByFullPath {
   '/staff/bookings': typeof StaffBookingsRoute
   '/staff/cabins': typeof StaffCabinsRoute
   '/staff/food-menu': typeof StaffFoodMenuRoute
+  '/staff/gallery': typeof StaffGalleryRoute
   '/staff/packages': typeof StaffPackagesRoute
   '/staff/room-settings': typeof StaffRoomSettingsRoute
   '/staff/rooms': typeof StaffRoomsRoute
@@ -214,6 +221,7 @@ export interface FileRoutesByTo {
   '/staff/bookings': typeof StaffBookingsRoute
   '/staff/cabins': typeof StaffCabinsRoute
   '/staff/food-menu': typeof StaffFoodMenuRoute
+  '/staff/gallery': typeof StaffGalleryRoute
   '/staff/packages': typeof StaffPackagesRoute
   '/staff/room-settings': typeof StaffRoomSettingsRoute
   '/staff/rooms': typeof StaffRoomsRoute
@@ -243,6 +251,7 @@ export interface FileRoutesById {
   '/staff/bookings': typeof StaffBookingsRoute
   '/staff/cabins': typeof StaffCabinsRoute
   '/staff/food-menu': typeof StaffFoodMenuRoute
+  '/staff/gallery': typeof StaffGalleryRoute
   '/staff/packages': typeof StaffPackagesRoute
   '/staff/room-settings': typeof StaffRoomSettingsRoute
   '/staff/rooms': typeof StaffRoomsRoute
@@ -273,6 +282,7 @@ export interface FileRouteTypes {
     | '/staff/bookings'
     | '/staff/cabins'
     | '/staff/food-menu'
+    | '/staff/gallery'
     | '/staff/packages'
     | '/staff/room-settings'
     | '/staff/rooms'
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
     | '/staff/bookings'
     | '/staff/cabins'
     | '/staff/food-menu'
+    | '/staff/gallery'
     | '/staff/packages'
     | '/staff/room-settings'
     | '/staff/rooms'
@@ -328,6 +339,7 @@ export interface FileRouteTypes {
     | '/staff/bookings'
     | '/staff/cabins'
     | '/staff/food-menu'
+    | '/staff/gallery'
     | '/staff/packages'
     | '/staff/room-settings'
     | '/staff/rooms'
@@ -486,6 +498,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffPackagesRouteImport
       parentRoute: typeof StaffRoute
     }
+    '/staff/gallery': {
+      id: '/staff/gallery'
+      path: '/gallery'
+      fullPath: '/staff/gallery'
+      preLoaderRoute: typeof StaffGalleryRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/staff/food-menu': {
       id: '/staff/food-menu'
       path: '/food-menu'
@@ -549,6 +568,7 @@ interface StaffRouteChildren {
   StaffBookingsRoute: typeof StaffBookingsRoute
   StaffCabinsRoute: typeof StaffCabinsRoute
   StaffFoodMenuRoute: typeof StaffFoodMenuRoute
+  StaffGalleryRoute: typeof StaffGalleryRoute
   StaffPackagesRoute: typeof StaffPackagesRoute
   StaffRoomSettingsRoute: typeof StaffRoomSettingsRoute
   StaffRoomsRoute: typeof StaffRoomsRoute
@@ -560,6 +580,7 @@ const StaffRouteChildren: StaffRouteChildren = {
   StaffBookingsRoute: StaffBookingsRoute,
   StaffCabinsRoute: StaffCabinsRoute,
   StaffFoodMenuRoute: StaffFoodMenuRoute,
+  StaffGalleryRoute: StaffGalleryRoute,
   StaffPackagesRoute: StaffPackagesRoute,
   StaffRoomSettingsRoute: StaffRoomSettingsRoute,
   StaffRoomsRoute: StaffRoomsRoute,

@@ -256,6 +256,15 @@ export interface CabinDetail extends CabinSummary {
   images: CabinImage[];
 }
 
+// ── Public gallery (/gallery page) — staff-managed photos ─────────────────
+
+export interface GalleryImage {
+  id: number;
+  image: string;
+  caption: string;
+  sort_order: number;
+}
+
 export interface ApiFieldErrors {
   [field: string]: string[];
 }

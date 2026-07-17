@@ -10,6 +10,7 @@ import type {
   StaffCabinWrite,
   StaffFoodMenuItem,
   StaffFoodMenuItemWrite,
+  StaffGalleryImage,
   StaffInvoice,
   StaffKidRule,
   StaffOverview,
@@ -303,6 +304,41 @@ export async function updateStaffCabinImage(
 
 export async function deleteStaffCabinImage(id: number) {
   await staffClient.delete(`/staff/cabin-images/${id}/`);
+}
+
+// ── Public gallery photos (/gallery page) ─────────────────────────────────
+export async function getStaffGalleryImages(): Promise<StaffGalleryImage[]> {
+  const { data } = await staffClient.get("/staff/gallery-images/");
+  return data;
+}
+
+export async function uploadStaffGalleryImage(payload: {
+  ship: number;
+  file: File;
+  caption?: string;
+  sort_order?: number;
+}): Promise<StaffGalleryImage> {
+  const form = new FormData();
+  form.append("ship", String(payload.ship));
+  form.append("image", payload.file);
+  if (payload.caption) form.append("caption", payload.caption);
+  if (payload.sort_order !== undefined) form.append("sort_order", String(payload.sort_order));
+  const { data } = await staffClient.post("/staff/gallery-images/", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+export async function updateStaffGalleryImage(
+  id: number,
+  payload: Partial<Pick<StaffGalleryImage, "caption" | "is_active" | "sort_order">>,
+): Promise<StaffGalleryImage> {
+  const { data } = await staffClient.patch(`/staff/gallery-images/${id}/`, payload);
+  return data;
+}
+
+export async function deleteStaffGalleryImage(id: number) {
+  await staffClient.delete(`/staff/gallery-images/${id}/`);
 }
 
 export async function getStaffKidRules(): Promise<StaffKidRule[]> {

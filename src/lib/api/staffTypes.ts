@@ -187,6 +187,21 @@ export interface StaffCabinWrite {
   sort_order?: number;
 }
 
+// ── Public gallery (/gallery page, staff-managed) ─────────────────────────
+
+export interface StaffGalleryImage {
+  id: number;
+  ship: number;
+  ship_name: string;
+  /** Storage URL (Cloudinary CDN in production) — the upload field itself is write-only. */
+  image_url: string;
+  /** Text staff write on the photo; shown on the public gallery. */
+  caption: string;
+  /** false hides the photo from the website without deleting it. */
+  is_active: boolean;
+  sort_order: number;
+}
+
 export type RoomAvailability = "available" | "booked" | "unavailable";
 
 export interface StaffPackageRoomBooking {
