@@ -15,6 +15,27 @@ export interface StaffShip {
   authority_phones: string;
   /** Resolved list actually printed on the PDFs (ship's, or system default). */
   authority_phone_list: string[];
+  /** Inbox for website contact-form messages; "" means use the system default. */
+  contact_notify_email: string;
+}
+
+export type ContactMessageStatus = "new" | "read" | "archived";
+
+export type ContactInquiryType = "general" | "family" | "corporate" | "charter";
+
+export interface StaffContactMessage {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  inquiry_type: ContactInquiryType;
+  /** Human label for inquiry_type, e.g. "Full ship charter". */
+  inquiry_type_display: string;
+  message: string;
+  departure_date: string | null;
+  guests: number | null;
+  status: ContactMessageStatus;
+  created_at: string;
 }
 
 export type PackageStatus = "draft" | "open" | "closed" | "completed" | "cancelled";

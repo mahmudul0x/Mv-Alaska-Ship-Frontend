@@ -1,6 +1,7 @@
 import { staffClient } from "./staffClient";
 import type { RoomType } from "./types";
 import type {
+  ContactMessageStatus,
   Paginated,
   StaffBooking,
   StaffBookingDetail,
@@ -8,6 +9,7 @@ import type {
   StaffCabin,
   StaffCabinImage,
   StaffCabinWrite,
+  StaffContactMessage,
   StaffFoodMenuItem,
   StaffFoodMenuItemWrite,
   StaffGalleryImage,
@@ -192,10 +194,37 @@ export async function getStaffShips(): Promise<StaffShip[]> {
 
 export async function updateStaffShip(
   id: number,
-  payload: { authority_phones: string },
+  payload: Partial<Pick<StaffShip, "authority_phones" | "contact_notify_email">>,
 ): Promise<StaffShip> {
   const { data } = await staffClient.patch(`/staff/ships/${id}/`, payload);
   return data;
+}
+
+// ── Contact messages (website inquiries) ──────────────────────────────────
+export async function getStaffContactMessages(
+  status?: ContactMessageStatus,
+): Promise<Paginated<StaffContactMessage>> {
+  const { data } = await staffClient.get<
+    StaffContactMessage[] | Paginated<StaffContactMessage>
+  >("/staff/contact-messages/", { params: { status } });
+  // The endpoint is paginated (default paginator); tolerate a bare list too.
+  return Array.isArray(data)
+    ? { count: data.length, next: null, previous: null, results: data }
+    : data;
+}
+
+export async function updateStaffContactMessage(
+  id: number,
+  status: ContactMessageStatus,
+): Promise<StaffContactMessage> {
+  const { data } = await staffClient.patch(`/staff/contact-messages/${id}/`, {
+    status,
+  });
+  return data;
+}
+
+export async function deleteStaffContactMessage(id: number) {
+  await staffClient.delete(`/staff/contact-messages/${id}/`);
 }
 
 // ── Settings resources ────────────────────────────────────────────────────

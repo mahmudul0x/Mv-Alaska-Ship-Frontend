@@ -74,7 +74,6 @@ export function Footer() {
               <div>
                 <div>+880 1831-694307</div>
                 <div>+880 1550-699732</div>
-                <div>+880 1712-786308</div>
               </div>
             </li>
             <li className="flex items-center gap-3">

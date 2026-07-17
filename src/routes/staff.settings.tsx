@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Phone, Save, ShieldCheck, Ship as ShipIcon, UserRound } from "lucide-react";
+import { Loader2, Mail, Phone, Save, ShieldCheck, Ship as ShipIcon, UserRound } from "lucide-react";
 
 import { errorText, staffInputClass } from "@/components/staff/ui";
 import { getStaffShips, updateStaffShip } from "@/lib/api/staff";
@@ -54,7 +54,126 @@ function SettingsPage() {
         admin panel.
       </p>
 
+      <NotificationInboxSection />
       <HelplineSection />
+    </div>
+  );
+}
+
+/* ── Contact-form notification inbox ──────────────────────────────────────── */
+
+function NotificationInboxSection() {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["staff", "ships"],
+    queryFn: getStaffShips,
+  });
+  const [savingId, setSavingId] = useState<number | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: ({ id, contact_notify_email }: { id: number; contact_notify_email: string }) => {
+      setSavingId(id);
+      return updateStaffShip(id, { contact_notify_email });
+    },
+    onSuccess: () => {
+      toast.success("Notification inbox updated — new website messages go here.");
+      queryClient.invalidateQueries({ queryKey: ["staff", "ships"] });
+    },
+    onError: (err) => toast.error(errorText(err)),
+    onSettled: () => setSavingId(null),
+  });
+
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 className="font-display text-xl flex items-center gap-2">
+          <Mail className="size-5 text-gold" /> Message notifications
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Where inquiries from the website contact form are emailed. Leave blank to use the
+          system default. Every message also appears in{" "}
+          <span className="font-medium">Messages</span>.
+        </p>
+      </div>
+
+      {isLoading ? (
+        <div className="p-12 flex items-center justify-center gap-3 text-muted-foreground">
+          <Loader2 className="size-5 animate-spin text-gold" /> Loading…
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {data?.map((ship) => (
+            <ShipNotifyCard
+              key={ship.id}
+              ship={ship}
+              saving={savingId === ship.id && mutation.isPending}
+              onSave={(contact_notify_email) =>
+                mutation.mutate({ id: ship.id, contact_notify_email })
+              }
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ShipNotifyCard({
+  ship,
+  onSave,
+  saving,
+}: {
+  ship: StaffShip;
+  onSave: (email: string) => void;
+  saving: boolean;
+}) {
+  const [value, setValue] = useState(ship.contact_notify_email);
+  const dirty = value.trim() !== ship.contact_notify_email.trim();
+
+  return (
+    <div
+      className={`rounded-2xl border bg-card overflow-hidden transition-all ${
+        dirty ? "border-gold/50 shadow-luxe" : "border-border"
+      }`}
+    >
+      <div className="px-5 py-4 border-b border-border flex items-center gap-3">
+        <div className="size-9 rounded-xl bg-ocean/8 grid place-items-center shrink-0">
+          <ShipIcon className="size-4.5 text-ocean" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-display text-base leading-tight truncate">{ship.name}</div>
+          <div className="text-[10px] text-muted-foreground">Contact-form notifications</div>
+        </div>
+        {dirty && (
+          <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-gold/15 text-gold shrink-0">
+            Unsaved
+          </span>
+        )}
+      </div>
+
+      <div className="p-5 space-y-4">
+        <label className="block">
+          <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
+            Notification email
+          </span>
+          <input
+            type="email"
+            value={value}
+            placeholder="reservations@mvalaska.com (blank = system default)"
+            onChange={(e) => setValue(e.target.value)}
+            className={staffInputClass}
+          />
+        </label>
+
+        <button
+          disabled={!dirty || saving}
+          onClick={() => onSave(value)}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
+        >
+          {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+          {dirty ? "Save changes" : "Saved"}
+        </button>
+      </div>
     </div>
   );
 }

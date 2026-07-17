@@ -17,6 +17,7 @@ import {
   Images,
   LayoutDashboard,
   LogOut,
+  MessageSquare,
   Settings,
   SlidersHorizontal,
 } from "lucide-react";
@@ -42,6 +43,7 @@ export const Route = createFileRoute("/staff")({
 const NAV = [
   { to: "/staff", label: "Overview", icon: LayoutDashboard, exact: true },
   { to: "/staff/bookings", label: "Bookings", icon: ClipboardList, exact: false },
+  { to: "/staff/messages", label: "Messages", icon: MessageSquare, exact: false },
   { to: "/staff/packages", label: "Packages", icon: CalendarRange, exact: false },
   { to: "/staff/rooms", label: "Rooms", icon: BedDouble, exact: false },
   { to: "/staff/cabins", label: "Cabins", icon: DoorOpen, exact: false },

@@ -27,6 +27,7 @@ import { Route as StaffSettingsRouteImport } from './routes/staff.settings'
 import { Route as StaffRoomsRouteImport } from './routes/staff.rooms'
 import { Route as StaffRoomSettingsRouteImport } from './routes/staff.room-settings'
 import { Route as StaffPackagesRouteImport } from './routes/staff.packages'
+import { Route as StaffMessagesRouteImport } from './routes/staff.messages'
 import { Route as StaffGalleryRouteImport } from './routes/staff.gallery'
 import { Route as StaffFoodMenuRouteImport } from './routes/staff.food-menu'
 import { Route as StaffCabinsRouteImport } from './routes/staff.cabins'
@@ -127,6 +128,11 @@ const StaffPackagesRoute = StaffPackagesRouteImport.update({
   path: '/packages',
   getParentRoute: () => StaffRoute,
 } as any)
+const StaffMessagesRoute = StaffMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => StaffRoute,
+} as any)
 const StaffGalleryRoute = StaffGalleryRouteImport.update({
   id: '/gallery',
   path: '/gallery',
@@ -194,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/staff/cabins': typeof StaffCabinsRoute
   '/staff/food-menu': typeof StaffFoodMenuRoute
   '/staff/gallery': typeof StaffGalleryRoute
+  '/staff/messages': typeof StaffMessagesRoute
   '/staff/packages': typeof StaffPackagesRoute
   '/staff/room-settings': typeof StaffRoomSettingsRoute
   '/staff/rooms': typeof StaffRoomsRoute
@@ -222,6 +229,7 @@ export interface FileRoutesByTo {
   '/staff/cabins': typeof StaffCabinsRoute
   '/staff/food-menu': typeof StaffFoodMenuRoute
   '/staff/gallery': typeof StaffGalleryRoute
+  '/staff/messages': typeof StaffMessagesRoute
   '/staff/packages': typeof StaffPackagesRoute
   '/staff/room-settings': typeof StaffRoomSettingsRoute
   '/staff/rooms': typeof StaffRoomsRoute
@@ -252,6 +260,7 @@ export interface FileRoutesById {
   '/staff/cabins': typeof StaffCabinsRoute
   '/staff/food-menu': typeof StaffFoodMenuRoute
   '/staff/gallery': typeof StaffGalleryRoute
+  '/staff/messages': typeof StaffMessagesRoute
   '/staff/packages': typeof StaffPackagesRoute
   '/staff/room-settings': typeof StaffRoomSettingsRoute
   '/staff/rooms': typeof StaffRoomsRoute
@@ -283,6 +292,7 @@ export interface FileRouteTypes {
     | '/staff/cabins'
     | '/staff/food-menu'
     | '/staff/gallery'
+    | '/staff/messages'
     | '/staff/packages'
     | '/staff/room-settings'
     | '/staff/rooms'
@@ -311,6 +321,7 @@ export interface FileRouteTypes {
     | '/staff/cabins'
     | '/staff/food-menu'
     | '/staff/gallery'
+    | '/staff/messages'
     | '/staff/packages'
     | '/staff/room-settings'
     | '/staff/rooms'
@@ -340,6 +351,7 @@ export interface FileRouteTypes {
     | '/staff/cabins'
     | '/staff/food-menu'
     | '/staff/gallery'
+    | '/staff/messages'
     | '/staff/packages'
     | '/staff/room-settings'
     | '/staff/rooms'
@@ -498,6 +510,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffPackagesRouteImport
       parentRoute: typeof StaffRoute
     }
+    '/staff/messages': {
+      id: '/staff/messages'
+      path: '/messages'
+      fullPath: '/staff/messages'
+      preLoaderRoute: typeof StaffMessagesRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/staff/gallery': {
       id: '/staff/gallery'
       path: '/gallery'
@@ -569,6 +588,7 @@ interface StaffRouteChildren {
   StaffCabinsRoute: typeof StaffCabinsRoute
   StaffFoodMenuRoute: typeof StaffFoodMenuRoute
   StaffGalleryRoute: typeof StaffGalleryRoute
+  StaffMessagesRoute: typeof StaffMessagesRoute
   StaffPackagesRoute: typeof StaffPackagesRoute
   StaffRoomSettingsRoute: typeof StaffRoomSettingsRoute
   StaffRoomsRoute: typeof StaffRoomsRoute
@@ -581,6 +601,7 @@ const StaffRouteChildren: StaffRouteChildren = {
   StaffCabinsRoute: StaffCabinsRoute,
   StaffFoodMenuRoute: StaffFoodMenuRoute,
   StaffGalleryRoute: StaffGalleryRoute,
+  StaffMessagesRoute: StaffMessagesRoute,
   StaffPackagesRoute: StaffPackagesRoute,
   StaffRoomSettingsRoute: StaffRoomSettingsRoute,
   StaffRoomsRoute: StaffRoomsRoute,
