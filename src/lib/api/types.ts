@@ -225,6 +225,37 @@ export interface PaymentInitiateResponse {
   payment_type: PaymentType;
 }
 
+// ── Showcase cabins (/cabins pages) — staff-managed marketing content ─────
+
+export interface CabinImage {
+  id: number;
+  image: string;
+  caption: string;
+  is_main: boolean;
+  sort_order: number;
+}
+
+/** Card payload for the /cabins grid. Deliberately price-free — pricing
+ *  belongs to the booking flow, never the showcase pages. */
+export interface CabinSummary {
+  id: number;
+  slug: string;
+  name: string;
+  tagline: string;
+  size_label: string;
+  /** Display string derived from the linked RoomType, e.g. "3 Adults + 1 Kids". */
+  occupancy: string;
+  features: string[];
+  main_image: CabinImage | null;
+}
+
+export interface CabinDetail extends CabinSummary {
+  description: string;
+  amenities: { label: string; value: string }[];
+  highlights: { title: string; desc: string }[];
+  images: CabinImage[];
+}
+
 export interface ApiFieldErrors {
   [field: string]: string[];
 }

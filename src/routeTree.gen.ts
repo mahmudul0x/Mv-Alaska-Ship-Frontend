@@ -28,11 +28,12 @@ import { Route as StaffRoomsRouteImport } from './routes/staff.rooms'
 import { Route as StaffRoomSettingsRouteImport } from './routes/staff.room-settings'
 import { Route as StaffPackagesRouteImport } from './routes/staff.packages'
 import { Route as StaffFoodMenuRouteImport } from './routes/staff.food-menu'
+import { Route as StaffCabinsRouteImport } from './routes/staff.cabins'
 import { Route as StaffBookingsRouteImport } from './routes/staff.bookings'
 import { Route as PaymentSuccessRouteImport } from './routes/payment.success'
 import { Route as PaymentFailRouteImport } from './routes/payment.fail'
 import { Route as PaymentCancelRouteImport } from './routes/payment.cancel'
-import { Route as CabinsSlugRouteImport } from './routes/cabins.$slug'
+import { Route as CabinsSlugRouteImport } from './routes/cabins_.$slug'
 import { Route as BookingConfirmationCodeRouteImport } from './routes/booking_.confirmation.$code'
 
 const WildlifeRoute = WildlifeRouteImport.update({
@@ -130,6 +131,11 @@ const StaffFoodMenuRoute = StaffFoodMenuRouteImport.update({
   path: '/food-menu',
   getParentRoute: () => StaffRoute,
 } as any)
+const StaffCabinsRoute = StaffCabinsRouteImport.update({
+  id: '/cabins',
+  path: '/cabins',
+  getParentRoute: () => StaffRoute,
+} as any)
 const StaffBookingsRoute = StaffBookingsRouteImport.update({
   id: '/bookings',
   path: '/bookings',
@@ -151,9 +157,9 @@ const PaymentCancelRoute = PaymentCancelRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const CabinsSlugRoute = CabinsSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => CabinsRoute,
+  id: '/cabins_/$slug',
+  path: '/cabins/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const BookingConfirmationCodeRoute = BookingConfirmationCodeRouteImport.update({
   id: '/booking_/confirmation/$code',
@@ -165,7 +171,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/booking': typeof BookingRoute
-  '/cabins': typeof CabinsRouteWithChildren
+  '/cabins': typeof CabinsRoute
   '/contact': typeof ContactRoute
   '/cruise-experience': typeof CruiseExperienceRoute
   '/dining': typeof DiningRoute
@@ -179,6 +185,7 @@ export interface FileRoutesByFullPath {
   '/payment/fail': typeof PaymentFailRoute
   '/payment/success': typeof PaymentSuccessRoute
   '/staff/bookings': typeof StaffBookingsRoute
+  '/staff/cabins': typeof StaffCabinsRoute
   '/staff/food-menu': typeof StaffFoodMenuRoute
   '/staff/packages': typeof StaffPackagesRoute
   '/staff/room-settings': typeof StaffRoomSettingsRoute
@@ -192,7 +199,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/booking': typeof BookingRoute
-  '/cabins': typeof CabinsRouteWithChildren
+  '/cabins': typeof CabinsRoute
   '/contact': typeof ContactRoute
   '/cruise-experience': typeof CruiseExperienceRoute
   '/dining': typeof DiningRoute
@@ -205,6 +212,7 @@ export interface FileRoutesByTo {
   '/payment/fail': typeof PaymentFailRoute
   '/payment/success': typeof PaymentSuccessRoute
   '/staff/bookings': typeof StaffBookingsRoute
+  '/staff/cabins': typeof StaffCabinsRoute
   '/staff/food-menu': typeof StaffFoodMenuRoute
   '/staff/packages': typeof StaffPackagesRoute
   '/staff/room-settings': typeof StaffRoomSettingsRoute
@@ -219,7 +227,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/booking': typeof BookingRoute
-  '/cabins': typeof CabinsRouteWithChildren
+  '/cabins': typeof CabinsRoute
   '/contact': typeof ContactRoute
   '/cruise-experience': typeof CruiseExperienceRoute
   '/dining': typeof DiningRoute
@@ -228,11 +236,12 @@ export interface FileRoutesById {
   '/policy': typeof PolicyRoute
   '/staff': typeof StaffRouteWithChildren
   '/wildlife': typeof WildlifeRoute
-  '/cabins/$slug': typeof CabinsSlugRoute
+  '/cabins_/$slug': typeof CabinsSlugRoute
   '/payment/cancel': typeof PaymentCancelRoute
   '/payment/fail': typeof PaymentFailRoute
   '/payment/success': typeof PaymentSuccessRoute
   '/staff/bookings': typeof StaffBookingsRoute
+  '/staff/cabins': typeof StaffCabinsRoute
   '/staff/food-menu': typeof StaffFoodMenuRoute
   '/staff/packages': typeof StaffPackagesRoute
   '/staff/room-settings': typeof StaffRoomSettingsRoute
@@ -262,6 +271,7 @@ export interface FileRouteTypes {
     | '/payment/fail'
     | '/payment/success'
     | '/staff/bookings'
+    | '/staff/cabins'
     | '/staff/food-menu'
     | '/staff/packages'
     | '/staff/room-settings'
@@ -288,6 +298,7 @@ export interface FileRouteTypes {
     | '/payment/fail'
     | '/payment/success'
     | '/staff/bookings'
+    | '/staff/cabins'
     | '/staff/food-menu'
     | '/staff/packages'
     | '/staff/room-settings'
@@ -310,11 +321,12 @@ export interface FileRouteTypes {
     | '/policy'
     | '/staff'
     | '/wildlife'
-    | '/cabins/$slug'
+    | '/cabins_/$slug'
     | '/payment/cancel'
     | '/payment/fail'
     | '/payment/success'
     | '/staff/bookings'
+    | '/staff/cabins'
     | '/staff/food-menu'
     | '/staff/packages'
     | '/staff/room-settings'
@@ -329,7 +341,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   BookingRoute: typeof BookingRoute
-  CabinsRoute: typeof CabinsRouteWithChildren
+  CabinsRoute: typeof CabinsRoute
   ContactRoute: typeof ContactRoute
   CruiseExperienceRoute: typeof CruiseExperienceRoute
   DiningRoute: typeof DiningRoute
@@ -338,6 +350,7 @@ export interface RootRouteChildren {
   PolicyRoute: typeof PolicyRoute
   StaffRoute: typeof StaffRouteWithChildren
   WildlifeRoute: typeof WildlifeRoute
+  CabinsSlugRoute: typeof CabinsSlugRoute
   PaymentCancelRoute: typeof PaymentCancelRoute
   PaymentFailRoute: typeof PaymentFailRoute
   PaymentSuccessRoute: typeof PaymentSuccessRoute
@@ -480,6 +493,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffFoodMenuRouteImport
       parentRoute: typeof StaffRoute
     }
+    '/staff/cabins': {
+      id: '/staff/cabins'
+      path: '/cabins'
+      fullPath: '/staff/cabins'
+      preLoaderRoute: typeof StaffCabinsRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/staff/bookings': {
       id: '/staff/bookings'
       path: '/bookings'
@@ -508,12 +528,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PaymentCancelRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/cabins/$slug': {
-      id: '/cabins/$slug'
-      path: '/$slug'
+    '/cabins_/$slug': {
+      id: '/cabins_/$slug'
+      path: '/cabins/$slug'
       fullPath: '/cabins/$slug'
       preLoaderRoute: typeof CabinsSlugRouteImport
-      parentRoute: typeof CabinsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/booking_/confirmation/$code': {
       id: '/booking_/confirmation/$code'
@@ -525,19 +545,9 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface CabinsRouteChildren {
-  CabinsSlugRoute: typeof CabinsSlugRoute
-}
-
-const CabinsRouteChildren: CabinsRouteChildren = {
-  CabinsSlugRoute: CabinsSlugRoute,
-}
-
-const CabinsRouteWithChildren =
-  CabinsRoute._addFileChildren(CabinsRouteChildren)
-
 interface StaffRouteChildren {
   StaffBookingsRoute: typeof StaffBookingsRoute
+  StaffCabinsRoute: typeof StaffCabinsRoute
   StaffFoodMenuRoute: typeof StaffFoodMenuRoute
   StaffPackagesRoute: typeof StaffPackagesRoute
   StaffRoomSettingsRoute: typeof StaffRoomSettingsRoute
@@ -548,6 +558,7 @@ interface StaffRouteChildren {
 
 const StaffRouteChildren: StaffRouteChildren = {
   StaffBookingsRoute: StaffBookingsRoute,
+  StaffCabinsRoute: StaffCabinsRoute,
   StaffFoodMenuRoute: StaffFoodMenuRoute,
   StaffPackagesRoute: StaffPackagesRoute,
   StaffRoomSettingsRoute: StaffRoomSettingsRoute,
@@ -562,7 +573,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   BookingRoute: BookingRoute,
-  CabinsRoute: CabinsRouteWithChildren,
+  CabinsRoute: CabinsRoute,
   ContactRoute: ContactRoute,
   CruiseExperienceRoute: CruiseExperienceRoute,
   DiningRoute: DiningRoute,
@@ -571,6 +582,7 @@ const rootRouteChildren: RootRouteChildren = {
   PolicyRoute: PolicyRoute,
   StaffRoute: StaffRouteWithChildren,
   WildlifeRoute: WildlifeRoute,
+  CabinsSlugRoute: CabinsSlugRoute,
   PaymentCancelRoute: PaymentCancelRoute,
   PaymentFailRoute: PaymentFailRoute,
   PaymentSuccessRoute: PaymentSuccessRoute,

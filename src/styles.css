@@ -60,63 +60,61 @@
 
 :root {
   --radius: 0.25rem;
-  /* Alaska Teal palette — matched to the client logo & ship hull.
-   * Variable names are kept from the previous Emerald/Gold theme so no
-   * component changes: "--gold" is now the bright cyan ACCENT, "--ocean"
-   * the deep navy-teal, "--sand" an ice-tinted off-white. */
-  --ocean: oklch(0.33 0.06 230);          /* #0b3c4d deep navy-teal (logo dark) */
-  --midnight: oklch(0.26 0.05 230);       /* darker navy-teal */
-  --mangrove: oklch(0.50 0.09 230);       /* mid navy-teal */
-  --gold: oklch(0.70 0.13 233);           /* #2ba6d9 bright cyan accent — FILLS ONLY */
-  --gold-soft: oklch(0.82 0.10 230);      /* #5bc6f0 light cyan */
-  /* Accent as *text on a light surface*. --gold (bright cyan) is too light to
-   * read: ~2.5:1 on white against WCAG AA's 4.5. This darker cyan clears AA on
-   * every light surface in the app (~5:1 on the white card, ~4.7:1 on the ice
-   * background) while keeping chroma high enough to read as the brand cyan.
-   * Keep using --gold for gradients, fills, borders and icons; use this only
-   * where the accent is the colour of *text*. */
-  --gold-text: oklch(0.50 0.12 238);
-  --sand: oklch(0.95 0.015 220);          /* ice-tinted off-white */
-  --teal: oklch(0.64 0.10 215);           /* teal glow */
-  --sunset: oklch(0.60 0.14 245);         /* deep sea blue (gradient endpoint) */
+  /* Emerald Prestige palette */
+  --ocean: oklch(0.32 0.07 162);          /* #064e3b deep emerald */
+  --midnight: oklch(0.24 0.055 162);      /* darker emerald */
+  --mangrove: oklch(0.50 0.10 162);       /* #0d7a5f mid emerald */
+  --gold: oklch(0.76 0.13 85);            /* #c9a84c luxury gold — FILLS ONLY */
+  --gold-soft: oklch(0.88 0.10 88);       /* #f0d78c soft gold */
+  /* Gold as *text on a light surface*. --gold itself is far too light to read:
+   * 2.16:1 on white and 1.92:1 on the cream background, against WCAG AA's 4.5.
+   * This darker gold clears AA on every light surface in the app (5.5:1 on the
+   * white card, 4.9:1 on the cream background, and still ~4.6:1 on the faintly
+   * tinted card headers) while keeping chroma high enough to read as gold
+   * rather than brown. Keep using --gold for gradients, fills, borders and
+   * icons; use this only where gold is the colour of *text*. */
+  --gold-text: oklch(0.52 0.13 85);
+  --sand: oklch(0.95 0.035 88);           /* #f5f0e0 cream */
+  --teal: oklch(0.62 0.09 168);           /* emerald glow */
+  --sunset: oklch(0.74 0.15 70);          /* warm amber */
 
-  --background: oklch(0.97 0.01 220);     /* ice white */
-  --foreground: oklch(0.23 0.04 230);
+  --background: oklch(0.96 0.025 88);     /* cream #f5f0e0 */
+  --foreground: oklch(0.22 0.05 162);
   --card: oklch(1 0 0);
   --card-foreground: var(--foreground);
   --popover: oklch(1 0 0);
   --popover-foreground: var(--foreground);
   --primary: var(--ocean);
-  --primary-foreground: oklch(0.98 0.005 220);
+  --primary-foreground: oklch(0.98 0.008 80);
   --secondary: var(--sand);
   --secondary-foreground: var(--ocean);
-  --muted: oklch(0.93 0.012 220);
-  --muted-foreground: oklch(0.44 0.035 230);
+  --muted: oklch(0.92 0.025 88);
+  --muted-foreground: oklch(0.42 0.04 162);
   --accent: var(--gold);
   --accent-foreground: var(--ocean);
   --destructive: oklch(0.55 0.22 27);
   --destructive-foreground: oklch(0.98 0.003 247);
-  --border: oklch(0.87 0.015 220);
-  --input: oklch(0.87 0.015 220);
+  --border: oklch(0.86 0.025 88);
+  --input: oklch(0.86 0.025 88);
   --ring: var(--gold);
 }
 
 .dark {
   --background: var(--ocean);
-  --foreground: oklch(0.98 0.005 220);
-  /* On the dark hull the bright cyan is the *readable* one; darkening it as
-   * we do on light surfaces would make it disappear. */
+  --foreground: oklch(0.98 0.008 80);
+  /* On the dark hull the bright gold is the *readable* one (8.5:1); darkening
+   * it as we do on light surfaces would make it disappear. */
   --gold-text: var(--gold);
   --card: var(--midnight);
-  --card-foreground: oklch(0.98 0.005 220);
+  --card-foreground: oklch(0.98 0.008 80);
   --popover: var(--midnight);
-  --popover-foreground: oklch(0.98 0.005 220);
+  --popover-foreground: oklch(0.98 0.008 80);
   --primary: var(--gold);
   --primary-foreground: var(--ocean);
   --secondary: oklch(0.30 0.045 245);
-  --secondary-foreground: oklch(0.98 0.005 220);
+  --secondary-foreground: oklch(0.98 0.008 80);
   --muted: oklch(0.30 0.045 245);
-  --muted-foreground: oklch(0.75 0.015 220);
+  --muted-foreground: oklch(0.75 0.015 80);
   --accent: var(--gold);
   --accent-foreground: var(--ocean);
   --border: oklch(1 0 0 / 12%);

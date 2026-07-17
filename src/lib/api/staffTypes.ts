@@ -138,6 +138,55 @@ export interface StaffRoomImage {
   sort_order: number;
 }
 
+// ── Showcase cabins (public /cabins pages, staff-managed) ─────────────────
+
+export interface StaffCabinImage {
+  id: number;
+  cabin: number;
+  /** Storage URL (Cloudinary CDN in production) — the upload field itself is write-only. */
+  image_url: string;
+  caption: string;
+  /** The public card/hero image. Only one per cabin — setting it clears the previous main. */
+  is_main: boolean;
+  sort_order: number;
+}
+
+export interface StaffCabin {
+  id: number;
+  ship: number;
+  ship_name: string;
+  room_type: number | null;
+  room_type_name: string | null;
+  /** Derived from the room type, e.g. "3 Adults + 1 Kids". */
+  occupancy: string;
+  slug: string;
+  name: string;
+  tagline: string;
+  description: string;
+  size_label: string;
+  features: string[];
+  amenities: { label: string; value: string }[];
+  highlights: { title: string; desc: string }[];
+  is_active: boolean;
+  sort_order: number;
+  images: StaffCabinImage[];
+}
+
+export interface StaffCabinWrite {
+  ship: number;
+  room_type: number | null;
+  slug?: string;
+  name: string;
+  tagline?: string;
+  description?: string;
+  size_label?: string;
+  features?: string[];
+  amenities?: { label: string; value: string }[];
+  highlights?: { title: string; desc: string }[];
+  is_active?: boolean;
+  sort_order?: number;
+}
+
 export type RoomAvailability = "available" | "booked" | "unavailable";
 
 export interface StaffPackageRoomBooking {

@@ -1553,23 +1553,23 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
       <title>Booking Receipt — ${booking.booking_code}</title>
       <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:Georgia,serif;background:#fff;color:#16303b;padding:48px;max-width:700px;margin:auto}
-        .header{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #2ba6d9;padding-bottom:20px;margin-bottom:28px}
-        .brand h1{font-size:22px;letter-spacing:4px;color:#0b3c4d}
-        .brand p{font-size:10px;letter-spacing:3px;color:#1b7ba8;text-transform:uppercase;margin-top:2px}
+        body{font-family:Georgia,serif;background:#fff;color:#1a2e25;padding:48px;max-width:700px;margin:auto}
+        .header{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #c9a84c;padding-bottom:20px;margin-bottom:28px}
+        .brand h1{font-size:22px;letter-spacing:4px;color:#064e3b}
+        .brand p{font-size:10px;letter-spacing:3px;color:#c9a84c;text-transform:uppercase;margin-top:2px}
         .issued{font-size:11px;color:#888;text-align:right}
-        .ref{background:#0b3c4d;color:#fff;padding:10px 20px;border-radius:8px;display:inline-block;margin-bottom:8px}
+        .ref{background:#064e3b;color:#fff;padding:10px 20px;border-radius:8px;display:inline-block;margin-bottom:8px}
         .ref span{font-size:10px;letter-spacing:2px;text-transform:uppercase;opacity:.7}
         .ref strong{display:block;font-size:20px;letter-spacing:3px;margin-top:2px}
-        .badge{display:inline-block;background:#eaf6fc;border:1px solid #2ba6d9;color:#0b3c4d;padding:4px 12px;border-radius:20px;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin:0 0 24px 12px;vertical-align:top}
+        .badge{display:inline-block;background:#f0f9f6;border:1px solid #c9a84c;color:#064e3b;padding:4px 12px;border-radius:20px;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin:0 0 24px 12px;vertical-align:top}
         .section{margin-bottom:24px}
-        .section-title{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#1b7ba8;margin-bottom:10px;border-bottom:1px solid #d9e7ef;padding-bottom:4px}
-        .row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #e8f1f6}
-        .row span:first-child{color:#55707e}
+        .section-title{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#c9a84c;margin-bottom:10px;border-bottom:1px solid #e5e0d0;padding-bottom:4px}
+        .row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #f0ece0}
+        .row span:first-child{color:#5a7a6a}
         .row span:last-child{font-weight:600}
-        .total-row{display:flex;justify-content:space-between;padding:14px 0 6px;font-size:18px;border-top:2px solid #2ba6d9;margin-top:8px}
-        .total-row span:last-child{color:#1b7ba8;font-size:22px}
-        .footer{margin-top:40px;border-top:1px solid #d9e7ef;padding-top:16px;font-size:11px;color:#888;text-align:center}
+        .total-row{display:flex;justify-content:space-between;padding:14px 0 6px;font-size:18px;border-top:2px solid #c9a84c;margin-top:8px}
+        .total-row span:last-child{color:#c9a84c;font-size:22px}
+        .footer{margin-top:40px;border-top:1px solid #e5e0d0;padding-top:16px;font-size:11px;color:#888;text-align:center}
         @media print{body{padding:24px}}
       </style>
       </head><body>

@@ -5,6 +5,9 @@ import type {
   StaffBooking,
   StaffBookingDetail,
   StaffBookingSummary,
+  StaffCabin,
+  StaffCabinImage,
+  StaffCabinWrite,
   StaffFoodMenuItem,
   StaffFoodMenuItemWrite,
   StaffInvoice,
@@ -246,6 +249,60 @@ export async function updateStaffRoomImage(
 
 export async function deleteStaffRoomImage(id: number) {
   await staffClient.delete(`/staff/room-images/${id}/`);
+}
+
+// ── Showcase cabins (public /cabins pages) ────────────────────────────────
+export async function getStaffCabins(): Promise<StaffCabin[]> {
+  const { data } = await staffClient.get("/staff/cabins/");
+  return data;
+}
+
+export async function createStaffCabin(payload: StaffCabinWrite): Promise<StaffCabin> {
+  const { data } = await staffClient.post("/staff/cabins/", payload);
+  return data;
+}
+
+export async function updateStaffCabin(
+  id: number,
+  payload: Partial<StaffCabinWrite>,
+): Promise<StaffCabin> {
+  const { data } = await staffClient.patch(`/staff/cabins/${id}/`, payload);
+  return data;
+}
+
+export async function deleteStaffCabin(id: number) {
+  await staffClient.delete(`/staff/cabins/${id}/`);
+}
+
+export async function uploadStaffCabinImage(payload: {
+  cabin: number;
+  file: File;
+  caption?: string;
+  is_main?: boolean;
+  sort_order?: number;
+}): Promise<StaffCabinImage> {
+  const form = new FormData();
+  form.append("cabin", String(payload.cabin));
+  form.append("image", payload.file);
+  if (payload.caption) form.append("caption", payload.caption);
+  if (payload.is_main) form.append("is_main", "true");
+  if (payload.sort_order !== undefined) form.append("sort_order", String(payload.sort_order));
+  const { data } = await staffClient.post("/staff/cabin-images/", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+export async function updateStaffCabinImage(
+  id: number,
+  payload: Partial<Pick<StaffCabinImage, "caption" | "is_main" | "sort_order">>,
+): Promise<StaffCabinImage> {
+  const { data } = await staffClient.patch(`/staff/cabin-images/${id}/`, payload);
+  return data;
+}
+
+export async function deleteStaffCabinImage(id: number) {
+  await staffClient.delete(`/staff/cabin-images/${id}/`);
 }
 
 export async function getStaffKidRules(): Promise<StaffKidRule[]> {
