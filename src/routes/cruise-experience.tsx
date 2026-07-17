@@ -1,12 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { useState } from "react";
-import { Anchor, Wifi, Wind, Coffee, Shield, Compass, Crown, Bed, Bath, Eye, Sparkles, Users, ChefHat, Loader2 } from "lucide-react";
+import { Anchor, Wifi, Wind, Coffee, Shield, Compass, Crown, Bed, Bath, Eye, Sparkles, Users } from "lucide-react";
 import { PageHero } from "@/components/site/PageHero";
 import { SectionHeader } from "@/components/site/SectionHeader";
 import { CTA } from "@/components/site/CTA";
 import { ItineraryMap, type Stop } from "@/components/site/ItineraryMap";
-import { useFoodMenu } from "@/hooks/queries/useFoodMenu";
+import { FoodMenuSection } from "@/components/site/FoodMenuSection";
 import deck from "@/assets/deck-sunset.jpg";
 import cabin from "@/assets/cabin-luxury.jpg";
 import dining from "@/assets/dining-bbq.jpg";
@@ -176,85 +175,5 @@ function CruiseExp() {
 
       <CTA />
     </>
-  );
-}
-
-const MEAL_ORDER = ["breakfast", "snacks", "lunch", "dinner"] as const;
-const MEAL_LABEL: Record<(typeof MEAL_ORDER)[number], string> = {
-  breakfast: "Breakfast",
-  snacks: "Snacks",
-  lunch: "Lunch",
-  dinner: "Dinner",
-};
-
-function FoodMenuSection() {
-  const { data, isLoading } = useFoodMenu();
-  const [activeDay, setActiveDay] = useState(0);
-
-  if (isLoading) {
-    return (
-      <div className="py-16 flex items-center justify-center gap-3 text-muted-foreground">
-        <Loader2 className="size-5 animate-spin text-gold" /> Loading the menu…
-      </div>
-    );
-  }
-
-  if (!data || data.days.length === 0) {
-    return null;
-  }
-
-  const day = data.days[activeDay] ?? data.days[0];
-  const mealsByType = new Map(day.meals.map((m) => [m.meal_type, m]));
-
-  return (
-    <div>
-      {/* Day tabs */}
-      <div className="flex items-center justify-center gap-2 mb-12">
-        {data.days.map((d, i) => (
-          <button
-            key={d.day}
-            onClick={() => setActiveDay(i)}
-            className={`px-5 py-2.5 rounded-full text-sm font-medium tracking-wide transition-colors border ${
-              i === activeDay
-                ? "bg-ocean text-primary-foreground border-transparent"
-                : "border-border text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {d.day_label}
-          </button>
-        ))}
-      </div>
-
-      <motion.div
-        key={day.day}
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="grid sm:grid-cols-2 lg:grid-cols-4 gap-px bg-border rounded-2xl overflow-hidden"
-      >
-        {MEAL_ORDER.map((mealType) => {
-          const meal = mealsByType.get(mealType);
-          return (
-            <div key={mealType} className="bg-background p-7">
-              <div className="flex items-center gap-2 mb-4">
-                <ChefHat className="size-4 text-gold" />
-                <h3 className="font-display text-lg">{MEAL_LABEL[mealType]}</h3>
-              </div>
-              {meal && meal.items.length > 0 ? (
-                <ul className="space-y-1.5 text-sm text-muted-foreground">
-                  {meal.items.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-muted-foreground/60">—</p>
-              )}
-            </div>
-          );
-        })}
-      </motion.div>
-
-      <p className="mt-8 text-center text-xs text-muted-foreground italic">{data.note}</p>
-    </div>
   );
 }

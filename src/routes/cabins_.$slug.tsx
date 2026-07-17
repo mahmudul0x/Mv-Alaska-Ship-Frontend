@@ -107,6 +107,7 @@ function CabinDetail() {
           <ArrowLeft className="size-4" /> All Cabins
         </Link>
 
+
         {/* Title block */}
         <div className="relative z-10 h-full container-luxe flex flex-col justify-end pb-16 pt-32">
           <motion.div
@@ -341,6 +342,25 @@ function CabinDetail() {
       </section>
 
       <CTA />
+
+      {/* Room for the sticky bar so it never hides the last content on mobile */}
+      <div className="h-20 lg:hidden" aria-hidden />
+
+      {/* Mobile sticky reserve bar */}
+      <div className="fixed bottom-0 inset-x-0 z-50 lg:hidden bg-card/95 backdrop-blur border-t border-border px-4 py-3 flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="font-display text-sm truncate">{cabin.name}</div>
+          {cabin.occupancy && (
+            <div className="text-[10px] text-muted-foreground truncate">{cabin.occupancy}</div>
+          )}
+        </div>
+        <Link
+          to="/booking"
+          className="shrink-0 px-6 py-3 rounded-full gradient-gold text-ocean text-[10px] uppercase tracking-[0.18em] font-semibold shadow-luxe"
+        >
+          Reserve
+        </Link>
+      </div>
     </>
   );
 }

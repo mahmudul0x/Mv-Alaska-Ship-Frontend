@@ -4,7 +4,6 @@ import { Landmark, Leaf, LifeBuoy, ShieldCheck } from "lucide-react";
 import { PageHero } from "@/components/site/PageHero";
 import { SectionHeader } from "@/components/site/SectionHeader";
 import { Stats } from "@/components/site/Stats";
-import { CTA } from "@/components/site/CTA";
 import deck from "@/assets/deck-sunset.jpg";
 import canal from "@/assets/M.V._ALASKA_AboutPageImage.jpeg";
 import shipVideo from "@/assets/MvalaskaVideo.mp4";
@@ -242,7 +241,6 @@ function About() {
         </div>
       </section>
 
-      <CTA />
     </>
   );
 }
