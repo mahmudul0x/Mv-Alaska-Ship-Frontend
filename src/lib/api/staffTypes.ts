@@ -94,6 +94,17 @@ export interface StaffStatusLog {
   created_at: string;
 }
 
+// One cabin of a staff-viewed booking, with that cabin's own party.
+export interface StaffBookingRoom {
+  room: number;
+  room_number: string;
+  room_type: string;
+  adult_count: number;
+  kid_details: KidDetail[];
+  room_subtotal: Money;
+  is_active: boolean;
+}
+
 export interface StaffBooking {
   id: number;
   booking_code: string;
@@ -102,10 +113,10 @@ export interface StaffBooking {
   email: string;
   package: number;
   package_title: string;
-  room: number;
+  // Every cabin the booking holds (a family may take several).
+  rooms: StaffBookingRoom[];
+  // Comma-joined room numbers for compact table columns, e.g. "201, 202".
   room_number: string;
-  adult_count: number;
-  kid_details: KidDetail[];
   total_pax: number;
   /** Customer's free-text note from the booking wizard (dietary, accessibility,
    * anniversary, etc.). Empty string when none was given. */
@@ -225,6 +236,8 @@ export interface StaffGalleryImage {
 
 export type RoomAvailability = "available" | "booked" | "unavailable";
 
+// The booking that holds one room in the package room-map. adult_count/
+// kid_details are THIS room's party; total_pax is the whole booking's.
 export interface StaffPackageRoomBooking {
   id: number;
   booking_code: string;
@@ -232,6 +245,9 @@ export interface StaffPackageRoomBooking {
   phone: string;
   adult_count: number;
   kid_details: KidDetail[];
+  /** This room's pax. */
+  room_pax: number;
+  /** The whole booking's pax across all its rooms. */
   total_pax: number;
   total_amount: Money;
   paid_amount: Money;

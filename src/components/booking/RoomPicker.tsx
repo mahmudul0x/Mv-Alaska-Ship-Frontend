@@ -11,6 +11,7 @@ import {
   Crown,
   Users,
   Waves,
+  X,
 } from "lucide-react";
 
 import { usePackageRooms } from "@/hooks/queries/usePackageRooms";
@@ -20,8 +21,10 @@ import type { PackageRoom, RoomAvailability } from "@/lib/api/types";
 
 type Props = {
   packageId: number | undefined;
-  selectedRoomId?: number;
-  onSelectRoom: (room: PackageRoom) => void;
+  /** Ids of every cabin currently in the booking — a booking may hold several. */
+  selectedRoomIds: number[];
+  /** Toggle a cabin in/out of the booking. */
+  onToggleRoom: (room: PackageRoom) => void;
 };
 
 const AVAILABILITY_LABEL: Record<RoomAvailability, string> = {
@@ -234,8 +237,7 @@ function RoomCell({
       }`}
     >
       <input
-        type="radio"
-        name="room"
+        type="checkbox"
         className="sr-only"
         aria-label={label}
         checked={checked}
@@ -316,14 +318,14 @@ function FeatureCell({
 function Deck({
   plan,
   roomsByNumber,
-  selectedRoomId,
-  onSelectRoom,
+  selectedRoomIds,
+  onToggleRoom,
   vertical,
 }: {
   plan: DeckPlan;
   roomsByNumber: Map<string, PackageRoom>;
-  selectedRoomId?: number;
-  onSelectRoom: (room: PackageRoom) => void;
+  selectedRoomIds: Set<number>;
+  onToggleRoom: (room: PackageRoom) => void;
   /** Draw the ship bow-up (mobile) rather than bow-right. Only the chosen hull
    * is rendered — the other must not be left in the DOM. */
   vertical: boolean;
@@ -375,8 +377,8 @@ function Deck({
       <RoomCell
         key={cell.number}
         room={r}
-        checked={selectedRoomId === r.id}
-        onSelect={() => onSelectRoom(r)}
+        checked={selectedRoomIds.has(r.id)}
+        onSelect={() => onToggleRoom(r)}
       />
     );
   };
@@ -452,12 +454,12 @@ function Deck({
      * which propagates out to the page and scrolls the whole document sideways
      * instead of scrolling the deck.
      *
-     * role=radiogroup + aria-labelledby: the room radios share a `name` but had
-     * no grouping element, so a screen reader announced "radio button, 1 of 31"
-     * with no statement of what was being chosen or which deck it was on. */
+     * role=group + aria-labelledby: the room checkboxes are grouped so a screen
+     * reader states which deck is being chosen from rather than announcing bare
+     * checkboxes. */
     <div
       className="min-w-0"
-      role="radiogroup"
+      role="group"
       aria-labelledby={deckHeadingId}
     >
       {/* Deck header */}
@@ -575,8 +577,9 @@ function Deck({
   );
 }
 
-export function RoomPicker({ packageId, selectedRoomId, onSelectRoom }: Props) {
+export function RoomPicker({ packageId, selectedRoomIds, onToggleRoom }: Props) {
   const { data: rooms, isLoading, isError } = usePackageRooms(packageId);
+  const selectedIdSet = new Set(selectedRoomIds);
   const [activeFloor, setActiveFloor] = useState<number | null>(null);
   // Matches the md breakpoint the deck layouts are keyed to — used to mount one
   // deck rather than render both and hide one.
@@ -602,7 +605,7 @@ export function RoomPicker({ packageId, selectedRoomId, onSelectRoom }: Props) {
 
   const roomsByNumber = new Map(rooms.map((r) => [r.room_number, r]));
   const availableCount = rooms.filter((r) => r.availability === "available").length;
-  const selectedRoom = rooms.find((r) => r.id === selectedRoomId);
+  const selectedRooms = rooms.filter((r) => selectedIdSet.has(r.id));
 
   // Use the drawn plan for decks whose rooms exist in this ship's data;
   // everything else gets an auto-generated deck so any ship still renders.
@@ -668,8 +671,8 @@ export function RoomPicker({ packageId, selectedRoomId, onSelectRoom }: Props) {
               key={`${plan.name}-${plan.floor}`}
               plan={plan}
               roomsByNumber={roomsByNumber}
-              selectedRoomId={selectedRoomId}
-              onSelectRoom={onSelectRoom}
+              selectedRoomIds={selectedIdSet}
+              onToggleRoom={onToggleRoom}
               vertical={false}
             />
           ))}
@@ -710,41 +713,62 @@ export function RoomPicker({ packageId, selectedRoomId, onSelectRoom }: Props) {
             key={`${activeDeck.name}-${activeDeck.floor}`}
             plan={activeDeck}
             roomsByNumber={roomsByNumber}
-            selectedRoomId={selectedRoomId}
-            onSelectRoom={onSelectRoom}
+            selectedRoomIds={selectedIdSet}
+            onToggleRoom={onToggleRoom}
             vertical
           />
         )}
       </div>
       )}
 
-      {/* Selected room recap */}
-      {selectedRoom && (
-        <div className="rounded-2xl border border-gold/40 bg-ocean/4 px-5 py-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl gradient-gold grid place-items-center shrink-0 shadow-luxe">
-              <BedDouble className="size-4.5 text-ocean" />
-            </div>
-            <div>
-              <div className="text-sm font-semibold">
-                Room {selectedRoom.room_number} · {selectedRoom.room_type.name}
-              </div>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                Up to {selectedRoom.room_type.max_adults} adult
-                {selectedRoom.room_type.max_adults > 1 ? "s" : ""}
-                {selectedRoom.room_type.max_kids
-                  ? ` and ${selectedRoom.room_type.max_kids} kid${selectedRoom.room_type.max_kids > 1 ? "s" : ""}`
-                  : ""}
-                {selectedRoom.floor_number !== null ? ` · Floor ${selectedRoom.floor_number}` : ""}
-              </div>
-            </div>
+      {/* Selected rooms recap — one line per chosen cabin. Tapping a booked
+       * tile can't add it; tapping a selected tile again removes it. */}
+      {selectedRooms.length > 0 && (
+        <div className="rounded-2xl border border-gold/40 bg-ocean/4 px-5 py-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <span className="eyebrow text-[10px] text-gold-text">
+              {selectedRooms.length} {selectedRooms.length === 1 ? "room" : "rooms"} selected
+            </span>
+            <span className="text-[11px] text-muted-foreground">Tap a room again to remove it</span>
           </div>
-          <div className="text-right">
-            <div className="eyebrow text-[9px] text-muted-foreground">Room base</div>
-            <div className="font-display text-xl text-gold-text leading-none mt-0.5">
-              {formatBDT(selectedRoom.room_type.base_price)}
+          {selectedRooms.map((sel) => (
+            <div key={sel.id} className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-xl gradient-gold grid place-items-center shrink-0 shadow-luxe">
+                  <BedDouble className="size-4 text-ocean" />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold">
+                    Room {sel.room_number} · {sel.room_type.name}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    Up to {sel.room_type.max_adults} adult
+                    {sel.room_type.max_adults > 1 ? "s" : ""}
+                    {sel.room_type.max_kids
+                      ? ` and ${sel.room_type.max_kids} kid${sel.room_type.max_kids > 1 ? "s" : ""}`
+                      : ""}
+                    {sel.floor_number !== null ? ` · Floor ${sel.floor_number}` : ""}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <div className="eyebrow text-[9px] text-muted-foreground">Room base</div>
+                  <div className="font-display text-lg text-gold-text leading-none mt-0.5">
+                    {formatBDT(sel.room_type.base_price)}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onToggleRoom(sel)}
+                  aria-label={`Remove room ${sel.room_number}`}
+                  className="size-9 rounded-lg grid place-items-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors cursor-pointer"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
             </div>
-          </div>
+          ))}
         </div>
       )}
     </div>

@@ -29,6 +29,9 @@ export function BookingStatusCard({
   const total = parseMoney(booking.total_amount);
   const paid = parseMoney(booking.paid_amount);
   const paidPct = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
+  // A booking may hold several cabins; sum the party across all of them.
+  const totalAdults = booking.rooms.reduce((n, r) => n + r.adult_count, 0);
+  const totalKids = booking.rooms.reduce((n, r) => n + r.kid_details.length, 0);
 
   return (
     <div className="rounded-2xl border border-border bg-card shadow-luxe overflow-hidden text-left">
@@ -96,9 +99,12 @@ export function BookingStatusCard({
 
         {/* Voyage + guest details */}
         <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3 pt-4 border-t border-border text-sm">
-          <div className="flex items-center gap-2.5 text-foreground">
+          <div className="flex items-center gap-2.5 text-foreground min-w-0">
             <BedDouble className="size-3.5 text-gold shrink-0" />
-            Room {booking.room_number}
+            <span className="truncate">
+              {booking.rooms.length > 1 ? "Rooms " : "Room "}
+              {booking.rooms.map((r) => r.room_number).join(", ")}
+            </span>
           </div>
           <div className="flex items-center gap-2.5 text-foreground">
             <CalendarDays className="size-3.5 text-gold shrink-0" />
@@ -107,11 +113,9 @@ export function BookingStatusCard({
           <div className="flex items-center gap-2.5 text-foreground">
             <User className="size-3.5 text-gold shrink-0" />
             <span className="truncate">
-              {booking.customer_name} · {booking.adult_count} adult
-              {booking.adult_count > 1 ? "s" : ""}
-              {booking.kid_details.length
-                ? `, ${booking.kid_details.length} kid${booking.kid_details.length > 1 ? "s" : ""}`
-                : ""}
+              {booking.customer_name} · {totalAdults} adult
+              {totalAdults > 1 ? "s" : ""}
+              {totalKids ? `, ${totalKids} kid${totalKids > 1 ? "s" : ""}` : ""}
             </span>
           </div>
           <div className="flex items-center gap-2.5 text-foreground min-w-0">

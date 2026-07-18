@@ -471,8 +471,13 @@ function BookingDialog({
           <Info label="Status" value={booking.status} />
           <Info label="Phone" value={booking.phone} />
           <Info
-            label="Guests"
-            value={`${booking.adult_count} adult(s)${kids ? ` · ${kids} kid(s)` : ""}`}
+            label="Guests in this room"
+            value={
+              `${booking.adult_count} adult(s)${kids ? ` · ${kids} kid(s)` : ""}` +
+              (booking.total_pax > booking.room_pax
+                ? ` · booking total ${booking.total_pax} pax`
+                : "")
+            }
           />
           <Info label="Room type" value={room.room_type.name} />
           <Info

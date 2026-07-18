@@ -689,12 +689,19 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
               <Info label="Email" value={booking.email} />
               <CopyButton value={booking.email} label="Email" />
             </div>
-            <Info label="Room" value={booking.room_number} />
-            <Info label="Package" value={booking.package_title} />
             <Info
-              label="Pax"
-              value={`${booking.adult_count} adult(s), ${booking.kid_details.length} kid(s)`}
+              label={booking.rooms.length > 1 ? "Rooms" : "Room"}
+              value={booking.room_number}
             />
+            <Info label="Package" value={booking.package_title} />
+            {/* Per-room pax: a family taking several cabins has a party per room. */}
+            {booking.rooms.map((r) => (
+              <Info
+                key={r.room}
+                label={`Room ${r.room_number} pax`}
+                value={`${r.adult_count} adult(s), ${r.kid_details.length} kid(s)`}
+              />
+            ))}
             <Info label="Total" value={formatBDT(booking.total_amount)} />
             <Info label="Paid" value={formatBDT(booking.paid_amount)} />
             <Info label="Due" value={formatBDT(booking.due_amount)} />

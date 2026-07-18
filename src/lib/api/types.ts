@@ -132,11 +132,17 @@ export interface KidDetail {
   age: number;
 }
 
-export interface BookingQuoteRequest {
-  package_id: number;
+// One room within a booking request: which cabin, and that cabin's own party.
+// A booking may hold several of these (a family taking 2–3 cabins).
+export interface BookingRoomInput {
   room_id: number;
   adult_count: number;
   kid_details?: KidDetail[];
+}
+
+export interface BookingQuoteRequest {
+  package_id: number;
+  rooms: BookingRoomInput[];
 }
 
 export interface PriceBreakdownKid {
@@ -144,7 +150,9 @@ export interface PriceBreakdownKid {
   charge: Money;
 }
 
-export interface PriceBreakdown {
+// The priced breakdown for a SINGLE room. `room_number` is present on quote/
+// create responses so the UI can label each cabin's line items.
+export interface RoomPriceBreakdown {
   room_base: Money;
   adult_price: Money;
   adult_count: number;
@@ -152,6 +160,14 @@ export interface PriceBreakdown {
   kids: PriceBreakdownKid[];
   kids_subtotal: Money;
   total: Money;
+  room_number?: string;
+}
+
+// The whole (multi-room) booking's price: each room's breakdown plus the grand
+// total the customer is charged — one payment, one invoice.
+export interface PriceBreakdown {
+  rooms: RoomPriceBreakdown[];
+  grand_total: Money;
 }
 
 export interface BookingCreateRequest extends BookingQuoteRequest {
@@ -176,16 +192,25 @@ export interface BookingPackageMini {
   end_date: string;
 }
 
+// One cabin of a confirmed booking, with that cabin's own party.
+export interface BookingRoomPublic {
+  room_number: string;
+  room_type: string;
+  adult_count: number;
+  kid_details: KidDetail[];
+  room_subtotal: Money;
+}
+
 export interface BookingPublic {
   booking_code: string;
   status: BookingStatus;
   package: BookingPackageMini;
-  room_number: string;
+  // Every cabin the booking holds (one payment, one invoice for all of them).
+  rooms: BookingRoomPublic[];
+  total_pax: number;
   customer_name: string;
   phone: string;
   email: string;
-  adult_count: number;
-  kid_details: KidDetail[];
   special_requests: string;
   total_amount: Money;
   paid_amount: Money;

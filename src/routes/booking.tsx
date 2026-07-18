@@ -46,11 +46,18 @@ import { formatBDT } from "@/lib/money";
 import { bookingContactSchema, type BookingContactValues } from "@/lib/validation/bookingForm";
 import type { ApiError, BookingPublic, PackageRoom } from "@/lib/api/types";
 
-type BookingData = {
-  packageId: number | undefined;
-  room: PackageRoom | undefined;
+// One selected cabin and its own party. A booking may hold several of these —
+// a family taking 2–3 rooms is ONE booking (one payment, one invoice), each
+// room priced on its own occupancy.
+type RoomSelection = {
+  room: PackageRoom;
   adultCount: number;
   kidAges: number[];
+};
+
+type BookingData = {
+  packageId: number | undefined;
+  rooms: RoomSelection[];
   name: string;
   email: string;
   phone: string;
@@ -89,8 +96,24 @@ const STEP_ROOM = 2;
 function isStepComplete(step: number, data: BookingData) {
   if (step === 0) return data.packageId !== undefined; // Package chosen
   if (step === 1) return data.packageId !== undefined; // Voyage confirmed
-  if (step === 2) return data.room !== undefined; // Room chosen
+  if (step === 2) return data.rooms.length > 0; // At least one room chosen
   return true;
+}
+
+/** Add/remove/update helpers for the selected-rooms list, keyed by room id. */
+function addRoom(rooms: RoomSelection[], room: PackageRoom): RoomSelection[] {
+  if (rooms.some((r) => r.room.id === room.id)) return rooms; // already selected
+  return [...rooms, { room, adultCount: 1, kidAges: [] }];
+}
+function removeRoom(rooms: RoomSelection[], roomId: number): RoomSelection[] {
+  return rooms.filter((r) => r.room.id !== roomId);
+}
+function updateRoom(
+  rooms: RoomSelection[],
+  roomId: number,
+  patch: Partial<RoomSelection>,
+): RoomSelection[] {
+  return rooms.map((r) => (r.room.id === roomId ? { ...r, ...patch } : r));
 }
 
 const stepHint: Record<number, string> = {
@@ -106,9 +129,7 @@ function Booking() {
   const [redirecting, setRedirecting] = useState(false);
   const [data, setData] = useState<BookingData>({
     packageId: search.package,
-    room: undefined,
-    adultCount: 2,
-    kidAges: [],
+    rooms: [],
     name: "",
     email: "",
     phone: "",
@@ -122,12 +143,14 @@ function Booking() {
   const createBooking = useCreateBooking();
 
   const quoteRequest =
-    data.packageId !== undefined && data.room !== undefined
+    data.packageId !== undefined && data.rooms.length > 0
       ? {
           package_id: data.packageId,
-          room_id: data.room.id,
-          adult_count: data.adultCount,
-          kid_details: data.kidAges.map((age) => ({ age })),
+          rooms: data.rooms.map((r) => ({
+            room_id: r.room.id,
+            adult_count: r.adultCount,
+            kid_details: r.kidAges.map((age) => ({ age })),
+          })),
         }
       : undefined;
   const { data: quote, isFetching: quoting, error: quoteError } = useBookingQuote(quoteRequest);
@@ -171,8 +194,8 @@ function Booking() {
     } catch (err) {
       const apiError = err as ApiError;
       if (apiError.code === "room_unavailable" || apiError.status === 409) {
-        toast.error("That room was just booked by someone else. Please pick another.");
-        update({ room: undefined });
+        toast.error("One of your rooms was just booked by someone else. Please pick again.");
+        update({ rooms: [] });
         setStep(STEP_ROOM);
       } else if (apiError.fieldErrors) {
         toast.error(Object.values(apiError.fieldErrors).flat().join(" "));
@@ -354,7 +377,7 @@ function Booking() {
               </div>
               <div className="font-display text-xl text-ocean leading-tight truncate">
                 {quote
-                  ? formatBDT(quote.total)
+                  ? formatBDT(quote.grand_total)
                   : selectedPackage
                     ? formatBDT(selectedPackage.adult_price)
                     : steps[step].label}
@@ -503,6 +526,10 @@ function SummaryCard({
 }) {
   const dates = `${parseLocalDate(selectedPackage.start_date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${parseLocalDate(selectedPackage.end_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
 
+  const totalAdults = data.rooms.reduce((n, r) => n + r.adultCount, 0);
+  const totalKids = data.rooms.reduce((n, r) => n + r.kidAges.length, 0);
+  const firstWithPhotos = data.rooms.find((r) => r.room.images?.length);
+
   const rows = [
     {
       icon: MapPin,
@@ -512,24 +539,26 @@ function SummaryCard({
     { icon: CalendarDays, label: "Dates", value: dates },
     {
       icon: Bed,
-      label: "Room",
-      value: data.room
-        ? `Room ${data.room.room_number} · ${data.room.room_type.name}`
-        : "Not selected yet",
-      muted: !data.room,
-      // Small peek at the chosen room — opens the full photo lightbox on tap.
-      gallery: data.room?.images?.length
-        ? { images: data.room.images, roomNumber: data.room.room_number }
+      label: data.rooms.length > 1 ? "Rooms" : "Room",
+      value:
+        data.rooms.length > 0
+          ? data.rooms.map((r) => `Room ${r.room.room_number}`).join(", ")
+          : "Not selected yet",
+      muted: data.rooms.length === 0,
+      // Small peek at a chosen room — opens the full photo lightbox on tap.
+      gallery: firstWithPhotos
+        ? { images: firstWithPhotos.room.images, roomNumber: firstWithPhotos.room.room_number }
         : undefined,
     },
     {
       icon: Users,
       label: "Guests",
-      value: `${data.adultCount} Adult${data.adultCount > 1 ? "s" : ""}${
-        data.kidAges.length
-          ? `, ${data.kidAges.length} Kid${data.kidAges.length > 1 ? "s" : ""}`
-          : ""
-      }`,
+      value:
+        data.rooms.length > 0
+          ? `${totalAdults} Adult${totalAdults > 1 ? "s" : ""}${
+              totalKids ? `, ${totalKids} Kid${totalKids > 1 ? "s" : ""}` : ""
+            }`
+          : "—",
     },
   ];
 
@@ -581,28 +610,25 @@ function SummaryCard({
               </div>
             ) : quote ? (
               <div className="space-y-2 text-xs">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Room base</span>
-                  <span className="text-foreground font-medium">{formatBDT(quote.room_base)}</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Adults × {quote.adult_count}</span>
-                  <span className="text-foreground font-medium">
-                    {formatBDT(quote.adults_subtotal)}
-                  </span>
-                </div>
-                {quote.kids.length > 0 && (
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Kids × {quote.kids.length}</span>
-                    <span className="text-foreground font-medium">
-                      {formatBDT(quote.kids_subtotal)}
+                {/* One line per cabin — its number and that cabin's subtotal. */}
+                {quote.rooms.map((room, i) => (
+                  <div key={i} className="flex justify-between text-muted-foreground">
+                    <span>
+                      {room.room_number ? `Room ${room.room_number}` : `Room ${i + 1}`}
+                      <span className="text-muted-foreground/70">
+                        {" "}
+                        · {room.adult_count} ad{room.kids.length ? ` · ${room.kids.length} kid` : ""}
+                      </span>
                     </span>
+                    <span className="text-foreground font-medium">{formatBDT(room.total)}</span>
                   </div>
-                )}
+                ))}
                 <div className="pt-2.5 mt-1 border-t border-dashed border-border flex justify-between items-baseline">
-                  <span className="eyebrow text-[10px] text-muted-foreground">Total</span>
+                  <span className="eyebrow text-[10px] text-muted-foreground">
+                    Total{quote.rooms.length > 1 ? ` · ${quote.rooms.length} rooms` : ""}
+                  </span>
                   <span className="font-display text-2xl text-gold-text leading-none">
-                    {formatBDT(quote.total)}
+                    {formatBDT(quote.grand_total)}
                   </span>
                 </div>
               </div>
@@ -694,7 +720,7 @@ function StepPackage({ data, update, onNext }: StepProps & { onNext: () => void 
         selectedPackageId={data.packageId}
         onSelectPackage={(pkg) => {
           // Selecting a different package invalidates room/guest downstream state.
-          update({ packageId: pkg.id, room: undefined });
+          update({ packageId: pkg.id, rooms: [] });
           onNext();
         }}
       />
@@ -864,7 +890,7 @@ function StepVoyage({ data, update }: StepProps) {
           <AvailabilityCalendar
             selectedPackageId={data.packageId}
             initialMonth={selectedPackage?.start_date}
-            onSelectPackage={(packageId) => update({ packageId, room: undefined })}
+            onSelectPackage={(packageId) => update({ packageId, rooms: [] })}
           />
         </div>
       </div>
@@ -872,20 +898,26 @@ function StepVoyage({ data, update }: StepProps) {
   );
 }
 
-/* ── Step 3: Cabin (room) ── */
+/* ── Step 3: Cabin (rooms) ── */
 function StepCabin({ data, update }: StepProps) {
   return (
     <div>
       <StepHeader
         step={2}
         title="Select your"
-        highlight="room."
-        description="Live availability for your selected voyage — choose any open room on the deck plan below."
+        highlight="room(s)."
+        description="Live availability for your selected voyage. Booking for a big family? Tap more than one open cabin — they'll be one booking with a single payment."
       />
       <RoomPicker
         packageId={data.packageId}
-        selectedRoomId={data.room?.id}
-        onSelectRoom={(room) => update({ room })}
+        selectedRoomIds={data.rooms.map((r) => r.room.id)}
+        onToggleRoom={(room) =>
+          update({
+            rooms: data.rooms.some((r) => r.room.id === room.id)
+              ? removeRoom(data.rooms, room.id)
+              : addRoom(data.rooms, room),
+          })
+        }
       />
     </div>
   );
@@ -934,147 +966,191 @@ function Counter({
   );
 }
 
-/* ── Guest counters + special requests — rendered inside the final step ── */
-function GuestsCards({ data, update }: StepProps) {
-  const requestsId = useId();
-  const maxAdults = data.room?.room_type.max_adults ?? 99;
-  const maxKids = data.room?.room_type.max_kids ?? 99;
+/* ── Per-room guest counters: one card per selected cabin, each with its own
+      adults + kids (the backend prices and limit-checks every room on its own
+      occupancy). ── */
+function RoomGuestsCard({
+  index,
+  selection,
+  onChange,
+}: {
+  index: number;
+  selection: RoomSelection;
+  onChange: (patch: Partial<RoomSelection>) => void;
+}) {
+  const { room, adultCount, kidAges } = selection;
+  const maxAdults = room.room_type.max_adults;
+  const maxKids = room.room_type.max_kids;
 
-  const setAdultCount = (n: number) => update({ adultCount: Math.max(1, Math.min(maxAdults, n)) });
+  const setAdultCount = (n: number) => onChange({ adultCount: Math.max(1, Math.min(maxAdults, n)) });
   const setKidCount = (n: number) => {
     const count = Math.max(0, Math.min(maxKids, n));
-    update({
+    onChange({
       kidAges:
-        count > data.kidAges.length
-          ? [...data.kidAges, ...Array(count - data.kidAges.length).fill(5)]
-          : data.kidAges.slice(0, count),
+        count > kidAges.length
+          ? [...kidAges, ...Array(count - kidAges.length).fill(5)]
+          : kidAges.slice(0, count),
     });
   };
-  const removeKid = (i: number) => update({ kidAges: data.kidAges.filter((_, idx) => idx !== i) });
+  const removeKid = (i: number) => onChange({ kidAges: kidAges.filter((_, idx) => idx !== i) });
   const setKidAge = (i: number, age: number) =>
-    update({
-      kidAges: data.kidAges.map((a, idx) => (idx === i ? Math.max(0, Math.min(17, age)) : a)),
+    onChange({
+      kidAges: kidAges.map((a, idx) => (idx === i ? Math.max(0, Math.min(17, age)) : a)),
     });
 
   return (
-    <div className="space-y-4">
-        {/* Guests card: adults + kids counter rows */}
-        <div className="rounded-2xl border border-border bg-card shadow-luxe divide-y divide-border">
-          {/* Adults */}
-          <div className="flex items-center justify-between gap-4 px-5 py-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="size-9 rounded-lg bg-ocean/8 grid place-items-center shrink-0">
-                <Users className="size-4 text-ocean/70" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-sm font-semibold leading-tight">Adults</div>
-                <div className="text-[11px] text-muted-foreground mt-0.5">
-                  Ages 12+ · up to {maxAdults} in this room
-                </div>
-              </div>
-            </div>
-            <Counter
-              value={data.adultCount}
-              min={1}
-              max={maxAdults}
-              onChange={setAdultCount}
-              decLabel="Fewer adults"
-              incLabel="More adults"
-            />
+    <div className="rounded-2xl border border-border bg-card shadow-luxe divide-y divide-border">
+      {/* Room label header */}
+      <div className="flex items-center gap-3 px-5 py-3 bg-ocean/3">
+        <div className="size-8 rounded-lg gradient-gold grid place-items-center shrink-0 shadow-luxe">
+          <Bed className="size-4 text-ocean" />
+        </div>
+        <div className="min-w-0">
+          <div className="text-sm font-semibold leading-tight">
+            Room {room.room_number} · {room.room_type.name}
           </div>
-
-          {/* Kids + inline ages */}
-          <div className="px-5 py-4">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="size-9 rounded-lg bg-ocean/8 grid place-items-center shrink-0">
-                  <Baby className="size-4 text-ocean/70" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold leading-tight">Kids</div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5">
-                    Under 12 · up to {maxKids} in this room
-                  </div>
-                </div>
-              </div>
-              <Counter
-                value={data.kidAges.length}
-                min={0}
-                max={maxKids}
-                onChange={setKidCount}
-                decLabel="Fewer kids"
-                incLabel="More kids"
-              />
-            </div>
-
-            <AnimatePresence>
-              {data.kidAges.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="mt-4 grid sm:grid-cols-2 gap-2">
-                    {data.kidAges.map((age, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between gap-2 rounded-xl border border-border/70 bg-ocean/3 pl-3.5 pr-1.5 py-1.5"
-                      >
-                        <span className="text-xs font-medium text-foreground">Kid {i + 1}</span>
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setKidAge(i, age - 1)}
-                            disabled={age <= 0}
-                            aria-label="Younger"
-                            className="size-11 rounded-lg border border-border bg-card grid place-items-center hover:border-gold hover:text-gold-text transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
-                          >
-                            <Minus className="size-3" />
-                          </button>
-                          <div className="w-12 text-center whitespace-nowrap">
-                            <input
-                              type="number"
-                              min={0}
-                              max={17}
-                              value={age}
-                              aria-label={`Age of kid ${i + 1} in years`}
-                              onChange={(e) => setKidAge(i, Number(e.target.value))}
-                              className="w-6 bg-transparent border-0 text-sm font-semibold text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ocean rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            />
-                            <span className="text-[10px] text-muted-foreground">yrs</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setKidAge(i, age + 1)}
-                            disabled={age >= 17}
-                            aria-label="Older"
-                            className="size-11 rounded-lg border border-border bg-card grid place-items-center hover:border-gold hover:text-gold-text transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
-                          >
-                            <Plus className="size-3" />
-                          </button>
-                          {/* Kept clear of the ± pair: at 28px and 4px apart, a
-                              mis-tap on the age stepper used to delete the kid. */}
-                          <button
-                            type="button"
-                            onClick={() => removeKid(i)}
-                            aria-label={`Remove kid ${i + 1}`}
-                            className="size-11 ml-2 rounded-lg grid place-items-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors cursor-pointer"
-                          >
-                            <X className="size-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-2 text-[10px] text-muted-foreground">
-                    Fares vary by age — set each kid's age at the time of travel.
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          <div className="text-[11px] text-muted-foreground mt-0.5">
+            Cabin {index + 1} of this booking · up to {maxAdults} adult
+            {maxAdults > 1 ? "s" : ""}
+            {maxKids ? ` + ${maxKids} kid${maxKids > 1 ? "s" : ""}` : ""}
           </div>
         </div>
+      </div>
+
+      {/* Adults */}
+      <div className="flex items-center justify-between gap-4 px-5 py-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="size-9 rounded-lg bg-ocean/8 grid place-items-center shrink-0">
+            <Users className="size-4 text-ocean/70" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold leading-tight">Adults</div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">
+              Ages 12+ · up to {maxAdults} in this room
+            </div>
+          </div>
+        </div>
+        <Counter
+          value={adultCount}
+          min={1}
+          max={maxAdults}
+          onChange={setAdultCount}
+          decLabel="Fewer adults"
+          incLabel="More adults"
+        />
+      </div>
+
+      {/* Kids + inline ages */}
+      <div className="px-5 py-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="size-9 rounded-lg bg-ocean/8 grid place-items-center shrink-0">
+              <Baby className="size-4 text-ocean/70" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm font-semibold leading-tight">Kids</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5">
+                Under 12 · up to {maxKids} in this room
+              </div>
+            </div>
+          </div>
+          <Counter
+            value={kidAges.length}
+            min={0}
+            max={maxKids}
+            onChange={setKidCount}
+            decLabel="Fewer kids"
+            incLabel="More kids"
+          />
+        </div>
+
+        <AnimatePresence>
+          {kidAges.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="mt-4 grid sm:grid-cols-2 gap-2">
+                {kidAges.map((age, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between gap-2 rounded-xl border border-border/70 bg-ocean/3 pl-3.5 pr-1.5 py-1.5"
+                  >
+                    <span className="text-xs font-medium text-foreground">Kid {i + 1}</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setKidAge(i, age - 1)}
+                        disabled={age <= 0}
+                        aria-label="Younger"
+                        className="size-11 rounded-lg border border-border bg-card grid place-items-center hover:border-gold hover:text-gold-text transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
+                      >
+                        <Minus className="size-3" />
+                      </button>
+                      <div className="w-12 text-center whitespace-nowrap">
+                        <input
+                          type="number"
+                          min={0}
+                          max={17}
+                          value={age}
+                          aria-label={`Age of kid ${i + 1} in room ${room.room_number}, in years`}
+                          onChange={(e) => setKidAge(i, Number(e.target.value))}
+                          className="w-6 bg-transparent border-0 text-sm font-semibold text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ocean rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <span className="text-[10px] text-muted-foreground">yrs</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setKidAge(i, age + 1)}
+                        disabled={age >= 17}
+                        aria-label="Older"
+                        className="size-11 rounded-lg border border-border bg-card grid place-items-center hover:border-gold hover:text-gold-text transition-colors disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
+                      >
+                        <Plus className="size-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeKid(i)}
+                        aria-label={`Remove kid ${i + 1}`}
+                        className="size-11 ml-2 rounded-lg grid place-items-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors cursor-pointer"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-2 text-[10px] text-muted-foreground">
+                Fares vary by age — set each kid's age at the time of travel.
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+/* ── Guest counters (one card per room) + special requests — rendered inside
+      the final step ── */
+function GuestsCards({ data, update }: StepProps) {
+  const requestsId = useId();
+
+  return (
+    <div className="space-y-4">
+        {/* One guests card per selected cabin */}
+        {data.rooms.map((selection, i) => (
+          <RoomGuestsCard
+            key={selection.room.id}
+            index={i}
+            selection={selection}
+            onChange={(patch) =>
+              update({ rooms: updateRoom(data.rooms, selection.room.id, patch) })
+            }
+          />
+        ))}
 
         {/* Special requests — the label must be associated, not just adjacent:
             with no htmlFor the field's accessible name fell back to the
@@ -1152,7 +1228,7 @@ function StepPayment({
     onConfirm(values);
   }
 
-  const dueAmount = quote ? Number.parseFloat(quote.total) : 0;
+  const dueAmount = quote ? Number.parseFloat(quote.grand_total) : 0;
   const partialAmountNumber = Number.parseFloat(data.partialAmount || "0");
   const partialInvalid =
     data.paymentType === "partial" &&
@@ -1232,7 +1308,7 @@ function StepPayment({
                     {voyageTitle}
                   </span>
                   <span className="font-display text-3xl leading-none shrink-0">
-                    {quote ? formatBDT(quote.total) : "—"}
+                    {quote ? formatBDT(quote.grand_total) : "—"}
                   </span>
                 </div>
               </div>
@@ -1278,30 +1354,42 @@ function StepPayment({
               </div>
             )}
 
-            {/* Cabin + guests, plus every photo of the chosen room (tap to view full size) */}
+            {/* Cabins + guests, plus a peek at a chosen room's photos */}
             <div className="mx-5 mt-3.5 mb-4 space-y-2">
-              <div className="rounded-lg bg-ocean/4 border border-border/60 px-3 py-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] font-medium">
-                <span className="inline-flex items-center gap-1">
-                  <Bed className="size-3 text-gold" />
-                  {data.room ? `Room ${data.room.room_number}` : "—"}
-                </span>
-                <span className="size-1 rounded-full bg-border" />
-                <span className="inline-flex items-center gap-1">
-                  <MapPin className="size-3 text-gold" />
-                  {data.room?.floor_number != null ? `Floor ${data.room.floor_number}` : "—"}
-                </span>
-                <span className="size-1 rounded-full bg-border" />
-                <span className="inline-flex items-center gap-1">
-                  <Users className="size-3 text-gold" />
-                  {data.adultCount} Adult{data.adultCount > 1 ? "s" : ""}
-                  {data.kidAges.length
-                    ? ` · ${data.kidAges.length} Kid${data.kidAges.length > 1 ? "s" : ""}`
-                    : ""}
-                </span>
-              </div>
-              {data.room && data.room.images?.length > 0 && (
-                <RoomGallery images={data.room.images} roomNumber={data.room.room_number} />
-              )}
+              {(() => {
+                const totalAdults = data.rooms.reduce((n, r) => n + r.adultCount, 0);
+                const totalKids = data.rooms.reduce((n, r) => n + r.kidAges.length, 0);
+                const withPhotos = data.rooms.find((r) => r.room.images?.length);
+                return (
+                  <>
+                    <div className="rounded-lg bg-ocean/4 border border-border/60 px-3 py-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] font-medium">
+                      <span className="inline-flex items-center gap-1">
+                        <Bed className="size-3 text-gold" />
+                        {data.rooms.length > 0
+                          ? data.rooms.map((r) => r.room.room_number).join(", ")
+                          : "—"}
+                      </span>
+                      <span className="size-1 rounded-full bg-border" />
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin className="size-3 text-gold" />
+                        {data.rooms.length} {data.rooms.length === 1 ? "Room" : "Rooms"}
+                      </span>
+                      <span className="size-1 rounded-full bg-border" />
+                      <span className="inline-flex items-center gap-1">
+                        <Users className="size-3 text-gold" />
+                        {totalAdults} Adult{totalAdults > 1 ? "s" : ""}
+                        {totalKids ? ` · ${totalKids} Kid${totalKids > 1 ? "s" : ""}` : ""}
+                      </span>
+                    </div>
+                    {withPhotos && (
+                      <RoomGallery
+                        images={withPhotos.room.images}
+                        roomNumber={withPhotos.room.room_number}
+                      />
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             {/* Perforation */}
@@ -1331,30 +1419,50 @@ function StepPayment({
                 </div>
               )}
               {quote && (
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Room base price</span>
-                    <span className="text-foreground font-medium">
-                      {formatBDT(quote.room_base)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>
-                      Adults ({quote.adult_count} × {formatBDT(quote.adult_price)})
-                    </span>
-                    <span className="text-foreground font-medium">
-                      {formatBDT(quote.adults_subtotal)}
-                    </span>
-                  </div>
-                  {quote.kids.map((kid, i) => (
-                    <div key={i} className="flex justify-between text-muted-foreground">
-                      <span>Kid (age {kid.age})</span>
-                      <span className="text-foreground font-medium">{formatBDT(kid.charge)}</span>
+                <div className="space-y-3 text-xs">
+                  {/* One itemised group per cabin. Multi-room bookings get a
+                      room heading; a single room reads as one flat group. */}
+                  {quote.rooms.map((room, i) => (
+                    <div key={i} className="space-y-1.5">
+                      {quote.rooms.length > 1 && (
+                        <div className="flex items-center justify-between text-[11px] font-semibold text-foreground">
+                          <span>
+                            {room.room_number ? `Room ${room.room_number}` : `Room ${i + 1}`}
+                          </span>
+                          <span className="text-gold-text">{formatBDT(room.total)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Room base price</span>
+                        <span className="text-foreground font-medium">
+                          {formatBDT(room.room_base)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>
+                          Adults ({room.adult_count} × {formatBDT(room.adult_price)})
+                        </span>
+                        <span className="text-foreground font-medium">
+                          {formatBDT(room.adults_subtotal)}
+                        </span>
+                      </div>
+                      {room.kids.map((kid, k) => (
+                        <div key={k} className="flex justify-between text-muted-foreground">
+                          <span>Kid (age {kid.age})</span>
+                          <span className="text-foreground font-medium">
+                            {formatBDT(kid.charge)}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   ))}
                   <div className="pt-2.5 mt-1 border-t border-dashed border-border flex justify-between items-baseline">
-                    <div className="font-medium text-foreground text-sm">Total amount</div>
-                    <div className="font-display text-xl text-gold-text">{formatBDT(quote.total)}</div>
+                    <div className="font-medium text-foreground text-sm">
+                      Total{quote.rooms.length > 1 ? ` · ${quote.rooms.length} rooms` : ""}
+                    </div>
+                    <div className="font-display text-xl text-gold-text">
+                      {formatBDT(quote.grand_total)}
+                    </div>
                   </div>
                 </div>
               )}
@@ -1410,7 +1518,7 @@ function StepPayment({
                     htmlFor={partialAmountId}
                     className="eyebrow text-muted-foreground text-[10px] block"
                   >
-                    Amount to pay now — max {quote ? formatBDT(quote.total) : "—"}
+                    Amount to pay now — max {quote ? formatBDT(quote.grand_total) : "—"}
                   </label>
                   <div className="relative">
                     <span
@@ -1511,6 +1619,12 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
   const breakdown = booking.price_breakdown;
   const hasDue = booking.due_amount !== "0.00";
 
+  // A booking may hold several cabins — summarise them for the recap/receipt.
+  const roomNumbers = booking.rooms.map((r) => r.room_number).join(", ");
+  const totalAdults = booking.rooms.reduce((n, r) => n + r.adult_count, 0);
+  const totalKids = booking.rooms.reduce((n, r) => n + r.kid_details.length, 0);
+  const roomsLabel = booking.rooms.length > 1 ? "Rooms" : "Room";
+
   // The official invoice PDF, if one has been issued (i.e. money has been
   // received). Until now the customer had no way to obtain it at all — the
   // "Download Receipt" button below only ever opened a browser print dialog on
@@ -1525,8 +1639,8 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
     `🚢 *MV Alaska Cruise — Booking Confirmed*\n\n` +
       `Ref: *${booking.booking_code}*\n` +
       `Name: ${booking.customer_name}\n` +
-      `Room: ${booking.room_number}\n` +
-      `Guests: ${booking.adult_count} adult(s), ${booking.kid_details.length} kid(s)\n` +
+      `${roomsLabel}: ${roomNumbers}\n` +
+      `Guests: ${totalAdults} adult(s), ${totalKids} kid(s)\n` +
       `Total: ${formatBDT(booking.total_amount)}\n` +
       `Due: ${formatBDT(booking.due_amount)}\n` +
       `Phone: ${booking.phone}\n\n` +
@@ -1582,11 +1696,11 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
         <div class="section">
           <div class="section-title">Voyage details</div>
           ${rows([
-            ["Room", `Room ${booking.room_number}`],
+            [roomsLabel, roomNumbers],
             ["Departure", booking.package.start_date],
             ["Return", booking.package.end_date],
-            ["Adults", String(booking.adult_count)],
-            ["Kids", String(booking.kid_details.length)],
+            ["Adults", String(totalAdults)],
+            ["Kids", String(totalKids)],
             ...(booking.special_requests
               ? ([["Special requests", booking.special_requests]] as [string, string][])
               : []),
@@ -1604,13 +1718,28 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
           <div class="section-title">Payment summary</div>
           ${
             breakdown
-              ? rows([
-                  ["Room base price", formatBDT(breakdown.room_base)],
-                  [
-                    `Adults (${breakdown.adult_count} × ${formatBDT(breakdown.adult_price)})`,
-                    formatBDT(breakdown.adults_subtotal),
-                  ],
-                ])
+              ? breakdown.rooms
+                  .map((room, i) => {
+                    const heading =
+                      breakdown.rooms.length > 1
+                        ? `<div class="row"><span><strong>Room ${room.room_number ?? i + 1}</strong></span><span>${formatBDT(room.total)}</span></div>`
+                        : "";
+                    return (
+                      heading +
+                      rows([
+                        ["Room base price", formatBDT(room.room_base)],
+                        [
+                          `Adults (${room.adult_count} × ${formatBDT(room.adult_price)})`,
+                          formatBDT(room.adults_subtotal),
+                        ],
+                        ...room.kids.map(
+                          (kid) =>
+                            [`Kid (age ${kid.age})`, formatBDT(kid.charge)] as [string, string],
+                        ),
+                      ])
+                    );
+                  })
+                  .join("")
               : ""
           }
           ${rows([
@@ -1685,7 +1814,9 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
               {
                 n: "1",
                 title: "Reservation held",
-                text: `Your room ${booking.room_number} is reserved under ref ${booking.booking_code}.`,
+                text: `Your ${booking.rooms.length > 1 ? "rooms" : "room"} ${roomNumbers} ${
+                  booking.rooms.length > 1 ? "are" : "is"
+                } reserved under ref ${booking.booking_code}.`,
                 done: true,
               },
               {
@@ -1825,11 +1956,11 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
             <div className="space-y-4">
               <div className="eyebrow text-gold-text text-[10px]">Voyage details</div>
               {[
-                { label: "Room", value: `Room ${booking.room_number}` },
+                { label: roomsLabel, value: roomNumbers },
                 { label: "Departure", value: booking.package.start_date },
                 { label: "Return", value: booking.package.end_date },
-                { label: "Adults", value: String(booking.adult_count) },
-                { label: "Kids", value: String(booking.kid_details.length) },
+                { label: "Adults", value: String(totalAdults) },
+                { label: "Kids", value: String(totalKids) },
               ].map((r) => (
                 <div
                   key={r.label}
@@ -1864,20 +1995,33 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
               Payment summary
             </div>
             <div className="p-5 space-y-2 text-sm">
-              {breakdown && (
-                <>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Room base price</span>
-                    <span>{formatBDT(breakdown.room_base)}</span>
+              {breakdown &&
+                breakdown.rooms.map((room, i) => (
+                  <div key={i} className="space-y-2">
+                    {breakdown.rooms.length > 1 && (
+                      <div className="flex justify-between text-foreground font-semibold text-[13px]">
+                        <span>Room {room.room_number ?? i + 1}</span>
+                        <span className="text-gold-text">{formatBDT(room.total)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Room base price</span>
+                      <span>{formatBDT(room.room_base)}</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>
+                        Adults ({room.adult_count} × {formatBDT(room.adult_price)})
+                      </span>
+                      <span>{formatBDT(room.adults_subtotal)}</span>
+                    </div>
+                    {room.kids.map((kid, k) => (
+                      <div key={k} className="flex justify-between text-muted-foreground">
+                        <span>Kid (age {kid.age})</span>
+                        <span>{formatBDT(kid.charge)}</span>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>
-                      Adults ({breakdown.adult_count} × {formatBDT(breakdown.adult_price)})
-                    </span>
-                    <span>{formatBDT(breakdown.adults_subtotal)}</span>
-                  </div>
-                </>
-              )}
+                ))}
               <div className="pt-3 mt-1 border-t border-border flex justify-between items-baseline">
                 <div>
                   <div className="font-semibold text-foreground">Total amount</div>
