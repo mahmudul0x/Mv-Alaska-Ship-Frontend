@@ -10,25 +10,24 @@ import {
   FileDown,
   Layers,
   Loader2,
+  Lock,
+  LockOpen,
   Phone,
   Search,
   Users,
   Wallet,
 } from "lucide-react";
 
-import {
-  DialogShell,
-  Info,
-  PageHeader,
-  StatCard,
-} from "@/components/staff/ui";
+import { DialogShell, Info, PageHeader, StatCard } from "@/components/staff/ui";
 import { GuideReportMenu } from "@/components/staff/GuideReportMenu";
 import {
+  blockPackageRoom,
   createStaffPayment,
   downloadGuideReport,
   getStaffPackageRooms,
   getStaffPackages,
   getStaffRooms,
+  unblockPackageRoom,
 } from "@/lib/api/staff";
 import { formatBDT, parseMoney } from "@/lib/money";
 import type { StaffPackage, StaffPackageRoom } from "@/lib/api/staffTypes";
@@ -39,7 +38,7 @@ export const Route = createFileRoute("/staff/rooms")({
 
 const INVENTORY = "inventory" as const;
 
-type RoomFilter = "all" | "available" | "booked" | "due";
+type RoomFilter = "all" | "available" | "booked" | "blocked" | "due";
 
 function RoomsPage() {
   const { data: packagesData, isLoading: packagesLoading } = useQuery({
@@ -60,9 +59,7 @@ function RoomsPage() {
         subtitle="Live room map — see which rooms are booked or free per package."
       >
         <label className="block min-w-64">
-          <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
-            Viewing
-          </span>
+          <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">Viewing</span>
           <select
             value={String(activeSelection)}
             onChange={(e) =>
@@ -109,33 +106,52 @@ function Loading({ label }: { label: string }) {
 
 /* ── Package room map ────────────────────────────────────────────────────── */
 
-function PackageRoomMap({
-  pkg,
-  packageId,
-}: {
-  pkg: StaffPackage | undefined;
-  packageId: number;
-}) {
+function PackageRoomMap({ pkg, packageId }: { pkg: StaffPackage | undefined; packageId: number }) {
+  const queryClient = useQueryClient();
   const { data: rooms, isLoading } = useQuery({
     queryKey: ["staff", "package-rooms", packageId],
     queryFn: () => getStaffPackageRooms(packageId),
   });
   const [inspecting, setInspecting] = useState<StaffPackageRoom | null>(null);
+  const [managing, setManaging] = useState<StaffPackageRoom | null>(null);
   const [filter, setFilter] = useState<RoomFilter>("all");
   const [search, setSearch] = useState("");
   const [exporting, setExporting] = useState(false);
+
+  // Rooms can only be held/released while the sailing is live — a cancelled or
+  // completed package is read-only (mirrors the backend guard).
+  const canManageBlocks = pkg?.status !== "cancelled" && pkg?.status !== "completed";
+
+  const blockMutation = useMutation({
+    mutationFn: ({ roomId, reason }: { roomId: number; reason: string }) =>
+      blockPackageRoom(packageId, roomId, reason),
+    onSuccess: () => {
+      toast.success("Room blocked — hidden from customers.");
+      queryClient.invalidateQueries({ queryKey: ["staff"] });
+      setManaging(null);
+    },
+    onError: (err: unknown) => toast.error(blockError(err)),
+  });
+
+  const unblockMutation = useMutation({
+    mutationFn: (roomId: number) => unblockPackageRoom(packageId, roomId),
+    onSuccess: () => {
+      toast.success("Room released — back on sale.");
+      queryClient.invalidateQueries({ queryKey: ["staff"] });
+      setManaging(null);
+    },
+    onError: () => toast.error("Could not release the room."),
+  });
 
   const stats = useMemo(() => {
     const total = rooms?.length ?? 0;
     const booked = rooms?.filter((r) => r.availability === "booked").length ?? 0;
     const available = rooms?.filter((r) => r.availability === "available").length ?? 0;
-    const unavailable = total - booked - available;
+    const blocked = rooms?.filter((r) => r.availability === "blocked").length ?? 0;
+    const unavailable = total - booked - available - blocked;
     const dueTotal =
-      rooms?.reduce(
-        (sum, r) => sum + (r.booking ? parseMoney(r.booking.due_amount) : 0),
-        0,
-      ) ?? 0;
-    return { total, booked, available, unavailable, dueTotal };
+      rooms?.reduce((sum, r) => sum + (r.booking ? parseMoney(r.booking.due_amount) : 0), 0) ?? 0;
+    return { total, booked, available, blocked, unavailable, dueTotal };
   }, [rooms]);
 
   // A room "matches" the active search + status filter. Non-matching rooms are
@@ -143,11 +159,13 @@ function PackageRoomMap({
   function matches(room: StaffPackageRoom): boolean {
     if (filter === "available" && room.availability !== "available") return false;
     if (filter === "booked" && room.availability !== "booked") return false;
+    if (filter === "blocked" && room.availability !== "blocked") return false;
     if (filter === "due" && !(room.booking && parseMoney(room.booking.due_amount) > 0))
       return false;
     if (search) {
       const q = search.toLowerCase();
-      const hay = `${room.room_number} ${room.booking?.customer_name ?? ""}`.toLowerCase();
+      const hay =
+        `${room.room_number} ${room.booking?.customer_name ?? ""} ${room.block_reason ?? ""}`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -180,9 +198,7 @@ function PackageRoomMap({
     return (
       <div className="rounded-2xl border border-dashed border-border bg-card p-16 text-center space-y-3">
         <BedDouble className="size-8 mx-auto text-muted-foreground/50" />
-        <p className="text-sm text-muted-foreground">
-          No rooms are attached to this package yet.
-        </p>
+        <p className="text-sm text-muted-foreground">No rooms are attached to this package yet.</p>
         <Link to="/staff/packages" className="inline-block text-xs text-gold hover:underline">
           Go to Packages and use “Generate rooms” →
         </Link>
@@ -202,18 +218,20 @@ function PackageRoomMap({
           label="Booked"
           value={String(stats.booked)}
           icon={DoorClosed}
-          hint={
-            stats.dueTotal > 0
-              ? `${formatBDT(String(stats.dueTotal))} due`
-              : "All dues clear"
-          }
+          hint={stats.dueTotal > 0 ? `${formatBDT(String(stats.dueTotal))} due` : "All dues clear"}
         />
         <StatCard
           label="Available"
           value={String(stats.available)}
           icon={DoorOpen}
           tone="emerald"
-          hint={stats.unavailable > 0 ? `${stats.unavailable} blocked` : undefined}
+          hint={
+            stats.blocked > 0
+              ? `${stats.blocked} blocked by admin`
+              : stats.unavailable > 0
+                ? `${stats.unavailable} unavailable`
+                : undefined
+          }
         />
         <div className="rounded-2xl border border-border bg-card p-5">
           <div className="flex items-center justify-between">
@@ -252,6 +270,7 @@ function PackageRoomMap({
               ["all", "All"],
               ["available", "Available"],
               ["booked", "Booked"],
+              ["blocked", "Blocked"],
               ["due", "Due only"],
             ] as [RoomFilter, string][]
           ).map(([key, label]) => (
@@ -292,18 +311,17 @@ function PackageRoomMap({
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-5 text-xs text-muted-foreground">
+      <div className="flex items-center gap-5 text-xs text-muted-foreground flex-wrap">
         <LegendDot className="bg-emerald-500" label="Available" />
         <LegendDot className="bg-gold" label="Booked" />
+        <LegendDot className="bg-indigo-500" label="Blocked by admin" />
         <LegendDot className="bg-muted-foreground/40" label="Unavailable" />
       </div>
 
       {/* Floor sections */}
       {floors.map(({ floor, items }) => {
         const bookedOnFloor = items.filter((r) => r.availability === "booked").length;
-        const floorPct = items.length
-          ? Math.round((bookedOnFloor / items.length) * 100)
-          : 0;
+        const floorPct = items.length ? Math.round((bookedOnFloor / items.length) * 100) : 0;
         return (
           <section
             key={floor ?? "other"}
@@ -315,10 +333,7 @@ function PackageRoomMap({
               </div>
               <div className="flex items-center gap-3 min-w-0 flex-1 justify-end">
                 <div className="h-1.5 w-28 rounded-full bg-muted overflow-hidden hidden sm:block">
-                  <div
-                    className="h-full rounded-full bg-ocean"
-                    style={{ width: `${floorPct}%` }}
-                  />
+                  <div className="h-full rounded-full bg-ocean" style={{ width: `${floorPct}%` }} />
                 </div>
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
                   {bookedOnFloor}/{items.length} booked
@@ -332,6 +347,7 @@ function PackageRoomMap({
                   room={room}
                   dimmed={!matches(room)}
                   onInspect={() => setInspecting(room)}
+                  onManage={canManageBlocks ? () => setManaging(room) : undefined}
                 />
               ))}
             </div>
@@ -342,8 +358,30 @@ function PackageRoomMap({
       {inspecting?.booking && (
         <BookingDialog room={inspecting} onClose={() => setInspecting(null)} />
       )}
+
+      {managing && (
+        <ManageRoomDialog
+          room={managing}
+          onClose={() => setManaging(null)}
+          onBlock={(reason) => blockMutation.mutate({ roomId: managing.room_id, reason })}
+          onUnblock={() => unblockMutation.mutate(managing.room_id)}
+          isBusy={blockMutation.isPending || unblockMutation.isPending}
+        />
+      )}
     </div>
   );
+}
+
+/** Turn a block-room 400 (e.g. booked room, dead package) into a readable
+ *  toast, falling back to a generic message. */
+function blockError(err: unknown): string {
+  const data = (err as { response?: { data?: Record<string, unknown> } })?.response?.data;
+  if (data) {
+    const first = data.room_id ?? data.detail ?? Object.values(data)[0];
+    if (Array.isArray(first) && first.length) return String(first[0]);
+    if (typeof first === "string") return first;
+  }
+  return "Could not block the room.";
 }
 
 function groupByFloor(rooms: StaffPackageRoom[]) {
@@ -371,23 +409,39 @@ function LegendDot({ className, label }: { className: string; label: string }) {
 function RoomCard({
   room,
   onInspect,
+  onManage,
   dimmed = false,
 }: {
   room: StaffPackageRoom;
   onInspect: () => void;
+  /** Open the block/unblock dialog — only for available/blocked rooms while
+   *  the package is live. Undefined = read-only (no click). */
+  onManage?: () => void;
   dimmed?: boolean;
 }) {
   const booked = room.availability === "booked";
+  const blocked = room.availability === "blocked";
   const unavailable = room.availability === "unavailable";
+  const available = room.availability === "available";
   const due = room.booking ? parseMoney(room.booking.due_amount) : 0;
 
   const base =
     "rounded-xl border p-3.5 text-left transition-all w-full h-full flex flex-col gap-2 hover:-translate-y-0.5";
   const look = booked
     ? "border-gold/50 bg-gold/8 hover:border-gold hover:shadow-luxe cursor-pointer"
-    : unavailable
-      ? "border-dashed border-border bg-muted/30 opacity-70"
-      : "border-emerald-500/30 bg-emerald-500/4";
+    : blocked
+      ? "border-indigo-500/40 bg-indigo-500/8 hover:border-indigo-500"
+      : unavailable
+        ? "border-dashed border-border bg-muted/30 opacity-70"
+        : "border-emerald-500/30 bg-emerald-500/4 hover:border-emerald-500/60";
+
+  const dot = booked
+    ? "bg-gold"
+    : blocked
+      ? "bg-indigo-500"
+      : unavailable
+        ? "bg-muted-foreground/40"
+        : "bg-emerald-500";
 
   const card = (
     <div className={`${base} ${look} ${dimmed ? "opacity-25 saturate-50" : ""}`}>
@@ -396,11 +450,7 @@ function RoomCard({
           <div className="font-display text-lg leading-none">{room.room_number}</div>
           <div className="text-[10px] text-muted-foreground mt-1">{room.room_type.name}</div>
         </div>
-        <span
-          className={`size-2.5 rounded-full mt-1 shrink-0 ${
-            booked ? "bg-gold" : unavailable ? "bg-muted-foreground/40" : "bg-emerald-500"
-          }`}
-        />
+        <span className={`size-2.5 rounded-full mt-1 shrink-0 ${dot}`} />
       </div>
 
       {booked && room.booking ? (
@@ -421,6 +471,15 @@ function RoomCard({
             )}
           </div>
         </div>
+      ) : blocked ? (
+        <div className="mt-auto space-y-1">
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-500">
+            <Lock className="size-3" /> Blocked by admin
+          </span>
+          {room.block_reason && (
+            <div className="text-[10px] text-muted-foreground truncate">{room.block_reason}</div>
+          )}
+        </div>
       ) : (
         <div className="mt-auto text-[10px] font-medium">
           {unavailable ? (
@@ -433,22 +492,126 @@ function RoomCard({
     </div>
   );
 
-  return booked ? (
-    <button onClick={onInspect} className="text-left">
-      {card}
-    </button>
-  ) : (
-    card
-  );
+  // Booked → inspect booking. Available/blocked → manage (block/unblock) when
+  // allowed. Unavailable and read-only cards are plain.
+  if (booked) {
+    return (
+      <button onClick={onInspect} className="text-left">
+        {card}
+      </button>
+    );
+  }
+  if (onManage && (available || blocked)) {
+    return (
+      <button onClick={onManage} className="text-left">
+        {card}
+      </button>
+    );
+  }
+  return card;
 }
 
-function BookingDialog({
+/** Block an available room (with an optional internal reason) or release a
+ *  blocked one. Booked/unavailable rooms never reach here. */
+function ManageRoomDialog({
   room,
   onClose,
+  onBlock,
+  onUnblock,
+  isBusy,
 }: {
   room: StaffPackageRoom;
   onClose: () => void;
+  onBlock: (reason: string) => void;
+  onUnblock: () => void;
+  isBusy: boolean;
 }) {
+  const blocked = room.availability === "blocked";
+  const [reason, setReason] = useState("");
+
+  return (
+    <DialogShell
+      title={`Room ${room.room_number} — ${blocked ? "release hold" : "block room"}`}
+      onClose={onClose}
+    >
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 gap-4">
+          <Info label="Room type" value={room.room_type.name} />
+          <Info
+            label="Floor"
+            value={room.floor_number === null ? "—" : String(room.floor_number)}
+          />
+        </div>
+
+        {blocked ? (
+          <div className="rounded-xl border border-indigo-500/40 bg-indigo-500/5 p-4 space-y-2">
+            <div className="eyebrow text-indigo-500 text-[10px] flex items-center gap-1.5">
+              <Lock className="size-3.5" /> Currently blocked by admin
+            </div>
+            {room.block_reason && <p className="text-sm text-foreground">{room.block_reason}</p>}
+            <p className="text-[11px] text-muted-foreground">
+              {room.blocked_by_username ? `Held by ${room.blocked_by_username}` : "Held"}
+              {room.blocked_at ? ` · ${new Date(room.blocked_at).toLocaleString()}` : ""}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Releasing puts this room back on sale — customers will be able to book it again.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Blocking hides this room from customers (it shows as taken on the booking page,
+              exactly like a booked room) without removing it from the sailing. You can release it
+              again at any time. The reason is internal — customers never see it.
+            </p>
+            <label className="block">
+              <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
+                Reason (optional)
+              </span>
+              <input
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                maxLength={200}
+                placeholder="e.g. crew cabin, maintenance, VIP hold"
+                className="w-full bg-background border border-border rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-gold"
+              />
+            </label>
+          </div>
+        )}
+
+        <div className="flex items-center justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-full border border-border text-xs text-muted-foreground hover:border-gold hover:text-gold transition-colors"
+          >
+            Cancel
+          </button>
+          {blocked ? (
+            <button
+              disabled={isBusy}
+              onClick={onUnblock}
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-full gradient-gold text-ocean text-xs font-semibold disabled:opacity-40"
+            >
+              <LockOpen className="size-3.5" />
+              {isBusy ? "Releasing…" : "Release room"}
+            </button>
+          ) : (
+            <button
+              disabled={isBusy}
+              onClick={() => onBlock(reason)}
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 disabled:opacity-40"
+            >
+              <Lock className="size-3.5" />
+              {isBusy ? "Blocking…" : "Block room"}
+            </button>
+          )}
+        </div>
+      </div>
+    </DialogShell>
+  );
+}
+
+function BookingDialog({ room, onClose }: { room: StaffPackageRoom; onClose: () => void }) {
   const booking = room.booking!;
   const kids = booking.kid_details?.length ?? 0;
   const due = parseMoney(booking.due_amount);
@@ -498,11 +661,7 @@ function BookingDialog({
         <div className="rounded-xl border border-border divide-y divide-border text-sm">
           <AmountRow label="Total" value={formatBDT(booking.total_amount)} />
           <AmountRow label="Paid" value={formatBDT(booking.paid_amount)} />
-          <AmountRow
-            label="Due"
-            value={formatBDT(booking.due_amount)}
-            highlight={due > 0}
-          />
+          <AmountRow label="Due" value={formatBDT(booking.due_amount)} highlight={due > 0} />
         </div>
 
         {/* Quick collect-due */}
@@ -546,10 +705,7 @@ function BookingDialog({
           >
             <Phone className="size-3.5" /> {booking.phone}
           </a>
-          <Link
-            to="/staff/bookings"
-            className="text-xs font-semibold text-gold hover:underline"
-          >
+          <Link to="/staff/bookings" className="text-xs font-semibold text-gold hover:underline">
             Manage in Bookings →
           </Link>
         </div>
@@ -590,9 +746,7 @@ function InventoryView() {
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(room);
     }
-    return [...map.entries()].sort(([a], [b]) =>
-      a === null ? 1 : b === null ? -1 : a - b,
-    );
+    return [...map.entries()].sort(([a], [b]) => (a === null ? 1 : b === null ? -1 : a - b));
   }, [data]);
 
   if (isLoading) return <Loading label="Loading rooms…" />;
@@ -600,11 +754,14 @@ function InventoryView() {
   return (
     <div className="space-y-6">
       <p className="text-xs text-muted-foreground">
-        Physical rooms on the ship ({data?.count ?? 0}). Select a package above to see live
-        booking status.
+        Physical rooms on the ship ({data?.count ?? 0}). Select a package above to see live booking
+        status.
       </p>
       {floors.map(([floor, items]) => (
-        <section key={floor ?? "other"} className="rounded-2xl border border-border bg-card overflow-hidden">
+        <section
+          key={floor ?? "other"}
+          className="rounded-2xl border border-border bg-card overflow-hidden"
+        >
           <div className="px-5 py-3.5 border-b border-border font-display text-base">
             {floor === null ? "Unassigned floor" : `Floor ${floor}`}
           </div>

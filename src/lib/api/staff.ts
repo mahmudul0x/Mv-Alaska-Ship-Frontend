@@ -84,6 +84,31 @@ export async function getStaffPackageRooms(id: number): Promise<StaffPackageRoom
   return data;
 }
 
+/** Admin hold: withhold one room from sale on a live sailing. A booked room is
+ *  rejected (400) — cancel the booking first. Returns the updated room. */
+export async function blockPackageRoom(
+  packageId: number,
+  roomId: number,
+  reason = "",
+): Promise<StaffPackageRoom> {
+  const { data } = await staffClient.post(`/staff/packages/${packageId}/block-room/`, {
+    room_id: roomId,
+    reason,
+  });
+  return data;
+}
+
+/** Release an admin hold, returning the room to sale. */
+export async function unblockPackageRoom(
+  packageId: number,
+  roomId: number,
+): Promise<StaffPackageRoom> {
+  const { data } = await staffClient.post(`/staff/packages/${packageId}/unblock-room/`, {
+    room_id: roomId,
+  });
+  return data;
+}
+
 /** Guide collection report PDF.
  *  scope "booked" (default) → only booked cabins (the dues sheet).
  *  scope "all" → every cabin, booked first then the available ones. */
@@ -213,9 +238,10 @@ export async function updateStaffShip(
 export async function getStaffContactMessages(
   status?: ContactMessageStatus,
 ): Promise<Paginated<StaffContactMessage>> {
-  const { data } = await staffClient.get<
-    StaffContactMessage[] | Paginated<StaffContactMessage>
-  >("/staff/contact-messages/", { params: { status } });
+  const { data } = await staffClient.get<StaffContactMessage[] | Paginated<StaffContactMessage>>(
+    "/staff/contact-messages/",
+    { params: { status } },
+  );
   // The endpoint is paginated (default paginator); tolerate a bare list too.
   return Array.isArray(data)
     ? { count: data.length, next: null, previous: null, results: data }
@@ -389,9 +415,7 @@ export async function updateStaffKidRule(id: number, payload: Partial<StaffKidRu
   return data;
 }
 
-export async function createStaffKidRule(
-  payload: Omit<StaffKidRule, "id">,
-): Promise<StaffKidRule> {
+export async function createStaffKidRule(payload: Omit<StaffKidRule, "id">): Promise<StaffKidRule> {
   const { data } = await staffClient.post("/staff/kid-pricing-rules/", payload);
   return data;
 }

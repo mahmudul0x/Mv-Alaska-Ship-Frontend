@@ -732,7 +732,6 @@ function StepPackage({ data, update, onNext }: StepProps & { onNext: () => void 
 function StepVoyage({ data, update }: StepProps) {
   const { data: selectedPackage } = usePackage(data.packageId);
 
-  const nights = selectedPackage ? Math.max(0, selectedPackage.nights - 1) : 0;
   const startDate = selectedPackage ? parseLocalDate(selectedPackage.start_date) : null;
   const endDate = selectedPackage ? parseLocalDate(selectedPackage.end_date) : null;
 
@@ -811,7 +810,7 @@ function StepVoyage({ data, update }: StepProps) {
                   {/* Journey rail */}
                   <div className="flex-1 flex flex-col items-center px-3">
                     <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ocean/70 mb-2">
-                      {selectedPackage.nights}D · {nights}N
+                      {selectedPackage.days}D · {selectedPackage.nights}N
                     </div>
                     <div className="relative w-full flex items-center">
                       <span className="size-2 rounded-full ring-1 ring-gold bg-background shrink-0" />
@@ -1338,7 +1337,7 @@ function StepPayment({
                     <span className="size-1.5 rounded-full bg-gold shrink-0" />
                   </div>
                   <div className="text-[8px] text-muted-foreground mt-1 uppercase tracking-[0.18em]">
-                    {selectedPackage.nights}D · {Math.max(0, selectedPackage.nights - 1)}N
+                    {selectedPackage.days}D · {selectedPackage.nights}N
                   </div>
                 </div>
 

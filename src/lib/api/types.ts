@@ -16,6 +16,7 @@ export interface Package {
   start_date: string; // ISO date
   end_date: string;
   nights: number;
+  days: number; // = nights + 1 unless admin-overridden; render as-is
   adult_price: Money;
   booking_cutoff_datetime: string; // ISO datetime
   is_bookable: boolean;

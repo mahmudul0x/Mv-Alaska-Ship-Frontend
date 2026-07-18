@@ -201,7 +201,7 @@ function PackagesPage() {
                   <h2 className="font-display text-3xl lg:text-4xl font-normal">{title}</h2>
                   <p className="mt-2 text-sm text-muted-foreground">{pkg.marketing_description}</p>
                   <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1.5"><Clock className="size-3.5 text-gold" /> {pkg.nights} Days · {pkg.nights - 1} Nights</span>
+                    <span className="flex items-center gap-1.5"><Clock className="size-3.5 text-gold" /> {pkg.days} Days · {pkg.nights} Nights</span>
                     <span className="flex items-start gap-1.5"><MapPin className="size-3.5 text-gold mt-0.5" /> {dateRange}</span>
                   </div>
                   <ul className="mt-5 grid sm:grid-cols-2 gap-1.5 text-sm">

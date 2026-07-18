@@ -238,7 +238,7 @@ export interface StaffGalleryImage {
   sort_order: number;
 }
 
-export type RoomAvailability = "available" | "booked" | "unavailable";
+export type RoomAvailability = "available" | "booked" | "blocked" | "unavailable";
 
 // The booking that holds one room in the package room-map. adult_count/
 // kid_details are THIS room's party; total_pax is the whole booking's.
@@ -268,6 +268,13 @@ export interface StaffPackageRoom {
   is_available: boolean;
   availability: RoomAvailability;
   booking: StaffPackageRoomBooking | null;
+  /** Admin hold: withheld from sale on a live sailing. Shown to customers as
+   *  plain "unavailable" (the reason never leaves the dashboard). */
+  is_blocked: boolean;
+  /** Internal note on why the room is held; "" when none was given. */
+  block_reason: string;
+  blocked_by_username: string | null;
+  blocked_at: string | null;
 }
 
 export interface StaffKidRule {

@@ -156,7 +156,8 @@ export function PackagePicker({ selectedPackageId, onSelectPackage }: Props) {
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <Moon className="size-3.5 text-gold" />
-                    {pkg.nights} {pkg.nights === 1 ? "day" : "days"}
+                    {pkg.days} {pkg.days === 1 ? "day" : "days"} · {pkg.nights}{" "}
+                    {pkg.nights === 1 ? "night" : "nights"}
                   </span>
                 </div>
 

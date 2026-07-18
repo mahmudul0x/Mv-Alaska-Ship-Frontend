@@ -86,7 +86,7 @@ export function UpcomingDepartures() {
                   <h3 className="mt-5 font-display text-2xl font-light leading-tight">{title}</h3>
                   <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Clock className="size-3.5 text-gold" />
-                    {pkg.nights} Days · {pkg.nights - 1} Nights · {pkg.ship.name}
+                    {pkg.days} Days · {pkg.nights} Nights · {pkg.ship.name}
                   </div>
 
                   <div className="mt-6 pt-5 border-t border-border flex items-end justify-between">
