@@ -10,7 +10,7 @@ import canal from "@/assets/canal-mangrove.jpg";
 
 // The reservations WhatsApp line — the "Send via WhatsApp" button opens a
 // pre-filled chat to this number. Digits only, international format, no "+".
-const WHATSAPP_NUMBER = "8801831694307";
+const WHATSAPP_NUMBER = "8801712823482";
 
 export const Route = createFileRoute("/contact")({
   component: Contact,
@@ -118,9 +118,9 @@ function Contact() {
 
             <div className="space-y-6">
               {[
-                { icon: Phone, label: "Phone", lines: ["+880 1831-694307", "+880 1550-699732", "+880 1712-823482"] },
+                { icon: Phone, label: "Phone", lines: ["+880 1712-823482", "+880 1831-694307", "+880 1550-699732"] },
                 { icon: Mail, label: "Email", lines: ["mvalaskacruise@gmail.com"] },
-                { icon: MessageCircle, label: "WhatsApp", lines: ["+880 1831-694307"] },
+                { icon: MessageCircle, label: "WhatsApp", lines: ["+880 1712-823482"] },
                 { icon: MapPin, label: "Dhaka Office", lines: ["13/A Planners Tower, Banglamotor, Dhaka"] },
                 { icon: MapPin, label: "Khulna Office", lines: ["71, KDA Avenue, Khulna, Bangladesh"] },
               ].map((c) => (

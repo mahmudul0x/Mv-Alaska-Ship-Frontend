@@ -49,8 +49,8 @@ function PaymentFailPage() {
         </div>
         <p className="leading-relaxed">
           Payments can fail due to bank limits or a timeout. If it keeps happening, call us at{" "}
-          <a href="tel:+8801831694307" className="font-medium text-foreground hover:text-gold">
-            +880 1831-694307
+          <a href="tel:+8801712823482" className="font-medium text-foreground hover:text-gold">
+            +880 1712-823482
           </a>{" "}
           and we'll help you complete it.
         </p>

@@ -55,10 +55,10 @@ export function BookingLoadError({
           </button>
         )}
         <a
-          href="tel:+8801831694307"
+          href="tel:+8801712823482"
           className="inline-flex items-center justify-center gap-2 px-6 py-3 min-h-11 rounded-full border border-border text-sm hover:border-gold hover:text-gold transition-colors"
         >
-          <Phone className="size-3.5" /> Call +880 1831-694307
+          <Phone className="size-3.5" /> Call +880 1712-823482
         </a>
       </div>
     </div>

@@ -13,7 +13,7 @@ export function FloatingCTA() {
         <MessageCircle className="size-6" />
       </a>
       <a
-        href="tel:+8801831694307"
+        href="tel:+8801712823482"
         className="size-14 rounded-full gradient-gold text-ocean grid place-items-center shadow-gold hover:scale-110 transition-transform"
         aria-label="Call"
       >

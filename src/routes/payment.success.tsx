@@ -70,8 +70,8 @@ function PaymentSuccessPage() {
         <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">
           No booking reference was provided. If you've just paid, check your email for your
           booking code, or call us on{" "}
-          <a href="tel:+8801831694307" className="text-gold hover:underline">
-            +880 1831-694307
+          <a href="tel:+8801712823482" className="text-gold hover:underline">
+            +880 1712-823482
           </a>
           .
         </div>

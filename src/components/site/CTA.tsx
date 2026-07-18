@@ -32,7 +32,7 @@ export function CTA() {
                 Reserve Now <ArrowUpRight className="size-4" />
               </Link>
               <a
-                href="https://wa.me/8801831694307"
+                href="https://wa.me/8801712823482"
                 className="px-8 py-4 rounded-full border border-background/40 text-background text-xs uppercase tracking-[0.2em] font-medium hover:border-gold hover:text-gold transition-colors"
               >
                 Chat on WhatsApp
