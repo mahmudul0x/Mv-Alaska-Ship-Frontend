@@ -84,8 +84,15 @@ export async function getStaffPackageRooms(id: number): Promise<StaffPackageRoom
   return data;
 }
 
-export async function downloadGuideReport(id: number): Promise<Blob> {
+/** Guide collection report PDF.
+ *  scope "booked" (default) → only booked cabins (the dues sheet).
+ *  scope "all" → every cabin, booked first then the available ones. */
+export async function downloadGuideReport(
+  id: number,
+  scope: "booked" | "all" = "booked",
+): Promise<Blob> {
   const { data } = await staffClient.get(`/staff/packages/${id}/guide-report/`, {
+    params: scope === "all" ? { scope: "all" } : undefined,
     responseType: "blob",
   });
   return data;

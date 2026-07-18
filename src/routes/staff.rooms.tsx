@@ -22,6 +22,7 @@ import {
   PageHeader,
   StatCard,
 } from "@/components/staff/ui";
+import { GuideReportMenu } from "@/components/staff/GuideReportMenu";
 import {
   createStaffPayment,
   downloadGuideReport,
@@ -154,14 +155,16 @@ function PackageRoomMap({
 
   const floors = useMemo(() => groupByFloor(rooms ?? []), [rooms]);
 
-  async function handleExport() {
+  async function handleExport(scope: "booked" | "all" = "booked") {
     setExporting(true);
     try {
-      const blob = await downloadGuideReport(packageId);
+      const blob = await downloadGuideReport(packageId, scope);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `room-manifest-${pkg?.start_date ?? packageId}.pdf`;
+      a.download = `room-manifest-${pkg?.start_date ?? packageId}${
+        scope === "all" ? "-all-rooms" : ""
+      }.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } catch {
@@ -268,18 +271,24 @@ function PackageRoomMap({
         {(filter !== "all" || search) && (
           <span className="text-xs text-muted-foreground">{matchCount} match(es)</span>
         )}
-        <button
-          onClick={handleExport}
-          disabled={exporting}
-          className="ml-auto flex items-center gap-2 px-4 py-2.5 rounded-full border border-border text-xs font-medium text-ocean hover:border-gold hover:text-gold transition-colors disabled:opacity-50"
-        >
-          {exporting ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <FileDown className="size-4" />
-          )}
-          Export manifest (PDF)
-        </button>
+        <div className="ml-auto">
+          <GuideReportMenu
+            onSelect={handleExport}
+            trigger={() => (
+              <span
+                className="flex items-center gap-2 px-4 py-2.5 rounded-full border border-border text-xs font-medium text-ocean hover:border-gold hover:text-gold transition-colors data-disabled:opacity-50"
+                data-disabled={exporting || undefined}
+              >
+                {exporting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <FileDown className="size-4" />
+                )}
+                Export manifest (PDF)
+              </span>
+            )}
+          />
+        </div>
       </div>
 
       {/* Legend */}

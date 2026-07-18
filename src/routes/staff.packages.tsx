@@ -28,6 +28,7 @@ import {
   errorText,
   staffInputClass,
 } from "@/components/staff/ui";
+import { GuideReportMenu } from "@/components/staff/GuideReportMenu";
 import {
   createStaffPackage,
   deleteStaffPackage,
@@ -115,13 +116,13 @@ function PackagesPage() {
     onError: (err) => toast.error(errorText(err)),
   });
 
-  async function handleReport(pkg: StaffPackage) {
+  async function handleReport(pkg: StaffPackage, scope: "booked" | "all" = "booked") {
     try {
-      const blob = await downloadGuideReport(pkg.id);
+      const blob = await downloadGuideReport(pkg.id, scope);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `guide-report-${pkg.start_date}.pdf`;
+      a.download = `guide-report-${pkg.start_date}${scope === "all" ? "-all-rooms" : ""}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -261,7 +262,7 @@ function PackagesPage() {
                       toggleMutation.mutate({ id: p.id, open: !p.is_booking_open })
                     }
                     onGenerateRooms={() => roomsMutation.mutate(p.id)}
-                    onReport={() => handleReport(p)}
+                    onReport={(scope) => handleReport(p, scope)}
                     onDelete={() => {
                       if (confirm("Delete this package? This cannot be undone."))
                         deleteMutation.mutate(p.id);
@@ -376,7 +377,7 @@ function PackageRow({
   onEdit: () => void;
   onToggle: () => void;
   onGenerateRooms: () => void;
-  onReport: () => void;
+  onReport: (scope: "booked" | "all") => void;
   onDelete: () => void;
 }) {
   const rooms = p.rooms_total ?? 0;
@@ -457,7 +458,19 @@ function PackageRow({
             icon={p.is_booking_open ? Ban : CheckCircle2}
           />
           <RowAction title="Generate rooms" onClick={onGenerateRooms} icon={DoorOpen} />
-          <RowAction title="Guide report (PDF)" onClick={onReport} icon={Download} />
+          <GuideReportMenu
+            onSelect={onReport}
+            trigger={(open) => (
+              <span
+                title="Guide report (PDF)"
+                className={`size-8 rounded-lg grid place-items-center transition-colors ${
+                  open ? "text-gold bg-gold/10" : "text-ocean/60 hover:text-gold hover:bg-gold/10"
+                }`}
+              >
+                <Download className="size-4" />
+              </span>
+            )}
+          />
           <RowAction title="Delete" onClick={onDelete} icon={Trash2} destructive />
         </div>
       </td>
