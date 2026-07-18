@@ -7,6 +7,8 @@ export interface Paginated<T> {
   results: T[];
 }
 
+export type GuideReportDensity = "compact" | "normal" | "large";
+
 export interface StaffShip {
   id: number;
   name: string;
@@ -17,6 +19,8 @@ export interface StaffShip {
   authority_phone_list: string[];
   /** Inbox for website contact-form messages; "" means use the system default. */
   contact_notify_email: string;
+  /** Guide report PDF text size / rows-per-page. */
+  guide_report_density: GuideReportDensity;
 }
 
 export type ContactMessageStatus = "new" | "read" | "archived";

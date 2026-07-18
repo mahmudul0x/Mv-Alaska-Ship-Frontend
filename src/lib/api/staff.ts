@@ -201,7 +201,9 @@ export async function getStaffShips(): Promise<StaffShip[]> {
 
 export async function updateStaffShip(
   id: number,
-  payload: Partial<Pick<StaffShip, "authority_phones" | "contact_notify_email">>,
+  payload: Partial<
+    Pick<StaffShip, "authority_phones" | "contact_notify_email" | "guide_report_density">
+  >,
 ): Promise<StaffShip> {
   const { data } = await staffClient.patch(`/staff/ships/${id}/`, payload);
   return data;
