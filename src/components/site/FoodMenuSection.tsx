@@ -3,11 +3,20 @@ import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { useFoodMenu } from "@/hooks/queries/useFoodMenu";
 
-const MEAL_ORDER = ["breakfast", "snacks", "lunch", "dinner"] as const;
+/** Serving order of the day. Days 1 and 2 have two snack sittings — one
+ *  before lunch, one after — so evening snacks is its own course. */
+const MEAL_ORDER = [
+  "breakfast",
+  "snacks",
+  "lunch",
+  "evening_snacks",
+  "dinner",
+] as const;
 const MEAL_LABEL: Record<(typeof MEAL_ORDER)[number], string> = {
   breakfast: "Breakfast",
   snacks: "Snacks",
   lunch: "Lunch",
+  evening_snacks: "Evening Snacks",
   dinner: "Dinner",
 };
 
@@ -76,9 +85,12 @@ export function FoodMenuSection() {
             </div>
 
             {/* Courses */}
-            <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-8">
+            {/* Only courses actually served that day get a column — Day 3
+                ends after lunch, so it renders fewer than the full five. */}
+            <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-x-8 gap-y-8">
               {MEAL_ORDER.map((mealType) => {
                 const meal = mealsByType.get(mealType);
+                if (!meal || meal.items.length === 0) return null;
                 return (
                   <div key={mealType} className="text-center">
                     <h4 className="eyebrow text-gold flex items-center justify-center gap-3">
@@ -86,20 +98,16 @@ export function FoodMenuSection() {
                       {MEAL_LABEL[mealType]}
                       <span className="h-px w-6 bg-gold/40" />
                     </h4>
-                    {meal && meal.items.length > 0 ? (
-                      <ul className="mt-4 space-y-2">
-                        {meal.items.map((item) => (
-                          <li
-                            key={item}
-                            className="font-display text-lg text-foreground/85 leading-snug"
-                          >
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="mt-4 text-sm text-muted-foreground/60">—</p>
-                    )}
+                    <ul className="mt-4 space-y-2">
+                      {meal.items.map((item) => (
+                        <li
+                          key={item}
+                          className="font-display text-lg text-foreground/85 leading-snug"
+                        >
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 );
               })}

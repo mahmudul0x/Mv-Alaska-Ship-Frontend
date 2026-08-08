@@ -106,7 +106,12 @@ export interface ShipLayout {
 }
 
 export type FoodMenuDay = "day_1" | "day_2" | "day_3";
-export type FoodMealType = "breakfast" | "snacks" | "lunch" | "dinner";
+export type FoodMealType =
+  | "breakfast"
+  | "snacks"
+  | "lunch"
+  | "evening_snacks"
+  | "dinner";
 
 export interface FoodMenuMeal {
   meal_type: FoodMealType;

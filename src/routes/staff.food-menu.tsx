@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Coffee,
+  Cookie,
   Copy,
   Eye,
   EyeOff,
@@ -60,6 +61,9 @@ type MealMeta = {
   bar: string;
 };
 
+/** Listed in serving order: Days 1 and 2 run
+ *  Breakfast → Snacks → Lunch → Evening Snacks → Dinner. Day 3 ends after
+ *  lunch, so its later cards simply stay empty. */
 const MEAL_TYPES: MealMeta[] = [
   {
     value: "breakfast",
@@ -81,6 +85,13 @@ const MEAL_TYPES: MealMeta[] = [
     icon: Soup,
     chip: "bg-emerald-500/12 text-emerald-600",
     bar: "bg-emerald-500/60",
+  },
+  {
+    value: "evening_snacks",
+    label: "Evening Snacks",
+    icon: Cookie,
+    chip: "bg-orange-500/12 text-orange-600",
+    bar: "bg-orange-500/60",
   },
   {
     value: "dinner",
@@ -519,7 +530,12 @@ function AddItemDialog({
   });
 
   return (
-    <DialogShell title={`Add item — ${day.replace("_", " ")} / ${mealType}`} onClose={onClose}>
+    <DialogShell
+      title={`Add item — ${DAYS.find((d) => d.value === day)?.label ?? day} / ${
+        MEAL_TYPES.find((m) => m.value === mealType)?.label ?? mealType
+      }`}
+      onClose={onClose}
+    >
       <div className="space-y-4">
         <StaffField label="Item name">
           <input
