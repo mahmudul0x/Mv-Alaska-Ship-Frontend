@@ -404,9 +404,17 @@ export interface StaffOverview {
   total_revenue_expected: Money;
   collection_rate: string;
   pending_payment_bookings: number;
-  /** Refunds-owed queue: money the company owes back to customers. */
+  /** Refunds-owed FLAG: bookings cancelled with money on them. Broader and
+   *  blunter than the ledger below — it also catches a booking cancelled
+   *  straight from the Django admin, where nobody decided a figure. */
   refunds_owed_count: number;
   refunds_owed_paid_total: Money;
+  /** Refund LEDGER: an exact amount promised and not yet sent. */
+  refund_liability_count: number;
+  refund_liability_total: Money;
+  /** Cancellation requests waiting on a human decision. */
+  pending_cancellation_count: number;
+  pending_cancellation_refund_total: Money;
   bookings_today: number;
   bookings_this_week: number;
   bookings_by_status: Record<BookingStatus, number>;

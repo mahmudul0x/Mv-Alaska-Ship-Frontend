@@ -6,6 +6,7 @@ import {
   Ban,
   CalendarRange,
   CheckCircle2,
+  CloudOff,
   DoorOpen,
   Download,
   Loader2,
@@ -29,6 +30,7 @@ import {
   staffInputClass,
 } from "@/components/staff/ui";
 import { GuideReportMenu } from "@/components/staff/GuideReportMenu";
+import { CancelDepartureDialog } from "@/components/staff/CancelDepartureDialog";
 import {
   createStaffPackage,
   deleteStaffPackage,
@@ -79,6 +81,7 @@ function PackagesPage() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<StaffPackage | null>(null);
   const [creating, setCreating] = useState(false);
+  const [cancellingDeparture, setCancellingDeparture] = useState<StaffPackage | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["staff", "packages", page],
@@ -154,10 +157,7 @@ function PackagesPage() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      <PageHeader
-        title="Packages"
-        subtitle={data ? `${data.count} package(s)` : "Loading…"}
-      >
+      <PageHeader title="Packages" subtitle={data ? `${data.count} package(s)` : "Loading…"}>
         <button
           onClick={() => setCreating(true)}
           className="flex items-center gap-2 px-5 py-2.5 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.15em] font-semibold shadow-luxe"
@@ -258,11 +258,10 @@ function PackagesPage() {
                     key={p.id}
                     pkg={p}
                     onEdit={() => setEditing(p)}
-                    onToggle={() =>
-                      toggleMutation.mutate({ id: p.id, open: !p.is_booking_open })
-                    }
+                    onToggle={() => toggleMutation.mutate({ id: p.id, open: !p.is_booking_open })}
                     onGenerateRooms={() => roomsMutation.mutate(p.id)}
                     onReport={(scope) => handleReport(p, scope)}
+                    onCancelDeparture={() => setCancellingDeparture(p)}
                     onDelete={() => {
                       if (confirm("Delete this package? This cannot be undone."))
                         deleteMutation.mutate(p.id);
@@ -279,16 +278,12 @@ function PackagesPage() {
                   </td>
                   <td className="px-4 py-3 text-right text-emerald-600">
                     {formatBDT(
-                      String(
-                        filtered.reduce((s, p) => s + parseMoney(p.paid_total ?? "0"), 0),
-                      ),
+                      String(filtered.reduce((s, p) => s + parseMoney(p.paid_total ?? "0"), 0)),
                     )}
                   </td>
                   <td className="px-4 py-3 text-right text-gold">
                     {formatBDT(
-                      String(
-                        filtered.reduce((s, p) => s + parseMoney(p.due_total ?? "0"), 0),
-                      ),
+                      String(filtered.reduce((s, p) => s + parseMoney(p.due_total ?? "0"), 0)),
                     )}
                   </td>
                   <td className="px-4 py-3" />
@@ -301,13 +296,21 @@ function PackagesPage() {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-end gap-2 text-sm">
-          <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}
-            className="px-4 py-2 rounded-full border border-border disabled:opacity-30">
+          <button
+            disabled={page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="px-4 py-2 rounded-full border border-border disabled:opacity-30"
+          >
             ← Prev
           </button>
-          <span className="text-muted-foreground">Page {page} of {totalPages}</span>
-          <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}
-            className="px-4 py-2 rounded-full border border-border disabled:opacity-30">
+          <span className="text-muted-foreground">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            className="px-4 py-2 rounded-full border border-border disabled:opacity-30"
+          >
             Next →
           </button>
         </div>
@@ -319,6 +322,18 @@ function PackagesPage() {
           onClose={() => {
             setCreating(false);
             setEditing(null);
+          }}
+        />
+      )}
+
+      {cancellingDeparture && (
+        <CancelDepartureDialog
+          pkg={cancellingDeparture}
+          onClose={() => setCancellingDeparture(null)}
+          onDone={() => {
+            setCancellingDeparture(null);
+            queryClient.invalidateQueries({ queryKey: ["staff", "packages"] });
+            queryClient.invalidateQueries({ queryKey: ["staff", "refund-summary"] });
           }}
         />
       )}
@@ -349,17 +364,9 @@ function FilterChip({
   );
 }
 
-function Th({
-  children,
-  className = "",
-}: {
-  children?: React.ReactNode;
-  className?: string;
-}) {
+function Th({ children, className = "" }: { children?: React.ReactNode; className?: string }) {
   return (
-    <th
-      className={`px-4 py-3 eyebrow text-[9px] text-muted-foreground font-medium ${className}`}
-    >
+    <th className={`px-4 py-3 eyebrow text-[9px] text-muted-foreground font-medium ${className}`}>
       {children}
     </th>
   );
@@ -371,6 +378,7 @@ function PackageRow({
   onToggle,
   onGenerateRooms,
   onReport,
+  onCancelDeparture,
   onDelete,
 }: {
   pkg: StaffPackage;
@@ -378,6 +386,7 @@ function PackageRow({
   onToggle: () => void;
   onGenerateRooms: () => void;
   onReport: (scope: "booked" | "all") => void;
+  onCancelDeparture: () => void;
   onDelete: () => void;
 }) {
   const rooms = p.rooms_total ?? 0;
@@ -410,10 +419,7 @@ function PackageRow({
               <CheckCircle2 className="size-3" /> Bookable
             </span>
           ) : (
-            <span
-              className="inline-flex items-center gap-1"
-              title={notBookableReason(p)}
-            >
+            <span className="inline-flex items-center gap-1" title={notBookableReason(p)}>
               <Ban className="size-3" /> {notBookableReason(p)}
             </span>
           )}
@@ -470,6 +476,15 @@ function PackageRow({
                 <Download className="size-4" />
               </span>
             )}
+          />
+          {/* Weather, a technical fault, or the passenger minimum not met.
+              Involuntary, so every booking is refunded in full — hence its own
+              action with a preview, not a status change. */}
+          <RowAction
+            title="Cancel departure (refund everyone)"
+            onClick={onCancelDeparture}
+            icon={CloudOff}
+            destructive
           />
           <RowAction title="Delete" onClick={onDelete} icon={Trash2} destructive />
         </div>
@@ -559,22 +574,47 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
   const canSubmit = form.start_date && form.end_date && form.adult_price;
 
   return (
-    <DialogShell title={pkg ? `Edit — ${pkg.marketing_title || pkg.start_date}` : "New package"} onClose={onClose}>
+    <DialogShell
+      title={pkg ? `Edit — ${pkg.marketing_title || pkg.start_date}` : "New package"}
+      onClose={onClose}
+    >
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <StaffField label="Start date">
-            <input type="date" value={form.start_date} onChange={(e) => set({ start_date: e.target.value })} className={staffInputClass} />
+            <input
+              type="date"
+              value={form.start_date}
+              onChange={(e) => set({ start_date: e.target.value })}
+              className={staffInputClass}
+            />
           </StaffField>
           <StaffField label="End date">
-            <input type="date" value={form.end_date} onChange={(e) => set({ end_date: e.target.value })} className={staffInputClass} />
+            <input
+              type="date"
+              value={form.end_date}
+              onChange={(e) => set({ end_date: e.target.value })}
+              className={staffInputClass}
+            />
           </StaffField>
           <StaffField label="Adult price (BDT)">
-            <input type="number" min={0} value={form.adult_price} onChange={(e) => set({ adult_price: e.target.value })} className={staffInputClass} />
+            <input
+              type="number"
+              min={0}
+              value={form.adult_price}
+              onChange={(e) => set({ adult_price: e.target.value })}
+              className={staffInputClass}
+            />
           </StaffField>
           <StaffField label="Status">
-            <select value={form.status} onChange={(e) => set({ status: e.target.value as PackageStatus })} className={staffInputClass}>
+            <select
+              value={form.status}
+              onChange={(e) => set({ status: e.target.value as PackageStatus })}
+              className={staffInputClass}
+            >
               {PACKAGE_STATUSES.map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s} value={s}>
+                  {s}
+                </option>
               ))}
             </select>
           </StaffField>
@@ -599,27 +639,32 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
             value={toDhakaInput(form.booking_cutoff_datetime)}
             onChange={(e) =>
               set({
-                booking_cutoff_datetime: e.target.value
-                  ? fromDhakaInput(e.target.value)
-                  : null,
+                booking_cutoff_datetime: e.target.value ? fromDhakaInput(e.target.value) : null,
               })
             }
             className={staffInputClass}
           />
           <span className="text-[10px] text-muted-foreground mt-1 block">
-            Bookings close at this time (Bangladesh clock, wherever you are). Leave blank
-            to auto-set to noon the day before departure.
+            Bookings close at this time (Bangladesh clock, wherever you are). Leave blank to
+            auto-set to noon the day before departure.
           </span>
         </StaffField>
 
         <StaffField label="Marketing title">
-          <input value={form.marketing_title} onChange={(e) => set({ marketing_title: e.target.value })}
-            placeholder="e.g. Sundarbans Explorer" className={staffInputClass} />
+          <input
+            value={form.marketing_title}
+            onChange={(e) => set({ marketing_title: e.target.value })}
+            placeholder="e.g. Sundarbans Explorer"
+            className={staffInputClass}
+          />
         </StaffField>
         <StaffField label="Marketing description">
-          <textarea rows={3} value={form.marketing_description}
+          <textarea
+            rows={3}
+            value={form.marketing_description}
             onChange={(e) => set({ marketing_description: e.target.value })}
-            className={`${staffInputClass} resize-none`} />
+            className={`${staffInputClass} resize-none`}
+          />
         </StaffField>
         <StaffField label="Highlights (one per line)">
           <textarea

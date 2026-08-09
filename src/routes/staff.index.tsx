@@ -128,6 +128,25 @@ function OverviewPage() {
           ? `${formatBDT(data.refunds_owed_paid_total)} to return — call the customers`
           : "No refunds pending",
     },
+    // The exact debt, from the refund ledger — sharper than the flag above,
+    // which only says "this cancelled booking has money on it".
+    {
+      label: "Refund liability",
+      value: formatBDT(data.refund_liability_total ?? "0.00"),
+      icon: Undo2,
+      tone: "destructive" as const,
+      hint: `${data.refund_liability_count ?? 0} payout(s) promised, not yet sent`,
+    },
+    {
+      label: "Cancellation requests",
+      value: String(data.pending_cancellation_count ?? 0),
+      icon: Receipt,
+      highlight: (data.pending_cancellation_count ?? 0) > 0,
+      hint:
+        (data.pending_cancellation_count ?? 0) > 0
+          ? `${formatBDT(data.pending_cancellation_refund_total)} would be refunded`
+          : "Nothing awaiting a decision",
+    },
   ];
 
   const chartData = data.packages
@@ -174,7 +193,11 @@ function OverviewPage() {
           ) : (
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 4 }} barGap={6}>
+                <BarChart
+                  data={chartData}
+                  margin={{ top: 8, right: 8, left: 8, bottom: 4 }}
+                  barGap={6}
+                >
                   <defs>
                     <linearGradient id="fillCollected" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="var(--mangrove)" stopOpacity={0.95} />
@@ -185,11 +208,7 @@ function OverviewPage() {
                       <stop offset="100%" stopColor="var(--gold)" stopOpacity={1} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid
-                    strokeDasharray="2 6"
-                    stroke="var(--border)"
-                    vertical={false}
-                  />
+                  <CartesianGrid strokeDasharray="2 6" stroke="var(--border)" vertical={false} />
                   <XAxis
                     dataKey="name"
                     tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
@@ -229,12 +248,7 @@ function OverviewPage() {
                     radius={[6, 6, 0, 0]}
                     maxBarSize={44}
                   />
-                  <Bar
-                    dataKey="Due"
-                    fill="url(#fillDue)"
-                    radius={[6, 6, 0, 0]}
-                    maxBarSize={44}
-                  />
+                  <Bar dataKey="Due" fill="url(#fillDue)" radius={[6, 6, 0, 0]} maxBarSize={44} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -369,8 +383,7 @@ function OverviewPage() {
                   <div className="min-w-0">
                     <div className="font-medium truncate">{p.booking_code}</div>
                     <div className="text-xs text-muted-foreground capitalize">
-                      {p.gateway}{" "}
-                      {p.paid_at ? `· ${new Date(p.paid_at).toLocaleDateString()}` : ""}
+                      {p.gateway} {p.paid_at ? `· ${new Date(p.paid_at).toLocaleDateString()}` : ""}
                     </div>
                   </div>
                   <div className="font-medium text-emerald-700 shrink-0">
@@ -420,15 +433,7 @@ function OverviewPage() {
   );
 }
 
-function ShipStat({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone?: "gold";
-}) {
+function ShipStat({ label, value, tone }: { label: string; value: string; tone?: "gold" }) {
   return (
     <div>
       <div className="text-[10px] text-muted-foreground uppercase">{label}</div>
@@ -437,15 +442,7 @@ function ShipStat({
   );
 }
 
-function PkgStat({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone?: "gold";
-}) {
+function PkgStat({ label, value, tone }: { label: string; value: string; tone?: "gold" }) {
   return (
     <div>
       <div className="text-[10px] text-muted-foreground uppercase">{label}</div>

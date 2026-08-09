@@ -1,11 +1,5 @@
 import { useState } from "react";
-import {
-  createFileRoute,
-  Link,
-  Outlet,
-  redirect,
-  useNavigate,
-} from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import {
   Anchor,
   BedDouble,
@@ -20,15 +14,11 @@ import {
   MessageSquare,
   Settings,
   SlidersHorizontal,
+  Wallet,
 } from "lucide-react";
 
 import { staffLogout } from "@/lib/api/staff";
-import {
-  clearStaffSession,
-  getRefreshToken,
-  getStaffUser,
-  isStaffLoggedIn,
-} from "@/lib/staffAuth";
+import { clearStaffSession, getRefreshToken, getStaffUser, isStaffLoggedIn } from "@/lib/staffAuth";
 
 export const Route = createFileRoute("/staff")({
   component: StaffLayout,
@@ -44,6 +34,7 @@ const NAV = [
   { to: "/staff", label: "Overview", icon: LayoutDashboard, exact: true },
   { to: "/staff/bookings", label: "Bookings", icon: ClipboardList, exact: false },
   { to: "/staff/messages", label: "Messages", icon: MessageSquare, exact: false },
+  { to: "/staff/refunds", label: "Refunds", icon: Wallet, exact: false },
   { to: "/staff/packages", label: "Packages", icon: CalendarRange, exact: false },
   { to: "/staff/rooms", label: "Rooms", icon: BedDouble, exact: false },
   { to: "/staff/cabins", label: "Cabins", icon: DoorOpen, exact: false },
@@ -58,9 +49,7 @@ const COLLAPSE_KEY = "staff.sidebar.collapsed";
 function StaffLayout() {
   const navigate = useNavigate();
   const user = getStaffUser();
-  const [collapsed, setCollapsed] = useState(
-    () => localStorage.getItem(COLLAPSE_KEY) === "1",
-  );
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSE_KEY) === "1");
 
   function toggle() {
     setCollapsed((c) => {
@@ -122,8 +111,7 @@ function StaffLayout() {
         <div className="p-2 lg:p-3 border-t border-white/10 shrink-0">
           {!collapsed && (
             <div className="px-3 pb-2 text-xs text-background/50 truncate">
-              Signed in as{" "}
-              <span className="text-background/80">{user?.username ?? "staff"}</span>
+              Signed in as <span className="text-background/80">{user?.username ?? "staff"}</span>
             </div>
           )}
           <button

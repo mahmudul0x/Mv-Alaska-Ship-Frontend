@@ -1,7 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AlertTriangle, ArrowRight, Banknote, CalendarX, ReceiptText, ShieldCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Banknote,
+  CalendarX,
+  ReceiptText,
+  ShieldCheck,
+} from "lucide-react";
 import { PageHero } from "@/components/site/PageHero";
 import { SectionHeader } from "@/components/site/SectionHeader";
+import { useCancellationPolicy } from "@/hooks/queries/useCancellation";
 import deck from "@/assets/deck-sunset.jpg";
 
 export const Route = createFileRoute("/policy")({
@@ -18,7 +26,12 @@ export const Route = createFileRoute("/policy")({
   }),
 });
 
-const CANCELLATION_TIERS: [string, string, string][] = [
+/** Fallback only — used if the policy API is unreachable, so this page never
+ *  renders an empty contract. The live table comes from the backend, which is
+ *  also what the cancellation charge is computed from: when this array and the
+ *  database disagreed, the page promised one number and the customer was
+ *  charged another. */
+const FALLBACK_TIERS: [string, string, string][] = [
   ["3 weeks before departure", "5%", "15%"],
   ["2 weeks before departure", "15%", "20%"],
   ["1 week before departure", "35%", "25%"],
@@ -28,15 +41,30 @@ const CANCELLATION_TIERS: [string, string, string][] = [
   ["Less than 24 hours before departure", "100%", "100%"],
 ];
 
+/** "35.00" → "35%", "12.50" → "12.5%" — trailing zeroes are noise in a table. */
+function percent(value: string): string {
+  return `${Number.parseFloat(value)}%`;
+}
+
+function useCancellationTiers(): [string, string, string][] {
+  const { data } = useCancellationPolicy();
+  if (!data?.tiers.length) return FALLBACK_TIERS;
+  return data.tiers.map((tier) => [
+    tier.label,
+    percent(tier.individual_percent),
+    percent(tier.group_percent),
+  ]);
+}
+
 function Policy() {
+  const tiers = useCancellationTiers();
   return (
     <>
       <PageHero
         eyebrow="Terms & Conditions"
         title={
           <>
-            Payment &{" "}
-            <em className="not-italic">cancellation</em> policy.
+            Payment & <em className="not-italic">cancellation</em> policy.
           </>
         }
         subtitle="Clear, fair terms — so the only surprises on your voyage are the ones the Sundarbans provides."
@@ -47,10 +75,7 @@ function Policy() {
       <section className="py-24 md:py-32 bg-background">
         <div className="container-luxe grid lg:grid-cols-12 gap-14">
           <div className="lg:col-span-5">
-            <SectionHeader
-              eyebrow="Payment Policy"
-              title={<>Confirming your booking.</>}
-            />
+            <SectionHeader eyebrow="Payment Policy" title={<>Confirming your booking.</>} />
           </div>
           <div className="lg:col-span-7 space-y-6">
             <div className="rounded-2xl border border-border bg-card shadow-luxe p-7 flex gap-5">
@@ -130,11 +155,8 @@ function Policy() {
                 </tr>
               </thead>
               <tbody>
-                {CANCELLATION_TIERS.map(([when, individual, group], i) => (
-                  <tr
-                    key={when}
-                    className={`border-t border-white/8 ${i % 2 ? "bg-white/3" : ""}`}
-                  >
+                {tiers.map(([when, individual, group], i) => (
+                  <tr key={when} className={`border-t border-white/8 ${i % 2 ? "bg-white/3" : ""}`}>
                     <td className="px-6 py-3.5">{when}</td>
                     <td className="px-6 py-3.5 font-semibold">{individual}</td>
                     <td className="px-6 py-3.5 font-semibold">{group}</td>
@@ -153,10 +175,7 @@ function Policy() {
       <section className="py-24 md:py-32 bg-background">
         <div className="container-luxe grid lg:grid-cols-12 gap-14">
           <div className="lg:col-span-5">
-            <SectionHeader
-              eyebrow="Please Note"
-              title={<>Weather & operations.</>}
-            />
+            <SectionHeader eyebrow="Please Note" title={<>Weather & operations.</>} />
           </div>
           <div className="lg:col-span-7 space-y-6">
             <div className="rounded-2xl border border-border bg-card shadow-luxe p-7 flex gap-5">
@@ -170,8 +189,9 @@ function Policy() {
                   <li>total number of passengers falling below 30 pax —</li>
                 </ul>
                 <p className="text-sm text-muted-foreground leading-relaxed mt-3">
-                  in these circumstances the tour may be <strong>cancelled, rescheduled or
-                  refunded</strong> upon discussion with the guest.
+                  in these circumstances the tour may be{" "}
+                  <strong>cancelled, rescheduled or refunded</strong> upon discussion with the
+                  guest.
                 </p>
               </div>
             </div>

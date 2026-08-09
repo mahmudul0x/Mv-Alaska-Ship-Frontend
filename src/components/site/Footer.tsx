@@ -12,12 +12,14 @@ export function Footer() {
             <img src={logo} alt="MV Alaska Cruise Ship" className="h-20 w-auto object-contain" />
             <div className="leading-none">
               <div className="font-display text-3xl tracking-widest font-bold">M.V. ALASKA</div>
-              <div className="eyebrow text-gold-soft text-[10px] mt-1 tracking-[0.2em]">Cruise Ship</div>
+              <div className="eyebrow text-gold-soft text-[10px] mt-1 tracking-[0.2em]">
+                Cruise Ship
+              </div>
             </div>
           </div>
           <p className="mt-6 text-sm text-background/65 leading-relaxed max-w-sm">
-            The premium brand for river cruising. Bangladesh's most luxurious
-            government-approved Sundarbans cruise — where adventure meets elegance.
+            The premium brand for river cruising. Bangladesh's most luxurious government-approved
+            Sundarbans cruise — where adventure meets elegance.
           </p>
           {/* Icon-only links carry no text, so each needs an explicit accessible
               name — without one a screen reader announces only "link". */}
@@ -56,6 +58,9 @@ export function Footer() {
               ["Dining", "/dining"],
               ["Gallery", "/gallery"],
               ["Policy", "/policy"],
+              // Where a customer who has already booked comes back to: cabins,
+              // dates, invoices and cancellation, from a booking code.
+              ["Manage booking", "/manage"],
             ].map(([l, h]) => (
               <li key={h}>
                 <Link to={h} className="hover:text-gold transition-colors">
@@ -103,9 +108,15 @@ export function Footer() {
         <div className="container-luxe py-6 flex flex-col md:flex-row gap-3 items-center justify-between text-xs text-background/50">
           <div>© {new Date().getFullYear()} MV Alaska Cruise Ship. All rights reserved.</div>
           <div className="flex gap-6">
-            <Link to="/policy" className="hover:text-gold">Privacy</Link>
-            <Link to="/policy" className="hover:text-gold">Terms</Link>
-            <Link to="/" className="hover:text-gold">Sitemap</Link>
+            <Link to="/policy" className="hover:text-gold">
+              Privacy
+            </Link>
+            <Link to="/policy" className="hover:text-gold">
+              Terms
+            </Link>
+            <Link to="/" className="hover:text-gold">
+              Sitemap
+            </Link>
           </div>
         </div>
       </div>

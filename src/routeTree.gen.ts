@@ -13,6 +13,7 @@ import { Route as WildlifeRouteImport } from './routes/wildlife'
 import { Route as StaffRouteImport } from './routes/staff'
 import { Route as PolicyRouteImport } from './routes/policy'
 import { Route as PackagesRouteImport } from './routes/packages'
+import { Route as ManageRouteImport } from './routes/manage'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as DiningRouteImport } from './routes/dining'
 import { Route as CruiseExperienceRouteImport } from './routes/cruise-experience'
@@ -26,6 +27,7 @@ import { Route as StaffLoginRouteImport } from './routes/staff_.login'
 import { Route as StaffSettingsRouteImport } from './routes/staff.settings'
 import { Route as StaffRoomsRouteImport } from './routes/staff.rooms'
 import { Route as StaffRoomSettingsRouteImport } from './routes/staff.room-settings'
+import { Route as StaffRefundsRouteImport } from './routes/staff.refunds'
 import { Route as StaffPackagesRouteImport } from './routes/staff.packages'
 import { Route as StaffMessagesRouteImport } from './routes/staff.messages'
 import { Route as StaffGalleryRouteImport } from './routes/staff.gallery'
@@ -56,6 +58,11 @@ const PolicyRoute = PolicyRouteImport.update({
 const PackagesRoute = PackagesRouteImport.update({
   id: '/packages',
   path: '/packages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManageRoute = ManageRouteImport.update({
+  id: '/manage',
+  path: '/manage',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GalleryRoute = GalleryRouteImport.update({
@@ -123,6 +130,11 @@ const StaffRoomSettingsRoute = StaffRoomSettingsRouteImport.update({
   path: '/room-settings',
   getParentRoute: () => StaffRoute,
 } as any)
+const StaffRefundsRoute = StaffRefundsRouteImport.update({
+  id: '/refunds',
+  path: '/refunds',
+  getParentRoute: () => StaffRoute,
+} as any)
 const StaffPackagesRoute = StaffPackagesRouteImport.update({
   id: '/packages',
   path: '/packages',
@@ -188,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/cruise-experience': typeof CruiseExperienceRoute
   '/dining': typeof DiningRoute
   '/gallery': typeof GalleryRoute
+  '/manage': typeof ManageRoute
   '/packages': typeof PackagesRoute
   '/policy': typeof PolicyRoute
   '/staff': typeof StaffRouteWithChildren
@@ -202,6 +215,7 @@ export interface FileRoutesByFullPath {
   '/staff/gallery': typeof StaffGalleryRoute
   '/staff/messages': typeof StaffMessagesRoute
   '/staff/packages': typeof StaffPackagesRoute
+  '/staff/refunds': typeof StaffRefundsRoute
   '/staff/room-settings': typeof StaffRoomSettingsRoute
   '/staff/rooms': typeof StaffRoomsRoute
   '/staff/settings': typeof StaffSettingsRoute
@@ -218,6 +232,7 @@ export interface FileRoutesByTo {
   '/cruise-experience': typeof CruiseExperienceRoute
   '/dining': typeof DiningRoute
   '/gallery': typeof GalleryRoute
+  '/manage': typeof ManageRoute
   '/packages': typeof PackagesRoute
   '/policy': typeof PolicyRoute
   '/wildlife': typeof WildlifeRoute
@@ -231,6 +246,7 @@ export interface FileRoutesByTo {
   '/staff/gallery': typeof StaffGalleryRoute
   '/staff/messages': typeof StaffMessagesRoute
   '/staff/packages': typeof StaffPackagesRoute
+  '/staff/refunds': typeof StaffRefundsRoute
   '/staff/room-settings': typeof StaffRoomSettingsRoute
   '/staff/rooms': typeof StaffRoomsRoute
   '/staff/settings': typeof StaffSettingsRoute
@@ -248,6 +264,7 @@ export interface FileRoutesById {
   '/cruise-experience': typeof CruiseExperienceRoute
   '/dining': typeof DiningRoute
   '/gallery': typeof GalleryRoute
+  '/manage': typeof ManageRoute
   '/packages': typeof PackagesRoute
   '/policy': typeof PolicyRoute
   '/staff': typeof StaffRouteWithChildren
@@ -262,6 +279,7 @@ export interface FileRoutesById {
   '/staff/gallery': typeof StaffGalleryRoute
   '/staff/messages': typeof StaffMessagesRoute
   '/staff/packages': typeof StaffPackagesRoute
+  '/staff/refunds': typeof StaffRefundsRoute
   '/staff/room-settings': typeof StaffRoomSettingsRoute
   '/staff/rooms': typeof StaffRoomsRoute
   '/staff/settings': typeof StaffSettingsRoute
@@ -280,6 +298,7 @@ export interface FileRouteTypes {
     | '/cruise-experience'
     | '/dining'
     | '/gallery'
+    | '/manage'
     | '/packages'
     | '/policy'
     | '/staff'
@@ -294,6 +313,7 @@ export interface FileRouteTypes {
     | '/staff/gallery'
     | '/staff/messages'
     | '/staff/packages'
+    | '/staff/refunds'
     | '/staff/room-settings'
     | '/staff/rooms'
     | '/staff/settings'
@@ -310,6 +330,7 @@ export interface FileRouteTypes {
     | '/cruise-experience'
     | '/dining'
     | '/gallery'
+    | '/manage'
     | '/packages'
     | '/policy'
     | '/wildlife'
@@ -323,6 +344,7 @@ export interface FileRouteTypes {
     | '/staff/gallery'
     | '/staff/messages'
     | '/staff/packages'
+    | '/staff/refunds'
     | '/staff/room-settings'
     | '/staff/rooms'
     | '/staff/settings'
@@ -339,6 +361,7 @@ export interface FileRouteTypes {
     | '/cruise-experience'
     | '/dining'
     | '/gallery'
+    | '/manage'
     | '/packages'
     | '/policy'
     | '/staff'
@@ -353,6 +376,7 @@ export interface FileRouteTypes {
     | '/staff/gallery'
     | '/staff/messages'
     | '/staff/packages'
+    | '/staff/refunds'
     | '/staff/room-settings'
     | '/staff/rooms'
     | '/staff/settings'
@@ -370,6 +394,7 @@ export interface RootRouteChildren {
   CruiseExperienceRoute: typeof CruiseExperienceRoute
   DiningRoute: typeof DiningRoute
   GalleryRoute: typeof GalleryRoute
+  ManageRoute: typeof ManageRoute
   PackagesRoute: typeof PackagesRoute
   PolicyRoute: typeof PolicyRoute
   StaffRoute: typeof StaffRouteWithChildren
@@ -410,6 +435,13 @@ declare module '@tanstack/react-router' {
       path: '/packages'
       fullPath: '/packages'
       preLoaderRoute: typeof PackagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manage': {
+      id: '/manage'
+      path: '/manage'
+      fullPath: '/manage'
+      preLoaderRoute: typeof ManageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gallery': {
@@ -503,6 +535,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffRoomSettingsRouteImport
       parentRoute: typeof StaffRoute
     }
+    '/staff/refunds': {
+      id: '/staff/refunds'
+      path: '/refunds'
+      fullPath: '/staff/refunds'
+      preLoaderRoute: typeof StaffRefundsRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/staff/packages': {
       id: '/staff/packages'
       path: '/packages'
@@ -590,6 +629,7 @@ interface StaffRouteChildren {
   StaffGalleryRoute: typeof StaffGalleryRoute
   StaffMessagesRoute: typeof StaffMessagesRoute
   StaffPackagesRoute: typeof StaffPackagesRoute
+  StaffRefundsRoute: typeof StaffRefundsRoute
   StaffRoomSettingsRoute: typeof StaffRoomSettingsRoute
   StaffRoomsRoute: typeof StaffRoomsRoute
   StaffSettingsRoute: typeof StaffSettingsRoute
@@ -603,6 +643,7 @@ const StaffRouteChildren: StaffRouteChildren = {
   StaffGalleryRoute: StaffGalleryRoute,
   StaffMessagesRoute: StaffMessagesRoute,
   StaffPackagesRoute: StaffPackagesRoute,
+  StaffRefundsRoute: StaffRefundsRoute,
   StaffRoomSettingsRoute: StaffRoomSettingsRoute,
   StaffRoomsRoute: StaffRoomsRoute,
   StaffSettingsRoute: StaffSettingsRoute,
@@ -620,6 +661,7 @@ const rootRouteChildren: RootRouteChildren = {
   CruiseExperienceRoute: CruiseExperienceRoute,
   DiningRoute: DiningRoute,
   GalleryRoute: GalleryRoute,
+  ManageRoute: ManageRoute,
   PackagesRoute: PackagesRoute,
   PolicyRoute: PolicyRoute,
   StaffRoute: StaffRouteWithChildren,

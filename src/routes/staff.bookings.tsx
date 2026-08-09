@@ -21,11 +21,14 @@ import {
   DialogShell,
   Info,
   PageHeader,
+  StaffField,
   StatCard,
   StatusBadge,
   STATUS_LABEL,
   errorText,
+  staffInputClass,
 } from "@/components/staff/ui";
+import { getStaffCancelQuote, staffCancelBooking } from "@/lib/api/staffRefunds";
 
 import {
   createStaffBooking,
@@ -210,9 +213,7 @@ function BookingsPage() {
 
   // "Due only" refines this page client-side; sort is applied on top.
   const rows = useMemo(() => {
-    const list = (data?.results ?? []).filter(
-      (b) => !dueOnly || Number(b.due_amount) > 0,
-    );
+    const list = (data?.results ?? []).filter((b) => !dueOnly || Number(b.due_amount) > 0);
     const dir = sortDir === "asc" ? 1 : -1;
     return [...list].sort((a, b) => {
       let cmp = 0;
@@ -227,13 +228,7 @@ function BookingsPage() {
     });
   }, [data?.results, dueOnly, sortKey, sortDir]);
 
-  const filtersActive = !!(
-    packageFilter ||
-    statusFilter ||
-    search ||
-    dueOnly ||
-    refundsOnly
-  );
+  const filtersActive = !!(packageFilter || statusFilter || search || dueOnly || refundsOnly);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -272,10 +267,7 @@ function BookingsPage() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      <PageHeader
-        title="Bookings"
-        subtitle={data ? `${data.count} booking(s)` : "Loading…"}
-      >
+      <PageHeader title="Bookings" subtitle={data ? `${data.count} booking(s)` : "Loading…"}>
         <button
           onClick={exportCsv}
           className="flex items-center gap-2 px-4 py-2.5 rounded-full border border-border text-xs font-medium text-ocean hover:border-gold hover:text-gold transition-colors"
@@ -349,9 +341,7 @@ function BookingsPage() {
             }`}
           >
             {STATUS_LABEL[s]}
-            <span className="ml-1.5 text-[10px] opacity-70">
-              {summary?.by_status[s] ?? 0}
-            </span>
+            <span className="ml-1.5 text-[10px] opacity-70">{summary?.by_status[s] ?? 0}</span>
           </button>
         ))}
         {/* Refunds-owed queue — money the company owes back; keep it loud. */}
@@ -369,9 +359,7 @@ function BookingsPage() {
           }`}
         >
           Refunds owed
-          <span className="ml-1.5 text-[10px] opacity-80">
-            {summary?.refunds_owed_count ?? 0}
-          </span>
+          <span className="ml-1.5 text-[10px] opacity-80">{summary?.refunds_owed_count ?? 0}</span>
         </button>
       </div>
 
@@ -594,9 +582,7 @@ function Th({
   const isActive = sortKey && active === sortKey;
   if (!sortKey || !onSort) {
     return (
-      <th className="px-4 py-3 eyebrow text-[9px] text-muted-foreground font-medium">
-        {children}
-      </th>
+      <th className="px-4 py-3 eyebrow text-[9px] text-muted-foreground font-medium">{children}</th>
     );
   }
   return (
@@ -707,10 +693,7 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
               <Info label="Email" value={booking.email} />
               <CopyButton value={booking.email} label="Email" />
             </div>
-            <Info
-              label={booking.rooms.length > 1 ? "Rooms" : "Room"}
-              value={booking.room_number}
-            />
+            <Info label={booking.rooms.length > 1 ? "Rooms" : "Room"} value={booking.room_number} />
             <Info label="Package" value={booking.package_title} />
             {/* Per-room pax: a family taking several cabins has a party per room. */}
             {booking.rooms.map((r) => (
@@ -737,9 +720,7 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
               <span>
                 {parseMoney(booking.total_amount) > 0
                   ? Math.round(
-                      (parseMoney(booking.paid_amount) /
-                        parseMoney(booking.total_amount)) *
-                        100,
+                      (parseMoney(booking.paid_amount) / parseMoney(booking.total_amount)) * 100,
                     )
                   : 0}
                 %
@@ -755,8 +736,7 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
                     parseMoney(booking.total_amount) > 0
                       ? Math.min(
                           100,
-                          (parseMoney(booking.paid_amount) /
-                            parseMoney(booking.total_amount)) *
+                          (parseMoney(booking.paid_amount) / parseMoney(booking.total_amount)) *
                             100,
                         )
                       : 0
@@ -783,23 +763,17 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
                       className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-xs border-b border-border/50 pb-2 last:border-0 last:pb-0"
                     >
                       <div className="min-w-0">
-                        <span className="font-medium">
-                          {guest.full_name || "(name not given)"}
-                        </span>
+                        <span className="font-medium">{guest.full_name || "(name not given)"}</span>
                         <span className="text-muted-foreground">
                           {" "}
                           · Room {room.room_number} ·{" "}
                           {guest.guest_type === "kid" ? "child" : "adult"} fare
                           {guest.nationality ? ` · ${countryName(guest.nationality)}` : ""}
-                          {guest.passport_expiry
-                            ? ` · expires ${guest.passport_expiry}`
-                            : ""}
+                          {guest.passport_expiry ? ` · expires ${guest.passport_expiry}` : ""}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="font-mono tracking-wide">
-                          {guest.passport_number}
-                        </span>
+                        <span className="font-mono tracking-wide">{guest.passport_number}</span>
                         <CopyButton value={guest.passport_number} label="Passport" />
                       </div>
                     </div>
@@ -821,21 +795,19 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
                 </p>
               )}
               <p className="text-xs text-muted-foreground">
-                Refunds are settled manually (phone/bKash). Once the customer has
-                been paid back, record how and clear the flag.
+                Refunds are settled manually (phone/bKash). Once the customer has been paid back,
+                record how and clear the flag.
               </p>
               <button
                 disabled={markRefundedMutation.isPending}
                 onClick={() => {
                   const note = prompt(
-                    "How was the refund settled? (e.g. \"Refunded 5000 BDT via bKash, 11 Jul\")",
+                    'How was the refund settled? (e.g. "Refunded 5000 BDT via bKash, 11 Jul")',
                   );
                   if (note === null) return;
                   const stamp = `Resolved: ${note || "refunded"}`;
                   markRefundedMutation.mutate(
-                    booking.refund_note
-                      ? `${booking.refund_note}\n${stamp}`
-                      : stamp,
+                    booking.refund_note ? `${booking.refund_note}\n${stamp}` : stamp,
                   );
                 }}
                 className="px-4 py-2 rounded-full border border-destructive/50 text-destructive text-xs font-semibold hover:bg-destructive/10 transition-colors disabled:opacity-40"
@@ -843,6 +815,14 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
                 {markRefundedMutation.isPending ? "Saving…" : "Mark refunded"}
               </button>
             </div>
+          )}
+
+          {/* Cancelling properly: applies the charge schedule and raises a
+              tracked payout. The raw "cancelled" status button below still
+              exists for corrections, but it decides no money — so this is the
+              one to use when a customer phones in. */}
+          {!["cancelled", "completed"].includes(booking.status) && (
+            <StaffCancelPanel booking={booking} onDone={onClose} />
           )}
 
           {/* Status change */}
@@ -854,7 +834,11 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
                   key={s}
                   disabled={booking.status === s || statusMutation.isPending}
                   onClick={() => {
-                    if (s === "cancelled" && !confirm("Cancel this booking? The room becomes available again.")) return;
+                    if (
+                      s === "cancelled" &&
+                      !confirm("Cancel this booking? The room becomes available again.")
+                    )
+                      return;
                     statusMutation.mutate(s);
                   }}
                   className={`px-3 py-1.5 rounded-full text-xs capitalize border transition-colors ${
@@ -1092,19 +1076,31 @@ function CreateBookingDialog({ onClose }: { onClose: () => void }) {
 
         <div className="grid grid-cols-2 gap-3">
           <label className="block col-span-2">
-            <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">Customer name</span>
-            <input value={name} onChange={(e) => setName(e.target.value)}
-              className="w-full bg-background border border-border rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-gold" />
+            <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
+              Customer name
+            </span>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full bg-background border border-border rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-gold"
+            />
           </label>
           <label className="block">
             <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">Phone</span>
-            <input value={phone} onChange={(e) => setPhone(e.target.value)}
-              className="w-full bg-background border border-border rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-gold" />
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="w-full bg-background border border-border rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-gold"
+            />
           </label>
           <label className="block">
             <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">Email</span>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-background border border-border rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-gold" />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-background border border-border rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-gold"
+            />
           </label>
         </div>
 
@@ -1121,3 +1117,184 @@ function CreateBookingDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
+/** Cancel on the customer's behalf — the phone call.
+ *
+ *  Deliberately shows the quote BEFORE anything happens, so whoever is on the
+ *  phone can read the customer the real figure. There is no amount field: the
+ *  charge comes from the schedule, and the only override is an explicit waiver
+ *  that has to be justified in writing.
+ */
+function StaffCancelPanel({ booking, onDone }: { booking: { id: number }; onDone: () => void }) {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [reasonCode, setReasonCode] = useState("plans_changed");
+  const [note, setNote] = useState("");
+  const [waive, setWaive] = useState(false);
+  const [method, setMethod] = useState("");
+  const [accountName, setAccountName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+
+  const quote = useQuery({
+    queryKey: ["staff", "cancel-quote", booking.id],
+    queryFn: () => getStaffCancelQuote(booking.id),
+    enabled: open,
+  });
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      staffCancelBooking(booking.id, {
+        reason_code: reasonCode,
+        reason_note: note,
+        waive_charge: waive,
+        refund_method: method,
+        refund_account_name: accountName,
+        refund_account_number: accountNumber,
+      }),
+    onSuccess: () => {
+      toast.success("Booking cancelled and refund raised.");
+      queryClient.invalidateQueries({ queryKey: ["staff"] });
+      onDone();
+    },
+    onError: (err) => toast.error(errorText(err)),
+  });
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="w-full min-h-11 rounded-full border border-border text-sm text-muted-foreground hover:border-destructive hover:text-destructive transition-colors"
+      >
+        Cancel booking (apply cancellation policy)
+      </button>
+    );
+  }
+
+  const q = quote.data;
+  const refund = waive ? q?.paid_amount : q?.refund_amount;
+
+  return (
+    <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 space-y-4">
+      <div className="eyebrow text-destructive text-[10px]">Cancel this booking</div>
+
+      {quote.isLoading && (
+        <div className="text-sm text-muted-foreground flex items-center gap-2">
+          <Loader2 className="size-4 animate-spin" /> Working out the charge…
+        </div>
+      )}
+
+      {q && !q.allowed && (
+        <p className="text-sm text-muted-foreground">
+          This booking cannot be cancelled ({q.block_reason}).
+        </p>
+      )}
+
+      {q?.allowed && (
+        <>
+          <div className="text-xs space-y-1">
+            <div className="text-muted-foreground">{q.tier_label}</div>
+            <div>
+              Paid {formatBDT(q.paid_amount)} · charge{" "}
+              {waive ? formatBDT("0.00") : formatBDT(q.cancellation_charge)} ·{" "}
+              <strong>refund {formatBDT(refund ?? "0.00")}</strong>
+            </div>
+            {q.shortfall_amount !== "0.00" && !waive && (
+              <div className="text-muted-foreground">
+                {formatBDT(q.shortfall_amount)} of the charge is not covered by the deposit —
+                recorded only, never billed.
+              </div>
+            )}
+            {q.suggests_group && q.booking_type === "individual" && (
+              <div className="text-muted-foreground">
+                This party is large enough to be a group booking — if it is one, change its type
+                first: the group column charges differently.
+              </div>
+            )}
+          </div>
+
+          <StaffField label="Reason">
+            <select
+              value={reasonCode}
+              onChange={(e) => setReasonCode(e.target.value)}
+              className={staffInputClass}
+            >
+              <option value="plans_changed">Plans changed</option>
+              <option value="medical">Illness / emergency</option>
+              <option value="date_change">Wants a different date</option>
+              <option value="booked_by_mistake">Booked by mistake</option>
+              <option value="other">Other</option>
+            </select>
+          </StaffField>
+
+          <StaffField label="Note">
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={2}
+              className={staffInputClass}
+            />
+          </StaffField>
+
+          {q.paid_amount !== "0.00" && (
+            <div className="grid sm:grid-cols-3 gap-2">
+              <select
+                value={method}
+                onChange={(e) => setMethod(e.target.value)}
+                className={staffInputClass}
+              >
+                <option value="">Payout method…</option>
+                <option value="bkash">bKash</option>
+                <option value="nagad">Nagad</option>
+                <option value="bank_transfer">Bank transfer</option>
+                <option value="cash">Cash</option>
+              </select>
+              <input
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
+                placeholder="Account name"
+                className={staffInputClass}
+              />
+              <input
+                value={accountNumber}
+                onChange={(e) => setAccountNumber(e.target.value)}
+                placeholder="Account / wallet number"
+                className={staffInputClass}
+              />
+            </div>
+          )}
+
+          <label className="flex items-start gap-2.5 text-xs">
+            <input
+              type="checkbox"
+              checked={waive}
+              onChange={(e) => setWaive(e.target.checked)}
+              className="mt-0.5 size-4 accent-gold"
+            />
+            <span>
+              Waive the cancellation charge — refund everything.
+              <span className="text-muted-foreground">
+                {" "}
+                Money given away, so the note becomes mandatory and is recorded against your name.
+              </span>
+            </span>
+          </label>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => setOpen(false)}
+              className="flex-1 min-h-11 rounded-full border border-border text-sm"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => mutation.mutate()}
+              disabled={mutation.isPending || (waive && !note.trim())}
+              className="flex-1 min-h-11 rounded-full bg-destructive text-white text-xs uppercase tracking-[0.14em] font-semibold disabled:opacity-40"
+            >
+              {mutation.isPending ? "Cancelling…" : "Cancel & refund"}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

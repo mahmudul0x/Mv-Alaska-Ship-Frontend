@@ -1,9 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowRight, CreditCard, Loader2, Lock, SearchX, Shield, Ticket } from "lucide-react";
+import {
+  ArrowRight,
+  CreditCard,
+  Loader2,
+  Lock,
+  SearchX,
+  Shield,
+  Ticket,
+  XCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { BookingStatusCard } from "@/components/booking/BookingStatusCard";
+import { CancelBookingDialog } from "@/components/booking/CancelBookingDialog";
 import { ResultShell } from "@/components/booking/ResultShell";
 import { useBooking } from "@/hooks/queries/useBooking";
 import { useInitiatePayment } from "@/hooks/queries/useInitiatePayment";
@@ -23,6 +33,7 @@ function BookingConfirmationPage() {
   const initiatePayment = useInitiatePayment(code);
   const [paymentType, setPaymentType] = useState<PaymentType>("full");
   const [partialAmount, setPartialAmount] = useState("");
+  const [cancelOpen, setCancelOpen] = useState(false);
 
   async function payNow() {
     try {
@@ -200,9 +211,8 @@ function BookingConfirmationPage() {
                 )}
                 {minPayment > 1 && (
                   <div className="text-[11px] text-muted-foreground">
-                    Booking confirmation requires a{" "}
-                    <strong>{formatBDT(String(minPayment))}</strong> minimum first
-                    payment; the remaining balance must be settled before the journey.
+                    Booking confirmation requires a <strong>{formatBDT(String(minPayment))}</strong>{" "}
+                    minimum first payment; the remaining balance must be settled before the journey.
                   </div>
                 )}
                 {partialAmount && partialInvalid && (
@@ -238,6 +248,27 @@ function BookingConfirmationPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Cancellation. Quiet by design — it sits below the payment panel and is
+          hidden once the booking is closed. The dialog quotes the exact charge
+          and refund before anything is committed. */}
+      {booking && !["cancelled", "completed"].includes(booking.status) && (
+        <button
+          onClick={() => setCancelOpen(true)}
+          className="w-full flex items-center justify-center gap-2 min-h-11 rounded-full border border-border text-sm text-muted-foreground hover:border-destructive hover:text-destructive transition-colors"
+        >
+          <XCircle className="size-4" />
+          Cancel this booking
+        </button>
+      )}
+
+      {booking && (
+        <CancelBookingDialog
+          booking={booking}
+          open={cancelOpen}
+          onClose={() => setCancelOpen(false)}
+        />
       )}
 
       <div className="flex justify-center">

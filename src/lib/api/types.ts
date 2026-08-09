@@ -110,12 +110,7 @@ export interface ShipLayout {
 }
 
 export type FoodMenuDay = "day_1" | "day_2" | "day_3";
-export type FoodMealType =
-  | "breakfast"
-  | "snacks"
-  | "lunch"
-  | "evening_snacks"
-  | "dinner";
+export type FoodMealType = "breakfast" | "snacks" | "lunch" | "evening_snacks" | "dinner";
 
 export interface FoodMenuMeal {
   meal_type: FoodMealType;
@@ -216,12 +211,7 @@ export interface BookingCreateRequest extends BookingQuoteRequest {
   special_requests?: string;
 }
 
-export type BookingStatus =
-  | "pending"
-  | "partially_paid"
-  | "fully_paid"
-  | "cancelled"
-  | "completed";
+export type BookingStatus = "pending" | "partially_paid" | "fully_paid" | "cancelled" | "completed";
 
 export interface BookingPackageMini {
   id: number;
@@ -328,6 +318,115 @@ export interface GalleryImage {
   image: string;
   caption: string;
   sort_order: number;
+}
+
+// ── Cancellations & refunds ───────────────────────────────────────────────
+
+/** One row of the published cancellation-charge schedule. Served from
+ *  /cancellation-policy/ so the policy page prints the same table the backend
+ *  charges from — it used to be a hardcoded array that could silently drift. */
+export interface CancellationTier {
+  days_before_start: number;
+  label: string;
+  /** Percent as a decimal string, e.g. "35.00". */
+  individual_percent: string;
+  group_percent: string;
+}
+
+export interface CancellationPolicy {
+  ship: string;
+  /** Working days quoted to the customer for a payout. */
+  refund_sla_days: number;
+  tiers: CancellationTier[];
+}
+
+/** Why a booking cannot be cancelled online right now. Stable codes — the copy
+ *  lives in the frontend so wording changes need no API change. */
+export type CancellationBlockReason =
+  | "already_cancelled"
+  | "completed"
+  | "in_progress"
+  | "sailed"
+  | "pending_request"
+  | "no_policy";
+
+/** What cancelling would cost. Every figure is computed server-side; the client
+ *  never sends an amount and never does this arithmetic. */
+export interface CancellationQuote {
+  allowed: boolean;
+  block_reason: CancellationBlockReason | null;
+  window: "upcoming" | "in_progress" | "sailed";
+  days_until_start: number;
+  booking_type: "individual" | "group";
+  tier_label: string;
+  charge_percent: string;
+  total_amount: Money;
+  paid_amount: Money;
+  cancellation_charge: Money;
+  refund_amount: Money;
+  forfeited_amount: Money;
+  /** False when nothing has been paid — the booking is cancelled on the spot
+   *  instead of queuing for a human decision. */
+  requires_approval: boolean;
+}
+
+export interface CancellationPreview extends CancellationQuote {
+  /** Signed proof of the figures shown. Submitted back so the server can
+   *  detect that they moved (a tier boundary crossed, a stale tab) and refuse
+   *  rather than charge something the customer never saw. Null when blocked. */
+  quote_token: string | null;
+  refund_sla_days: number;
+  pending_request: CancellationRequestPublic | null;
+}
+
+export type CancellationReasonCode =
+  | "plans_changed"
+  | "medical"
+  | "date_change"
+  | "booked_by_mistake"
+  | "other";
+
+export type RefundMethod = "bkash" | "nagad" | "bank_transfer";
+
+export interface CancellationRequestPayload {
+  /** Last 4 digits of the phone on the booking — the second factor. */
+  phone_confirm: string;
+  reason_code: CancellationReasonCode;
+  reason_note?: string;
+  /** Omitted when nothing has been paid — there is no payout to arrange, and
+   *  the server ignores these fields in that case. */
+  refund_method?: RefundMethod;
+  refund_account_name?: string;
+  refund_account_number?: string;
+  bank_name?: string;
+  branch_name?: string;
+  acknowledged_charge: boolean;
+  quote_token: string;
+}
+
+export interface CancellationRequestPublic {
+  id: number;
+  status: "pending" | "approved" | "rejected" | "withdrawn";
+  status_label: string;
+  reason_code: CancellationReasonCode;
+  reason_label: string;
+  tier_label: string;
+  total_amount: Money;
+  paid_amount: Money;
+  cancellation_charge: Money;
+  refund_amount: Money;
+  refund_method: RefundMethod | "";
+  refund_method_label: string;
+  /** Masked ("•••••••5678") — enough to confirm the right wallet was entered. */
+  refund_account_masked: string;
+  requested_at: string;
+  decided_at: string | null;
+  decision_note: string;
+}
+
+export interface BookingLookupRequest {
+  booking_code: string;
+  phone_last4: string;
 }
 
 export interface ApiFieldErrors {
