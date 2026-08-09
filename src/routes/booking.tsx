@@ -1082,6 +1082,18 @@ function RoomGuestsCard({
             {maxKids ? ` + ${maxKids} kid${maxKids > 1 ? "s" : ""}` : ""}
           </div>
         </div>
+        {/* Live headcount for THIS cabin. The foreign-national counters below
+            show a second set of numbers for the same people; an always-visible
+            "who is actually on board" figure is what stops that reading as
+            extra guests. */}
+        <div className="ml-auto text-right shrink-0">
+          <div className="text-sm font-semibold leading-tight tabular-nums">
+            {adultCount + kidAges.length}
+          </div>
+          <div className="text-[10px] text-muted-foreground">
+            {adultCount + kidAges.length === 1 ? "guest" : "guests"}
+          </div>
+        </div>
       </div>
 
       {/* Adults */}

@@ -119,22 +119,50 @@ export function ForeignGuestsSection({
             className="overflow-hidden"
           >
             <div className="mt-4 rounded-xl border border-border/70 bg-ocean/3 px-4 py-3 space-y-3">
+              {/* The counters below look like they ADD people — two numbers on
+                  one screen ("1 adult" and "1 foreign adult") read as two
+                  guests. They are the same guests, so say so before the
+                  customer can misread it. */}
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                These are the <strong className="text-foreground">same guests</strong>{" "}
+                you already added above — marking someone as a foreign national
+                does not add another person to the cabin.
+              </p>
               <FareCounter
-                label="Foreign adults"
-                hint={`of ${adultCount} adult${adultCount > 1 ? "s" : ""} in this cabin`}
+                label="Adults holding a foreign passport"
+                hint={`${foreignAdults.length} of the ${adultCount} adult${
+                  adultCount > 1 ? "s" : ""
+                } in this cabin`}
                 value={foreignAdults.length}
                 max={adultCount}
                 onChange={(n) => setCount("adult", n)}
               />
               {kidCount > 0 && (
                 <FareCounter
-                  label="Foreign children"
-                  hint={`of ${kidCount} child${kidCount > 1 ? "ren" : ""} in this cabin`}
+                  label="Children holding a foreign passport"
+                  hint={`${foreignKids.length} of the ${kidCount} ${
+                    kidCount > 1 ? "children" : "child"
+                  } in this cabin`}
                   value={foreignKids.length}
                   max={kidCount}
                   onChange={(n) => setCount("kid", n)}
                 />
               )}
+              <p className="text-[11px] text-foreground border-t border-border/60 pt-2.5">
+                Guests travelling in this cabin:{" "}
+                <strong>
+                  {adultCount + kidCount}
+                  {adultCount + kidCount === 1 ? " person" : " people"}
+                </strong>
+                <span className="text-muted-foreground">
+                  {" "}
+                  ({adultCount} adult{adultCount > 1 ? "s" : ""}
+                  {kidCount > 0
+                    ? `, ${kidCount} ${kidCount > 1 ? "children" : "child"}`
+                    : ""}
+                  ) — unchanged.
+                </span>
+              </p>
             </div>
 
             <div className="mt-3 space-y-3">
@@ -142,6 +170,16 @@ export function ForeignGuestsSection({
                 <GuestCard
                   key={i}
                   index={i}
+                  // Numbered WITHIN its fare type ("adult 2 of 2"), not across
+                  // the whole list: "Foreign guest 3" on a cabin holding two
+                  // people is the same double-counting illusion the counters
+                  // above already had to fix.
+                  ordinal={
+                    guests
+                      .slice(0, i + 1)
+                      .filter((g) => g.guest_type === guest.guest_type).length
+                  }
+                  ofType={guests.filter((g) => g.guest_type === guest.guest_type).length}
                   roomNumber={roomNumber}
                   guest={guest}
                   onChange={(patch) => updateGuest(i, patch)}
@@ -206,11 +244,15 @@ const field =
 
 function GuestCard({
   index,
+  ordinal,
+  ofType,
   roomNumber,
   guest,
   onChange,
 }: {
   index: number;
+  ordinal: number;
+  ofType: number;
   roomNumber: string;
   guest: ForeignGuest;
   onChange: (patch: Partial<ForeignGuest>) => void;
@@ -230,9 +272,10 @@ function GuestCard({
   return (
     <div className="rounded-xl border border-border/70 bg-card px-4 py-3">
       <div className="text-[11px] font-semibold text-muted-foreground mb-2.5">
-        Foreign guest {index + 1} ·{" "}
+        Passport details ·{" "}
         <span className="normal-case font-normal">
-          {guest.guest_type === "kid" ? "child fare" : "adult fare"}
+          {guest.guest_type === "kid" ? "child" : "adult"}
+          {ofType > 1 ? ` ${ordinal} of ${ofType}` : ""}
         </span>
       </div>
 
