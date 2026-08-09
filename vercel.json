@@ -1,12 +1,5 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "rewrites": [
-    {
-      "//": "Proxy the API through this host so customer-facing links (invoice downloads) carry the company's domain rather than the hosting provider's, and so a link outlives the backend moving. Must come BEFORE the SPA catch-all below, which would otherwise swallow it. Not a secrecy measure: the API origin is in the bundle either way.",
-      "source": "/api/:path*",
-      "destination": "https://mv-alaska-ship-backend.onrender.com/api/:path*"
-    },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
