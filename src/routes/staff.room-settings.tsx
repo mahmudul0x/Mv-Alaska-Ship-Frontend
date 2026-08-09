@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Gift,
+  Globe,
   ImagePlus,
   Images,
   Info,
@@ -25,10 +26,12 @@ import {
   createStaffKidRule,
   deleteStaffKidRule,
   deleteStaffRoomImage,
+  getStaffForeignerSurcharge,
   getStaffKidRules,
   getStaffRoomImages,
   getStaffRooms,
   getStaffRoomTypes,
+  updateStaffForeignerSurcharge,
   updateStaffKidRule,
   updateStaffRoomImage,
   updateStaffRoomType,
@@ -45,6 +48,9 @@ export const Route = createFileRoute("/staff/room-settings")({
 const TABS = [
   { key: "room-types", label: "Room Types", hint: "Prices & pax limits", icon: BedDouble },
   { key: "kid-pricing", label: "Kid Pricing", hint: "Age-based fares", icon: Baby },
+  // Sits beside kid pricing because it is the same kind of thing: a global
+  // fare policy, not a per-sailing price.
+  { key: "foreigner", label: "Foreigner Surcharge", hint: "Extra per foreign guest", icon: Globe },
   { key: "room-photos", label: "Room Photos", hint: "Per-room gallery", icon: Images },
 ] as const;
 
@@ -88,6 +94,8 @@ function RoomSettingsPage() {
         <RoomTypesSection />
       ) : activeTab === "kid-pricing" ? (
         <KidPricingSection />
+      ) : activeTab === "foreigner" ? (
+        <ForeignerSurchargeSection />
       ) : (
         <RoomPhotosSection />
       )}
@@ -121,8 +129,8 @@ function RoomTypesSection() {
   return (
     <section className="space-y-4 pt-6">
       <p className="text-xs text-muted-foreground">
-        Base price is charged once per room, on top of per-person fares. Pax limits are
-        enforced by the booking API — the frontend cannot bypass them.
+        Base price is charged once per room, on top of per-person fares. Pax limits are enforced by
+        the booking API — the frontend cannot bypass them.
       </p>
 
       {isLoading ? (
@@ -241,7 +249,9 @@ function RoomTypeCard({
 
         <button
           disabled={!dirty || saving}
-          onClick={() => onSave({ base_price: basePrice, max_adults: maxAdults, max_kids: maxKids })}
+          onClick={() =>
+            onSave({ base_price: basePrice, max_adults: maxAdults, max_kids: maxKids })
+          }
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
         >
           {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
@@ -278,6 +288,126 @@ const CHARGE_META: Record<
   },
 };
 
+/* ── Foreigner surcharge ──────────────────────────────────────────────────── */
+
+/** The one global foreign-national surcharge.
+ *
+ *  It lives here rather than on each package for the same reason the kid rules
+ *  do: it is a pricing policy that applies to every sailing. On Package it had
+ *  to be re-entered per voyage and — worse — could not be changed at all once a
+ *  voyage had bookings, because a per-package price is part of what those
+ *  customers were quoted.
+ */
+function ForeignerSurchargeSection() {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["staff", "foreigner-surcharge"],
+    queryFn: getStaffForeignerSurcharge,
+  });
+
+  // Draft state so the inputs stay editable while a save is in flight, seeded
+  // once the row arrives.
+  const [draft, setDraft] = useState<{ adult: string; kid: string } | null>(null);
+  const adult = draft?.adult ?? data?.adult_amount ?? "0.00";
+  const kid = draft?.kid ?? data?.kid_amount ?? "0.00";
+  const dirty =
+    data !== undefined &&
+    (Number(adult) !== Number(data.adult_amount) || Number(kid) !== Number(data.kid_amount));
+
+  const mutation = useMutation({
+    mutationFn: () => updateStaffForeignerSurcharge({ adult_amount: adult, kid_amount: kid }),
+    onSuccess: (saved) => {
+      toast.success("Foreigner surcharge updated.");
+      setDraft(null);
+      queryClient.setQueryData(["staff", "foreigner-surcharge"], saved);
+    },
+    onError: (err) => toast.error(errorText(err)),
+  });
+
+  if (isLoading) {
+    return (
+      <section className="pt-6">
+        <div className="p-16 flex items-center justify-center gap-3 text-muted-foreground">
+          <Loader2 className="size-5 animate-spin text-gold" /> Loading surcharge…
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="space-y-4 pt-6">
+      <div className="flex items-start gap-2.5 rounded-xl border border-gold/30 bg-gold/5 px-4 py-3 text-xs text-muted-foreground">
+        <Info className="size-4 text-gold shrink-0 mt-0.5" />
+        <p>
+          Charged <strong className="text-foreground">once per foreign guest</strong>, on top of
+          their normal adult or child fare. A foreign child is surcharged even on a free age tier.
+          Set both to <strong className="text-foreground">0</strong> to charge foreign nationals
+          exactly what local guests pay — their passport is still collected for the boarding
+          manifest.
+        </p>
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-5 space-y-4 max-w-xl">
+        <div className="grid sm:grid-cols-2 gap-4">
+          <label className="block">
+            <span className="text-xs font-medium flex items-center gap-1.5">
+              <UserRound className="size-3.5 text-ocean/60" /> Per foreign adult (BDT)
+            </span>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={adult}
+              onChange={(e) => setDraft({ adult: e.target.value, kid })}
+              className={`${staffInputClass} mt-1.5`}
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs font-medium flex items-center gap-1.5">
+              <Baby className="size-3.5 text-ocean/60" /> Per foreign child (BDT)
+            </span>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={kid}
+              onChange={(e) => setDraft({ adult, kid: e.target.value })}
+              className={`${staffInputClass} mt-1.5`}
+            />
+          </label>
+        </div>
+
+        <div className="flex items-center justify-between gap-4 pt-1">
+          <p className="text-[11px] text-muted-foreground">
+            {/* The reassurance that makes a global rate safe to touch: staff
+                need to know an edit cannot reach money already collected. */}
+            Applies to new bookings only — bookings already made keep the rate they were charged.
+          </p>
+          <button
+            onClick={() => mutation.mutate()}
+            disabled={!dirty || mutation.isPending}
+            className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-full gradient-gold text-ocean text-xs font-semibold shadow-luxe disabled:opacity-40 disabled:pointer-events-none"
+          >
+            {mutation.isPending ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Save className="size-3.5" />
+            )}
+            Save
+          </button>
+        </div>
+      </div>
+
+      {data && Number(data.adult_amount) === 0 && Number(data.kid_amount) === 0 && (
+        <p className="text-xs text-muted-foreground">
+          No surcharge is being charged right now. Foreign guests are asked for a passport but pay
+          the same fare as everyone else.
+        </p>
+      )}
+    </section>
+  );
+}
+
 function KidPricingSection() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
@@ -287,8 +417,7 @@ function KidPricingSection() {
   const [savingId, setSavingId] = useState<number | null>(null);
   const [showAdd, setShowAdd] = useState(false);
 
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ["staff", "kid-rules"] });
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["staff", "kid-rules"] });
 
   const mutation = useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: Partial<StaffKidRule> }) => {
@@ -333,10 +462,11 @@ function KidPricingSection() {
           <div className="flex items-start gap-2.5 rounded-xl border border-gold/30 bg-gold/5 px-4 py-3 text-xs text-muted-foreground">
             <Info className="size-4 text-gold shrink-0 mt-0.5" />
             <p>
-              Age ranges are <strong className="text-foreground">min-inclusive, max-exclusive</strong>:
-              a rule 3 → 8 covers kids aged 3, 4, … 7. To move the full-fare boundary from 8 to 9,
-              set the fixed rule to 3 → 9 and the adult rule to 9 → 99 — no code change needed.
-              Ranges must not overlap.
+              Age ranges are{" "}
+              <strong className="text-foreground">min-inclusive, max-exclusive</strong>: a rule 3 →
+              8 covers kids aged 3, 4, … 7. To move the full-fare boundary from 8 to 9, set the
+              fixed rule to 3 → 9 and the adult rule to 9 → 99 — no code change needed. Ranges must
+              not overlap.
             </p>
           </div>
 
@@ -365,8 +495,8 @@ function KidPricingSection() {
 
           {(!data || data.length === 0) && !showAdd && (
             <div className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-              No kid pricing rules yet. Bookings with children will fail until you add
-              rules covering their ages. Click <strong>Add rule</strong> to start.
+              No kid pricing rules yet. Bookings with children will fail until you add rules
+              covering their ages. Click <strong>Add rule</strong> to start.
             </div>
           )}
 
@@ -440,9 +570,7 @@ function AddKidRuleForm({
       </div>
 
       <label className="block">
-        <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
-          Charge type
-        </span>
+        <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">Charge type</span>
         <select
           value={chargeType}
           onChange={(e) => setChargeType(e.target.value as KidChargeType)}
@@ -563,17 +691,14 @@ function RoomPhotosSection() {
         <div className="flex items-start gap-2 text-[11px] text-muted-foreground max-w-md">
           <Info className="size-3.5 text-gold shrink-0 mt-0.5" />
           <p>
-            Photos show on the customer room picker. Keep files under ~1 MB
-            (hard limit 10 MB). Click a room to manage its gallery.
+            Photos show on the customer room picker. Keep files under ~1 MB (hard limit 10 MB).
+            Click a room to manage its gallery.
           </p>
         </div>
       </div>
 
       {floors.map(([floor, floorRooms]) => {
-        const photoCount = floorRooms.reduce(
-          (sum, r) => sum + (byRoom.get(r.id)?.length ?? 0),
-          0,
-        );
+        const photoCount = floorRooms.reduce((sum, r) => sum + (byRoom.get(r.id)?.length ?? 0), 0);
         return (
           <div key={floor ?? "none"} className="space-y-3">
             <div className="flex items-baseline justify-between border-b border-border pb-2">
@@ -609,9 +734,7 @@ function RoomPhotosSection() {
           room={openRoom}
           images={byRoom.get(openRoom.id) ?? []}
           onClose={() => setOpenRoomId(null)}
-          invalidate={() =>
-            queryClient.invalidateQueries({ queryKey: ["staff", "room-images"] })
-          }
+          invalidate={() => queryClient.invalidateQueries({ queryKey: ["staff", "room-images"] })}
         />
       )}
     </section>
@@ -650,9 +773,7 @@ function RoomPhotoTile({
         )}
         <span
           className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] font-semibold ${
-            images.length
-              ? "bg-black/55 text-white"
-              : "bg-amber-100/95 text-amber-700"
+            images.length ? "bg-black/55 text-white" : "bg-amber-100/95 text-amber-700"
           }`}
         >
           {images.length ? `${images.length} photo${images.length > 1 ? "s" : ""}` : "No photos"}
@@ -665,9 +786,7 @@ function RoomPhotoTile({
       </div>
       <div className="px-3.5 py-2.5">
         <div className="font-display text-base leading-none">Room {room.room_number}</div>
-        <div className="text-[10px] text-muted-foreground mt-1 truncate">
-          {room.room_type_name}
-        </div>
+        <div className="text-[10px] text-muted-foreground mt-1 truncate">{room.room_type_name}</div>
       </div>
     </button>
   );
@@ -691,9 +810,7 @@ function RoomGalleryDialog({
   const uploadMutation = useMutation({
     mutationFn: async (files: File[]) => {
       setUploading(true);
-      const nextOrder = images.length
-        ? Math.max(...images.map((i) => i.sort_order)) + 1
-        : 0;
+      const nextOrder = images.length ? Math.max(...images.map((i) => i.sort_order)) + 1 : 0;
       // Sequential, so sort_order stays deterministic and one failure
       // doesn't abort the files already uploaded.
       for (const [i, file] of files.entries()) {
@@ -737,7 +854,9 @@ function RoomGalleryDialog({
       [order[index], order[target]] = [order[target], order[index]];
       await Promise.all(
         order
-          .map((img, i) => (img.sort_order === i ? null : updateStaffRoomImage(img.id, { sort_order: i })))
+          .map((img, i) =>
+            img.sort_order === i ? null : updateStaffRoomImage(img.id, { sort_order: i }),
+          )
           .filter(Boolean),
       );
     },
@@ -746,17 +865,13 @@ function RoomGalleryDialog({
   });
 
   return (
-    <DialogShell
-      wide
-      title={`Room ${room.room_number} — Photos`}
-      onClose={onClose}
-    >
+    <DialogShell wide title={`Room ${room.room_number} — Photos`} onClose={onClose}>
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div className="text-xs text-muted-foreground">
             {room.room_type_name}
-            {room.floor_number ? ` · Floor ${room.floor_number}` : ""} ·{" "}
-            {images.length} photo(s) — lower order shows first on the customer site.
+            {room.floor_number ? ` · Floor ${room.floor_number}` : ""} · {images.length} photo(s) —
+            lower order shows first on the customer site.
           </div>
           <input
             ref={fileInputRef}
@@ -853,13 +968,7 @@ function RoomGalleryDialog({
 }
 
 /** Uncontrolled-ish caption field: saves on blur/Enter only when changed. */
-function CaptionInput({
-  initial,
-  onSave,
-}: {
-  initial: string;
-  onSave: (caption: string) => void;
-}) {
+function CaptionInput({ initial, onSave }: { initial: string; onSave: (caption: string) => void }) {
   const [value, setValue] = useState(initial);
   const commit = () => {
     if (value.trim() !== initial) onSave(value.trim());
@@ -887,10 +996,7 @@ const CHARGE_BAR: Record<KidChargeType, string> = {
  * Surfaces gaps and overlaps that are hard to see as three number pairs. */
 function AgeTimeline({ rules }: { rules: StaffKidRule[] }) {
   const AXIS_MAX = 18;
-  const ordered = useMemo(
-    () => [...rules].sort((a, b) => a.min_age - b.min_age),
-    [rules],
-  );
+  const ordered = useMemo(() => [...rules].sort((a, b) => a.min_age - b.min_age), [rules]);
 
   // Detect coverage gaps between consecutive (sorted) rules within the axis.
   const gaps = useMemo(() => {
@@ -914,7 +1020,9 @@ function AgeTimeline({ rules }: { rules: StaffKidRule[] }) {
             {gaps.length} gap(s) — some ages have no rule
           </span>
         ) : (
-          <span className="text-[10px] font-medium text-emerald-600">Fully covered 0–{AXIS_MAX}</span>
+          <span className="text-[10px] font-medium text-emerald-600">
+            Fully covered 0–{AXIS_MAX}
+          </span>
         )}
       </div>
 
@@ -1074,7 +1182,11 @@ function KidRuleCard({
         <button
           disabled={!dirty || saving}
           onClick={() =>
-            onSave({ min_age: minAge, max_age: maxAge, ...(isFixed ? { amount: String(amount) } : {}) })
+            onSave({
+              min_age: minAge,
+              max_age: maxAge,
+              ...(isFixed ? { amount: String(amount) } : {}),
+            })
           }
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
         >

@@ -59,11 +59,6 @@ export interface StaffPackage {
   end_date: string;
   booking_cutoff_datetime: string | null;
   adult_price: Money;
-  /** Fixed extra charge per foreign guest, on top of their ordinary fare.
-   *  "0.00" = foreign nationals pay the same as local guests. Locked once the
-   *  package has active bookings, exactly like adult_price. */
-  foreigner_adult_surcharge: Money;
-  foreigner_kid_surcharge: Money;
   status: PackageStatus;
   is_booking_open: boolean;
   marketing_title: string;
@@ -82,8 +77,6 @@ export interface StaffPackageWrite {
   start_date: string;
   end_date: string;
   adult_price: string;
-  foreigner_adult_surcharge?: string;
-  foreigner_kid_surcharge?: string;
   status: PackageStatus;
   is_booking_open: boolean;
   booking_cutoff_datetime?: string | null;
@@ -306,13 +299,20 @@ export interface StaffKidRule {
   amount: Money | null;
 }
 
+/** The single global foreign-national surcharge — a fixed amount per foreign
+ *  guest, on top of their ordinary fare. A pricing POLICY like the kid rules,
+ *  not a per-sailing price, so there is exactly one of these and no id.
+ *
+ *  Editing it re-prices only FUTURE bookings: each booking freezes the rate it
+ *  was charged, so issued invoices can never be rewritten from here. */
+export interface StaffForeignerSurcharge {
+  adult_amount: Money;
+  kid_amount: Money;
+  updated_at: string;
+}
+
 export type FoodMenuDay = "day_1" | "day_2" | "day_3";
-export type FoodMealType =
-  | "breakfast"
-  | "snacks"
-  | "lunch"
-  | "evening_snacks"
-  | "dinner";
+export type FoodMealType = "breakfast" | "snacks" | "lunch" | "evening_snacks" | "dinner";
 
 export interface StaffFoodMenuItem {
   id: number;

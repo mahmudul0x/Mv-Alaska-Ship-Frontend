@@ -14,6 +14,7 @@ import type {
   StaffFoodMenuItemWrite,
   StaffGalleryImage,
   StaffInvoice,
+  StaffForeignerSurcharge,
   StaffKidRule,
   StaffOverview,
   StaffPackage,
@@ -422,6 +423,20 @@ export async function createStaffKidRule(payload: Omit<StaffKidRule, "id">): Pro
 
 export async function deleteStaffKidRule(id: number) {
   await staffClient.delete(`/staff/kid-pricing-rules/${id}/`);
+}
+
+/** The one global foreigner surcharge. A singleton, so there is no id, no
+ *  list and no create/delete — just read and update. */
+export async function getStaffForeignerSurcharge(): Promise<StaffForeignerSurcharge> {
+  const { data } = await staffClient.get("/staff/foreigner-surcharge/");
+  return data;
+}
+
+export async function updateStaffForeignerSurcharge(
+  payload: Partial<Omit<StaffForeignerSurcharge, "updated_at">>,
+): Promise<StaffForeignerSurcharge> {
+  const { data } = await staffClient.patch("/staff/foreigner-surcharge/", payload);
+  return data;
 }
 
 export async function getStaffFoodMenuItems(): Promise<StaffFoodMenuItem[]> {
