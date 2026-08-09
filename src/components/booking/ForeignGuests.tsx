@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useId } from "react";
-import { Baby, Globe, User } from "lucide-react";
+import { useId, useState } from "react";
+import { Baby, Check, Globe, User } from "lucide-react";
 import { COUNTRIES } from "@/lib/countries";
 import { formatBDT } from "@/lib/money";
 import { foreignGuestError, normalisePassport } from "@/lib/validation/foreignGuests";
@@ -64,12 +64,15 @@ export function ForeignGuestsSection({
       guest_type: "adult" as const,
       slot: i,
       label: adultCount > 1 ? `Adult ${i + 1}` : "Adult",
-      detail: "Ages 12+",
+      // No "Ages 12+" here: the counters directly above already say it, and a
+      // second copy on every row is noise in a list meant to be scanned.
+      detail: "",
     })),
     ...kidAges.map((age, i) => ({
       guest_type: "kid" as const,
       slot: i,
       label: kidAges.length > 1 ? `Child ${i + 1}` : "Child",
+      // Age stays: it is the only thing telling two children apart.
       detail: `${age} year${age === 1 ? "" : "s"} old`,
     })),
   ];
@@ -155,6 +158,14 @@ export function ForeignGuestsSection({
                   />
                 ))}
               </div>
+              {/* Said ONCE for the cabin. It used to repeat under every ticked
+                  guest, so a family of four read the same disclaimer four
+                  times — which makes it read as boilerplate and stop being
+                  read at all. */}
+              <p className="px-4 py-2.5 bg-ocean/4 text-[10px] text-muted-foreground border-t border-border/70">
+                Passport details are used only for the ship's boarding manifest and the port
+                authority, and are never shown in full on your confirmation page.
+              </p>
             </div>
           </motion.div>
         )}
@@ -184,6 +195,10 @@ function SeatRow({
   const rowId = useId();
   const SeatIcon = seat.guest_type === "kid" ? Baby : User;
   const selected = guest !== undefined;
+  // A cabin can hold four ticked guests, each with its own form open. A tick
+  // in the row header is what lets the customer see which ones are already
+  // done without reading four passport fields.
+  const done = Boolean(guest?.passport_number && !foreignGuestError(guest));
 
   return (
     <div className={selected ? "bg-ocean/3" : ""}>
@@ -203,8 +218,11 @@ function SeatRow({
         />
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-medium leading-tight">{seat.label}</span>
-          <span className="block text-[10px] text-muted-foreground">{seat.detail}</span>
+          {seat.detail && (
+            <span className="block text-[10px] text-muted-foreground">{seat.detail}</span>
+          )}
         </span>
+        {done && <Check className="size-3.5 shrink-0 text-emerald-600" />}
         {selected && rate > 0 && (
           <span className="shrink-0 rounded-full bg-gold/15 text-gold-text px-2.5 py-1 text-[10px] font-semibold tabular-nums">
             +{formatBDT(String(rate))}
@@ -252,6 +270,13 @@ function PassportFields({
   // just ticked is not a mistake to shout about — Confirm is disabled anyway.
   const error = guest.passport_number ? foreignGuestError(guest) : null;
   const errorId = `${ids.passport}-error`;
+  // Only the passport is required, so only the passport is shown. Name,
+  // nationality and expiry are nice to have and are never demanded, and
+  // putting four inputs in front of someone who must fill one makes the whole
+  // section look like paperwork. Opened automatically if any already holds a
+  // value (going back a step, or a guest who filled them earlier).
+  const hasOptional = Boolean(guest.full_name || guest.nationality || guest.passport_expiry);
+  const [showOptional, setShowOptional] = useState(hasOptional);
 
   return (
     <div className="px-4 pb-4 pl-11 grid sm:grid-cols-2 gap-2.5">
@@ -282,56 +307,68 @@ function PassportFields({
         )}
       </div>
 
-      <div>
-        <label htmlFor={ids.name} className="block text-[11px] text-muted-foreground mb-1">
-          Full name <span className="normal-case">(optional)</span>
-        </label>
-        <input
-          id={ids.name}
-          value={guest.full_name ?? ""}
-          onChange={(e) => onChange({ full_name: e.target.value })}
-          placeholder="As printed in the passport"
-          maxLength={100}
-          className={field}
-        />
-      </div>
-
-      <div>
-        <label htmlFor={ids.nationality} className="block text-[11px] text-muted-foreground mb-1">
-          Nationality <span className="normal-case">(optional)</span>
-        </label>
-        <select
-          id={ids.nationality}
-          value={guest.nationality ?? ""}
-          onChange={(e) => onChange({ nationality: e.target.value })}
-          className={`${field} cursor-pointer`}
+      {!showOptional && (
+        <button
+          type="button"
+          onClick={() => setShowOptional(true)}
+          className="sm:col-span-2 justify-self-start text-[11px] text-ocean/80 hover:text-gold-text underline underline-offset-2 cursor-pointer"
         >
-          <option value="">Select a country</option>
-          {COUNTRIES.map((c) => (
-            <option key={c.code} value={c.code}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-      </div>
+          Add name, nationality &amp; expiry (optional)
+        </button>
+      )}
 
-      <div className="sm:col-span-2">
-        <label htmlFor={ids.expiry} className="block text-[11px] text-muted-foreground mb-1">
-          Passport expiry <span className="normal-case">(optional)</span>
-        </label>
-        <input
-          id={ids.expiry}
-          type="date"
-          value={guest.passport_expiry ?? ""}
-          onChange={(e) => onChange({ passport_expiry: e.target.value })}
-          className={`${field} cursor-pointer`}
-        />
-      </div>
+      {showOptional && (
+        <>
+          <div>
+            <label htmlFor={ids.name} className="block text-[11px] text-muted-foreground mb-1">
+              Full name <span className="normal-case">(optional)</span>
+            </label>
+            <input
+              id={ids.name}
+              value={guest.full_name ?? ""}
+              onChange={(e) => onChange({ full_name: e.target.value })}
+              placeholder="As printed in the passport"
+              maxLength={100}
+              className={field}
+            />
+          </div>
 
-      <p className="sm:col-span-2 text-[10px] text-muted-foreground">
-        Used only for the ship's boarding manifest and the port authority. Never shown in full on
-        your confirmation page.
-      </p>
+          <div>
+            <label
+              htmlFor={ids.nationality}
+              className="block text-[11px] text-muted-foreground mb-1"
+            >
+              Nationality <span className="normal-case">(optional)</span>
+            </label>
+            <select
+              id={ids.nationality}
+              value={guest.nationality ?? ""}
+              onChange={(e) => onChange({ nationality: e.target.value })}
+              className={`${field} cursor-pointer`}
+            >
+              <option value="">Select a country</option>
+              {COUNTRIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label htmlFor={ids.expiry} className="block text-[11px] text-muted-foreground mb-1">
+              Passport expiry <span className="normal-case">(optional)</span>
+            </label>
+            <input
+              id={ids.expiry}
+              type="date"
+              value={guest.passport_expiry ?? ""}
+              onChange={(e) => onChange({ passport_expiry: e.target.value })}
+              className={`${field} cursor-pointer`}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }
