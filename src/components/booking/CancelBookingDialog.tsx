@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle2, Info, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
@@ -82,6 +82,28 @@ export function CancelBookingDialog({ booking, open, onClose }: Props) {
   const [acknowledged, setAcknowledged] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
+  // Freeze the page behind the dialog. Without this the wheel scrolls the
+  // site underneath, which is how the fixed navbar ended up sliding across
+  // the middle of the form.
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
+  // Escape closes, as every dialog on the web does.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   if (!open) return null;
 
   const quote = preview.data;
@@ -139,273 +161,290 @@ export function CancelBookingDialog({ booking, open, onClose }: Props) {
   const error = (field: string) => fieldErrors[field]?.[0];
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-midnight/70 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="w-full max-w-lg my-8 rounded-2xl border border-border bg-card shadow-luxe overflow-hidden">
-        <div className="bg-linear-to-br from-ocean to-midnight px-6 py-5">
-          <div className="eyebrow text-gold-soft text-[10px]">Cancel booking</div>
-          <div className="font-display text-xl text-background mt-1">{booking.booking_code}</div>
-        </div>
+    // z-100 clears the fixed navbar (z-50) and the floating CTA (z-40) —
+    // at z-50 the header rendered straight across the middle of the form.
+    // The scroll lives on this layer, and the inner min-h-full flex keeps a
+    // short dialog centred while a tall one scrolls from its own top instead
+    // of having its head cut off.
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Cancel booking"
+      className="fixed inset-0 z-100 overflow-y-auto overscroll-contain bg-midnight/70 backdrop-blur-sm"
+      onClick={close}
+    >
+      <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
+        <div
+          // The backdrop closes on click; the panel must not.
+          onClick={(event) => event.stopPropagation()}
+          className="w-full max-w-lg rounded-2xl border border-border bg-card shadow-luxe overflow-hidden"
+        >
+          <div className="bg-linear-to-br from-ocean to-midnight px-6 py-5">
+            <div className="eyebrow text-gold-soft text-[10px]">Cancel booking</div>
+            <div className="font-display text-xl text-background mt-1">{booking.booking_code}</div>
+          </div>
 
-        <div className="p-6 space-y-5">
-          {preview.isLoading && (
-            <div className="flex items-center justify-center gap-3 py-10 text-muted-foreground">
-              <Loader2 className="size-5 animate-spin text-gold" /> Checking your booking…
-            </div>
-          )}
-
-          {quote && !quote.allowed && quote.block_reason && (
-            <div className="rounded-xl border border-border bg-muted/40 p-5 space-y-2">
-              <div className="flex items-center gap-2 font-display text-lg">
-                <Info className="size-4 text-gold" />
-                {BLOCK_COPY[quote.block_reason].title}
+          <div className="p-6 space-y-5">
+            {preview.isLoading && (
+              <div className="flex items-center justify-center gap-3 py-10 text-muted-foreground">
+                <Loader2 className="size-5 animate-spin text-gold" /> Checking your booking…
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {BLOCK_COPY[quote.block_reason].body}
-              </p>
-            </div>
-          )}
+            )}
 
-          {/* ── Step 1: the figures, before anything is committed ── */}
-          {quote?.allowed && step === "quote" && (
-            <>
-              <div className="rounded-xl border border-border overflow-hidden">
-                <div className="bg-muted/50 px-4 py-2.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                  If you cancel today — {quote.tier_label}
+            {quote && !quote.allowed && quote.block_reason && (
+              <div className="rounded-xl border border-border bg-muted/40 p-5 space-y-2">
+                <div className="flex items-center gap-2 font-display text-lg">
+                  <Info className="size-4 text-gold" />
+                  {BLOCK_COPY[quote.block_reason].title}
                 </div>
-                <dl className="divide-y divide-border text-sm">
-                  <Row label="You have paid" value={formatBDT(quote.paid_amount)} />
-                  <Row
-                    label={`Cancellation charge (${quote.charge_percent}%)`}
-                    value={`− ${formatBDT(quote.cancellation_charge)}`}
-                    muted
-                  />
-                  <Row label="Refund due to you" value={formatBDT(quote.refund_amount)} strong />
-                </dl>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {BLOCK_COPY[quote.block_reason].body}
+                </p>
               </div>
+            )}
 
-              {quote.requires_approval ? (
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  We aim to send refunds within{" "}
-                  <strong>{quote.refund_sla_days} working days</strong> of approval. Your cabin
-                  stays reserved until our team reviews the request.
-                </p>
-              ) : (
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  No payment has been received on this booking, so it will be cancelled straight
-                  away. There is nothing to refund.
-                </p>
-              )}
+            {/* ── Step 1: the figures, before anything is committed ── */}
+            {quote?.allowed && step === "quote" && (
+              <>
+                <div className="rounded-xl border border-border overflow-hidden">
+                  <div className="bg-muted/50 px-4 py-2.5 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                    If you cancel today — {quote.tier_label}
+                  </div>
+                  <dl className="divide-y divide-border text-sm">
+                    <Row label="You have paid" value={formatBDT(quote.paid_amount)} />
+                    <Row
+                      label={`Cancellation charge (${quote.charge_percent}%)`}
+                      value={`− ${formatBDT(quote.cancellation_charge)}`}
+                      muted
+                    />
+                    <Row label="Refund due to you" value={formatBDT(quote.refund_amount)} strong />
+                  </dl>
+                </div>
 
-              <div className="flex gap-3">
+                {quote.requires_approval ? (
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    We aim to send refunds within{" "}
+                    <strong>{quote.refund_sla_days} working days</strong> of approval. Your cabin
+                    stays reserved until our team reviews the request.
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    No payment has been received on this booking, so it will be cancelled straight
+                    away. There is nothing to refund.
+                  </p>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={close}
+                    className="flex-1 min-h-11 rounded-full border border-border text-sm hover:border-gold hover:text-gold transition-colors"
+                  >
+                    Keep my booking
+                  </button>
+                  <button
+                    onClick={() => setStep("form")}
+                    className="flex-1 min-h-11 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.16em] font-semibold hover-lift"
+                  >
+                    Continue
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* ── Step 2: reason, payout destination, confirmation ── */}
+            {quote?.allowed && step === "form" && (
+              <>
+                <Field label="Last 4 digits of your phone number" error={error("phone_confirm")}>
+                  <input
+                    inputMode="numeric"
+                    maxLength={4}
+                    value={phoneConfirm}
+                    onChange={(e) => setPhoneConfirm(e.target.value)}
+                    placeholder="••••"
+                    className={inputClass}
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1.5">
+                    So we know it is really you.
+                  </p>
+                </Field>
+
+                <Field label="Why are you cancelling?" error={error("reason_note")}>
+                  <select
+                    value={reasonCode}
+                    onChange={(e) => setReasonCode(e.target.value as CancellationReasonCode)}
+                    className={inputClass}
+                  >
+                    {REASONS.map((r) => (
+                      <option key={r.value} value={r.value}>
+                        {r.label}
+                      </option>
+                    ))}
+                  </select>
+                  <textarea
+                    value={reasonNote}
+                    onChange={(e) => setReasonNote(e.target.value)}
+                    maxLength={500}
+                    rows={2}
+                    placeholder={
+                      reasonCode === "other"
+                        ? "Please tell us a little more"
+                        : "Anything else we should know? (optional)"
+                    }
+                    className={`${inputClass} mt-2`}
+                  />
+                </Field>
+
+                {needsPayoutDetails && (
+                  <>
+                    <div className="rounded-xl bg-ocean/4 border border-border p-4 space-y-3">
+                      <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        Where should we send {formatBDT(quote.refund_amount)}?
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {METHODS.map((m) => (
+                          <button
+                            key={m.value}
+                            type="button"
+                            onClick={() => setMethod(m.value)}
+                            className={`min-h-11 rounded-lg border text-xs font-semibold transition-colors ${
+                              method === m.value
+                                ? "border-gold text-gold bg-background"
+                                : "border-border text-muted-foreground hover:border-gold/50"
+                            }`}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <Field label="Account holder name" error={error("refund_account_name")}>
+                        <input
+                          value={accountName}
+                          onChange={(e) => setAccountName(e.target.value)}
+                          className={inputClass}
+                        />
+                      </Field>
+
+                      <Field
+                        label={isBank ? "Account number" : "Wallet mobile number"}
+                        error={error("refund_account_number")}
+                      >
+                        <input
+                          inputMode={isBank ? "text" : "numeric"}
+                          value={accountNumber}
+                          onChange={(e) => setAccountNumber(e.target.value)}
+                          placeholder={isBank ? "e.g. 1234567890123" : "01712345678"}
+                          className={inputClass}
+                        />
+                        {!isBank && (
+                          <p className="text-[11px] text-muted-foreground mt-1.5">
+                            This does not have to be the number on your booking.
+                          </p>
+                        )}
+                      </Field>
+
+                      {isBank && (
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          <Field label="Bank name" error={error("bank_name")}>
+                            <input
+                              value={bankName}
+                              onChange={(e) => setBankName(e.target.value)}
+                              className={inputClass}
+                            />
+                          </Field>
+                          <Field label="Branch" error={error("branch_name")}>
+                            <input
+                              value={branchName}
+                              onChange={(e) => setBranchName(e.target.value)}
+                              className={inputClass}
+                            />
+                          </Field>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                <label className="flex items-start gap-3 p-4 rounded-xl border border-border cursor-pointer hover:border-gold/50 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={acknowledged}
+                    onChange={(e) => setAcknowledged(e.target.checked)}
+                    className="mt-0.5 size-4 accent-gold"
+                  />
+                  <span className="text-xs leading-relaxed">
+                    I understand a cancellation charge of{" "}
+                    <strong>{formatBDT(quote.cancellation_charge)}</strong> applies and that{" "}
+                    <strong>{formatBDT(quote.refund_amount)}</strong> will be refunded to me.
+                  </span>
+                </label>
+                {error("acknowledged_charge") && (
+                  <p className="text-xs text-destructive">{error("acknowledged_charge")}</p>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setStep("quote")}
+                    className="flex-1 min-h-11 rounded-full border border-border text-sm hover:border-gold hover:text-gold transition-colors"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={onSubmit}
+                    disabled={submit.isPending || !acknowledged}
+                    className="flex-1 min-h-11 flex items-center justify-center gap-2 rounded-full bg-destructive text-white text-xs uppercase tracking-[0.16em] font-semibold hover-lift disabled:opacity-40 disabled:pointer-events-none"
+                  >
+                    {submit.isPending && <Loader2 className="size-4 animate-spin" />}
+                    {quote.requires_approval ? "Send request" : "Cancel booking"}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* ── Step 3 ── */}
+            {step === "done" && (
+              <div className="text-center space-y-3 py-6">
+                <div className="size-12 rounded-full bg-gold/15 grid place-items-center mx-auto">
+                  <CheckCircle2 className="size-6 text-gold" />
+                </div>
+                <div className="font-display text-xl">
+                  {quote?.requires_approval ? "Request received" : "Your booking is cancelled"}
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {quote?.requires_approval ? (
+                    <>
+                      We have emailed you a copy. Our team reviews every request — usually within
+                      one working day — and <strong>your cabin stays reserved until then</strong>.
+                    </>
+                  ) : (
+                    <>No payment was taken, so there is nothing to refund.</>
+                  )}
+                </p>
                 <button
                   onClick={close}
-                  className="flex-1 min-h-11 rounded-full border border-border text-sm hover:border-gold hover:text-gold transition-colors"
+                  className="mt-2 px-8 py-3 rounded-full border border-border text-sm hover:border-gold hover:text-gold transition-colors"
                 >
-                  Keep my booking
-                </button>
-                <button
-                  onClick={() => setStep("form")}
-                  className="flex-1 min-h-11 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.16em] font-semibold hover-lift"
-                >
-                  Continue
+                  Close
                 </button>
               </div>
-            </>
-          )}
+            )}
 
-          {/* ── Step 2: reason, payout destination, confirmation ── */}
-          {quote?.allowed && step === "form" && (
-            <>
-              <Field label="Last 4 digits of your phone number" error={error("phone_confirm")}>
-                <input
-                  inputMode="numeric"
-                  maxLength={4}
-                  value={phoneConfirm}
-                  onChange={(e) => setPhoneConfirm(e.target.value)}
-                  placeholder="••••"
-                  className={inputClass}
-                />
-                <p className="text-[11px] text-muted-foreground mt-1.5">
-                  So we know it is really you.
-                </p>
-              </Field>
-
-              <Field label="Why are you cancelling?" error={error("reason_note")}>
-                <select
-                  value={reasonCode}
-                  onChange={(e) => setReasonCode(e.target.value as CancellationReasonCode)}
-                  className={inputClass}
-                >
-                  {REASONS.map((r) => (
-                    <option key={r.value} value={r.value}>
-                      {r.label}
-                    </option>
-                  ))}
-                </select>
-                <textarea
-                  value={reasonNote}
-                  onChange={(e) => setReasonNote(e.target.value)}
-                  maxLength={500}
-                  rows={2}
-                  placeholder={
-                    reasonCode === "other"
-                      ? "Please tell us a little more"
-                      : "Anything else we should know? (optional)"
-                  }
-                  className={`${inputClass} mt-2`}
-                />
-              </Field>
-
-              {needsPayoutDetails && (
-                <>
-                  <div className="rounded-xl bg-ocean/4 border border-border p-4 space-y-3">
-                    <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                      Where should we send {formatBDT(quote.refund_amount)}?
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      {METHODS.map((m) => (
-                        <button
-                          key={m.value}
-                          type="button"
-                          onClick={() => setMethod(m.value)}
-                          className={`min-h-11 rounded-lg border text-xs font-semibold transition-colors ${
-                            method === m.value
-                              ? "border-gold text-gold bg-background"
-                              : "border-border text-muted-foreground hover:border-gold/50"
-                          }`}
-                        >
-                          {m.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    <Field label="Account holder name" error={error("refund_account_name")}>
-                      <input
-                        value={accountName}
-                        onChange={(e) => setAccountName(e.target.value)}
-                        className={inputClass}
-                      />
-                    </Field>
-
-                    <Field
-                      label={isBank ? "Account number" : "Wallet mobile number"}
-                      error={error("refund_account_number")}
-                    >
-                      <input
-                        inputMode={isBank ? "text" : "numeric"}
-                        value={accountNumber}
-                        onChange={(e) => setAccountNumber(e.target.value)}
-                        placeholder={isBank ? "e.g. 1234567890123" : "01712345678"}
-                        className={inputClass}
-                      />
-                      {!isBank && (
-                        <p className="text-[11px] text-muted-foreground mt-1.5">
-                          This does not have to be the number on your booking.
-                        </p>
-                      )}
-                    </Field>
-
-                    {isBank && (
-                      <div className="grid sm:grid-cols-2 gap-3">
-                        <Field label="Bank name" error={error("bank_name")}>
-                          <input
-                            value={bankName}
-                            onChange={(e) => setBankName(e.target.value)}
-                            className={inputClass}
-                          />
-                        </Field>
-                        <Field label="Branch" error={error("branch_name")}>
-                          <input
-                            value={branchName}
-                            onChange={(e) => setBranchName(e.target.value)}
-                            className={inputClass}
-                          />
-                        </Field>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-
-              <label className="flex items-start gap-3 p-4 rounded-xl border border-border cursor-pointer hover:border-gold/50 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={acknowledged}
-                  onChange={(e) => setAcknowledged(e.target.checked)}
-                  className="mt-0.5 size-4 accent-gold"
-                />
-                <span className="text-xs leading-relaxed">
-                  I understand a cancellation charge of{" "}
-                  <strong>{formatBDT(quote.cancellation_charge)}</strong> applies and that{" "}
-                  <strong>{formatBDT(quote.refund_amount)}</strong> will be refunded to me.
-                </span>
-              </label>
-              {error("acknowledged_charge") && (
-                <p className="text-xs text-destructive">{error("acknowledged_charge")}</p>
-              )}
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setStep("quote")}
-                  className="flex-1 min-h-11 rounded-full border border-border text-sm hover:border-gold hover:text-gold transition-colors"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={onSubmit}
-                  disabled={submit.isPending || !acknowledged}
-                  className="flex-1 min-h-11 flex items-center justify-center gap-2 rounded-full bg-destructive text-white text-xs uppercase tracking-[0.16em] font-semibold hover-lift disabled:opacity-40 disabled:pointer-events-none"
-                >
-                  {submit.isPending && <Loader2 className="size-4 animate-spin" />}
-                  {quote.requires_approval ? "Send request" : "Cancel booking"}
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* ── Step 3 ── */}
-          {step === "done" && (
-            <div className="text-center space-y-3 py-6">
-              <div className="size-12 rounded-full bg-gold/15 grid place-items-center mx-auto">
-                <CheckCircle2 className="size-6 text-gold" />
-              </div>
-              <div className="font-display text-xl">
-                {quote?.requires_approval ? "Request received" : "Your booking is cancelled"}
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {quote?.requires_approval ? (
-                  <>
-                    We have emailed you a copy. Our team reviews every request — usually within one
-                    working day — and <strong>your cabin stays reserved until then</strong>.
-                  </>
-                ) : (
-                  <>No payment was taken, so there is nothing to refund.</>
-                )}
-              </p>
+            {quote && !quote.allowed && (
               <button
                 onClick={close}
-                className="mt-2 px-8 py-3 rounded-full border border-border text-sm hover:border-gold hover:text-gold transition-colors"
+                className="w-full min-h-11 rounded-full border border-border text-sm hover:border-gold hover:text-gold transition-colors"
               >
                 Close
               </button>
-            </div>
-          )}
+            )}
 
-          {quote && !quote.allowed && (
-            <button
-              onClick={close}
-              className="w-full min-h-11 rounded-full border border-border text-sm hover:border-gold hover:text-gold transition-colors"
-            >
-              Close
-            </button>
-          )}
-
-          {step !== "done" && (
-            <div className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground pt-1">
-              <ShieldCheck className="size-3.5 text-gold shrink-0" />
-              All amounts are calculated by our system from your booking.
-            </div>
-          )}
+            {step !== "done" && (
+              <div className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground pt-1">
+                <ShieldCheck className="size-3.5 text-gold shrink-0" />
+                All amounts are calculated by our system from your booking.
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

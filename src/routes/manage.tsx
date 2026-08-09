@@ -165,6 +165,12 @@ function BookingActions({ booking, onCancel }: { booking: BookingPublic; onCance
   const invoices = useQuery({
     queryKey: ["booking-invoices", booking.booking_code],
     queryFn: () => getBookingInvoices(booking.booking_code),
+    // Each download_url is a signed link that expires after 30 minutes, so a
+    // page left open would eventually hold dead hrefs. Re-mint them well
+    // inside that window, and again whenever the tab is returned to.
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000,
+    refetchOnWindowFocus: true,
   });
 
   const departure = new Date(`${booking.package.start_date}T00:00:00`);
