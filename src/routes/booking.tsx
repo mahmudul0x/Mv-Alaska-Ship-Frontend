@@ -1105,6 +1105,24 @@ function RoomGuestsCard({
         </div>
       </div>
 
+      {/* Pointer to the foreign-national section further down the card. The
+          checkbox sits BELOW the pax counters (it depends on them), so a
+          customer travelling with a foreign guest could fill in the counters
+          and move on without ever scrolling to it. Disappears once they have
+          ticked it — at that point it is just clutter. */}
+      {foreignGuests.length === 0 && (
+        <div className="flex items-start gap-2 px-5 py-2.5 bg-gold/8 text-[11px] leading-relaxed">
+          <Globe className="size-3.5 text-gold shrink-0 mt-0.5" />
+          <span>
+            <strong className="font-semibold">Travelling with a foreign national?</strong>{" "}
+            <span className="text-muted-foreground">
+              Tick “Any foreign nationals in this cabin?” at the bottom of this
+              card and add their passport.
+            </span>
+          </span>
+        </div>
+      )}
+
       {/* Adults */}
       <div className="flex items-center justify-between gap-4 px-5 py-4">
         <div className="flex items-center gap-3 min-w-0">

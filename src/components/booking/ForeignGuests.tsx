@@ -202,7 +202,18 @@ function SeatRow({
           className={`size-4 shrink-0 ${selected ? "text-ocean/70" : "text-muted-foreground/50"}`}
         />
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-medium leading-tight">{seat.label}</span>
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="text-sm font-medium leading-tight">{seat.label}</span>
+            {/* Says outright what ticking this row MEANS. Without it the
+                passport fields appear under a plain "Adult 1" and read as
+                something every guest must fill in, rather than the
+                foreign-nationals-only section they are. */}
+            {selected && (
+              <span className="rounded-full bg-ocean/10 text-ocean px-2 py-0.5 text-[10px] font-semibold">
+                Foreign national
+              </span>
+            )}
+          </span>
           <span className="block text-[10px] text-muted-foreground">{seat.detail}</span>
         </span>
         {selected && rate > 0 && (
@@ -255,6 +266,9 @@ function PassportFields({
 
   return (
     <div className="px-4 pb-4 pl-11 grid sm:grid-cols-2 gap-2.5">
+      <p className="sm:col-span-2 text-[10px] text-muted-foreground -mt-0.5">
+        Foreign guests only — Bangladeshi guests need none of this.
+      </p>
       <div className="sm:col-span-2">
         <label htmlFor={ids.passport} className="block text-[11px] text-muted-foreground mb-1">
           Passport number <span className="text-destructive">*</span>
