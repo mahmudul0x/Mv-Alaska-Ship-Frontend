@@ -41,6 +41,7 @@ import {
 } from "@/lib/api/staff";
 import { getPackageRooms } from "@/lib/api/packages";
 import { copyToClipboard } from "@/lib/clipboard";
+import { countryName } from "@/lib/countries";
 import { formatBDT, parseMoney } from "@/lib/money";
 import type { BookingStatus } from "@/lib/api/types";
 import type { StaffBooking } from "@/lib/api/staffTypes";
@@ -140,6 +141,10 @@ function toCsv(rows: StaffBooking[]): string {
     "Package",
     "Room",
     "Pax",
+    // Passport numbers are deliberately NOT exported: a CSV leaves the app and
+    // gets mailed around. The count is enough to reconcile against the
+    // manifest; the numbers stay in the dashboard and the guide report PDF.
+    "Foreign pax",
     "Total",
     "Paid",
     "Due",
@@ -156,6 +161,7 @@ function toCsv(rows: StaffBooking[]): string {
       b.package_title,
       b.room_number,
       b.total_pax,
+      b.foreign_pax_count,
       b.total_amount,
       b.paid_amount,
       b.due_amount,
@@ -494,7 +500,19 @@ function BookingsPage() {
                 </td>
                 <td className="px-4 py-3 max-w-40 truncate">{b.package_title}</td>
                 <td className="px-4 py-3">{b.room_number}</td>
-                <td className="px-4 py-3">{b.total_pax}</td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  {b.total_pax}
+                  {/* Foreign nationals on board need a passport check and go on
+                      the port manifest — staff must see that from the list. */}
+                  {b.foreign_pax_count > 0 && (
+                    <span
+                      title={`${b.foreign_pax_count} foreign national(s)`}
+                      className="ml-1.5 inline-flex items-center rounded px-1.5 py-0.5 bg-gold/15 text-gold-text text-[10px] font-semibold align-middle"
+                    >
+                      {b.foreign_pax_count} FN
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-3 whitespace-nowrap">{formatBDT(b.total_amount)}</td>
                 <td className="px-4 py-3">
                   <PaymentProgress paid={b.paid_amount} total={b.total_amount} />
@@ -699,7 +717,12 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
               <Info
                 key={r.room}
                 label={`Room ${r.room_number} pax`}
-                value={`${r.adult_count} adult(s), ${r.kid_details.length} kid(s)`}
+                value={
+                  `${r.adult_count} adult(s), ${r.kid_details.length} kid(s)` +
+                  (r.foreign_guests?.length
+                    ? `, ${r.foreign_guests.length} foreign national(s)`
+                    : "")
+                }
               />
             ))}
             <Info label="Total" value={formatBDT(booking.total_amount)} />
@@ -742,6 +765,49 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
               />
             </div>
           </div>
+
+          {/* Foreign nationals — the boarding manifest, with FULL passports.
+              Staff are authenticated here (the customer's own confirmation
+              page masks these), and this is what gets transcribed for the port
+              authority. Hidden entirely on a domestic booking. */}
+          {booking.rooms.some((r) => r.foreign_guests?.length) && (
+            <div className="rounded-xl border border-border p-4 space-y-3">
+              <div className="eyebrow text-[10px] text-muted-foreground">
+                Foreign nationals — boarding manifest
+              </div>
+              <div className="space-y-2">
+                {booking.rooms.flatMap((room) =>
+                  (room.foreign_guests ?? []).map((guest, i) => (
+                    <div
+                      key={`${room.room}-${i}`}
+                      className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-xs border-b border-border/50 pb-2 last:border-0 last:pb-0"
+                    >
+                      <div className="min-w-0">
+                        <span className="font-medium">
+                          {guest.full_name || "(name not given)"}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {" "}
+                          · Room {room.room_number} ·{" "}
+                          {guest.guest_type === "kid" ? "child" : "adult"} fare
+                          {guest.nationality ? ` · ${countryName(guest.nationality)}` : ""}
+                          {guest.passport_expiry
+                            ? ` · expires ${guest.passport_expiry}`
+                            : ""}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="font-mono tracking-wide">
+                          {guest.passport_number}
+                        </span>
+                        <CopyButton value={guest.passport_number} label="Passport" />
+                      </div>
+                    </div>
+                  )),
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Refund owed — manual process; the flag is the admin's only nudge */}
           {booking.refund_required && (

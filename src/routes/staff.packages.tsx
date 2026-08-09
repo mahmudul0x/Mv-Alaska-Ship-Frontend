@@ -536,6 +536,8 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
     start_date: pkg?.start_date ?? "",
     end_date: pkg?.end_date ?? "",
     adult_price: pkg?.adult_price ?? "",
+    foreigner_adult_surcharge: pkg?.foreigner_adult_surcharge ?? "0.00",
+    foreigner_kid_surcharge: pkg?.foreigner_kid_surcharge ?? "0.00",
     status: pkg?.status ?? "draft",
     is_booking_open: pkg?.is_booking_open ?? true,
     booking_cutoff_datetime: pkg?.booking_cutoff_datetime ?? null,
@@ -578,6 +580,42 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
               ))}
             </select>
           </StaffField>
+        </div>
+
+        {/* Foreign-national surcharge — a fixed amount PER foreign guest, on
+            top of that guest's ordinary adult/child fare. 0 means foreign
+            nationals pay exactly what local guests pay. Like adult_price, the
+            API refuses a change once the sailing has active bookings: those
+            customers were quoted the current rate. */}
+        <div className="rounded-lg border border-border p-3 space-y-3">
+          <div className="text-xs font-semibold">Foreign national surcharge</div>
+          <div className="grid grid-cols-2 gap-3">
+            <StaffField label="Per foreign adult (BDT)">
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={form.foreigner_adult_surcharge ?? "0.00"}
+                onChange={(e) => set({ foreigner_adult_surcharge: e.target.value })}
+                className={staffInputClass}
+              />
+            </StaffField>
+            <StaffField label="Per foreign child (BDT)">
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={form.foreigner_kid_surcharge ?? "0.00"}
+                onChange={(e) => set({ foreigner_kid_surcharge: e.target.value })}
+                className={staffInputClass}
+              />
+            </StaffField>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Charged once per foreign guest, in addition to their normal fare. A
+            foreign child is surcharged even on a free age tier. Leave at 0 to
+            charge foreign nationals the same as local guests.
+          </p>
         </div>
 
         <label className="flex items-center gap-2 text-sm">

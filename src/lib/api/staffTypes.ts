@@ -1,4 +1,11 @@
-import type { BookingStatus, KidChargeType, KidDetail, Money, PaymentType } from "./types";
+import type {
+  BookingStatus,
+  ForeignGuest,
+  KidChargeType,
+  KidDetail,
+  Money,
+  PaymentType,
+} from "./types";
 
 export interface Paginated<T> {
   count: number;
@@ -52,6 +59,11 @@ export interface StaffPackage {
   end_date: string;
   booking_cutoff_datetime: string | null;
   adult_price: Money;
+  /** Fixed extra charge per foreign guest, on top of their ordinary fare.
+   *  "0.00" = foreign nationals pay the same as local guests. Locked once the
+   *  package has active bookings, exactly like adult_price. */
+  foreigner_adult_surcharge: Money;
+  foreigner_kid_surcharge: Money;
   status: PackageStatus;
   is_booking_open: boolean;
   marketing_title: string;
@@ -70,6 +82,8 @@ export interface StaffPackageWrite {
   start_date: string;
   end_date: string;
   adult_price: string;
+  foreigner_adult_surcharge?: string;
+  foreigner_kid_surcharge?: string;
   status: PackageStatus;
   is_booking_open: boolean;
   booking_cutoff_datetime?: string | null;
@@ -105,6 +119,10 @@ export interface StaffBookingRoom {
   room_type: string;
   adult_count: number;
   kid_details: KidDetail[];
+  /** Foreign nationals in this cabin, with FULL passport numbers — unlike the
+   *  public confirmation view, which masks them. Staff are authenticated and
+   *  these are the numbers transcribed for the port authority. */
+  foreign_guests: ForeignGuest[];
   room_subtotal: Money;
   is_active: boolean;
 }
@@ -122,6 +140,9 @@ export interface StaffBooking {
   // Comma-joined room numbers for compact table columns, e.g. "201, 202".
   room_number: string;
   total_pax: number;
+  /** How many of total_pax are foreign nationals — drives the FN badge without
+   *  the list walking every cabin's guest data. 0 on a domestic booking. */
+  foreign_pax_count: number;
   /** Customer's free-text note from the booking wizard (dietary, accessibility,
    * anniversary, etc.). Empty string when none was given. */
   special_requests: string;

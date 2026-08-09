@@ -18,6 +18,10 @@ export interface Package {
   nights: number;
   days: number; // = nights + 1 unless admin-overridden; render as-is
   adult_price: Money;
+  /** Fixed extra charge per foreign guest, on top of their ordinary fare.
+   *  "0.00" means foreign nationals pay the same as local guests. */
+  foreigner_adult_surcharge: Money;
+  foreigner_kid_surcharge: Money;
   booking_cutoff_datetime: string; // ISO datetime
   is_bookable: boolean;
   booking_status: BookingStatusFilter;
@@ -138,12 +142,31 @@ export interface KidDetail {
   age: number;
 }
 
+/** A foreign national travelling in a cabin — a SUBSET of that cabin's pax,
+ *  never an extra person. Each one adds the package's fixed foreigner
+ *  surcharge to the room total.
+ *
+ *  Only `passport_number` is required; the rest is captured when the guest
+ *  offers it. On responses from the public booking endpoint the passport is
+ *  MASKED ("****4567") — the full number never leaves the server to an
+ *  unauthenticated caller. */
+export interface ForeignGuest {
+  guest_type: "adult" | "kid";
+  passport_number: string;
+  full_name?: string;
+  /** ISO 3166-1 alpha-2, e.g. "US". Rejected server-side if not a real code. */
+  nationality?: string;
+  /** ISO date. Must be in the future — an expired passport cannot board. */
+  passport_expiry?: string;
+}
+
 // One room within a booking request: which cabin, and that cabin's own party.
 // A booking may hold several of these (a family taking 2–3 cabins).
 export interface BookingRoomInput {
   room_id: number;
   adult_count: number;
   kid_details?: KidDetail[];
+  foreign_guests?: ForeignGuest[];
 }
 
 export interface BookingQuoteRequest {
@@ -165,6 +188,14 @@ export interface RoomPriceBreakdown {
   adults_subtotal: Money;
   kids: PriceBreakdownKid[];
   kids_subtotal: Money;
+  // Foreign-national surcharge for this cabin. Counts AND rates come from the
+  // server so the summary line reads "2 × ৳3,000" without the client ever
+  // computing money. Zero on every domestic booking.
+  foreign_adult_count: number;
+  foreign_kid_count: number;
+  foreigner_adult_surcharge: Money;
+  foreigner_kid_surcharge: Money;
+  foreigner_subtotal: Money;
   total: Money;
   room_number?: string;
 }
@@ -204,6 +235,9 @@ export interface BookingRoomPublic {
   room_type: string;
   adult_count: number;
   kid_details: KidDetail[];
+  /** Passports are masked on this endpoint — it is reached with a booking
+   *  code alone, with no login. */
+  foreign_guests: ForeignGuest[];
   room_subtotal: Money;
 }
 

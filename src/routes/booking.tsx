@@ -17,6 +17,7 @@ import {
   Check,
   CreditCard,
   Download,
+  Globe,
   Loader2,
   Lock,
   Mail,
@@ -44,7 +45,13 @@ import { useCreateBooking } from "@/hooks/queries/useCreateBooking";
 import { parseLocalDate } from "@/lib/dates";
 import { formatBDT } from "@/lib/money";
 import { bookingContactSchema, type BookingContactValues } from "@/lib/validation/bookingForm";
-import type { ApiError, BookingPublic, PackageRoom } from "@/lib/api/types";
+import { ForeignGuestsSection } from "@/components/booking/ForeignGuests";
+import {
+  foreignGuestIssues,
+  serialiseForeignGuests,
+} from "@/lib/validation/foreignGuests";
+import { countryName } from "@/lib/countries";
+import type { ApiError, BookingPublic, ForeignGuest, PackageRoom } from "@/lib/api/types";
 
 // One selected cabin and its own party. A booking may hold several of these —
 // a family taking 2–3 rooms is ONE booking (one payment, one invoice), each
@@ -53,6 +60,10 @@ type RoomSelection = {
   room: PackageRoom;
   adultCount: number;
   kidAges: number[];
+  // Foreign nationals among this cabin's pax — a subset of adultCount/kidAges,
+  // never extra people. Empty on a domestic booking, which is the default and
+  // the overwhelming majority.
+  foreignGuests: ForeignGuest[];
 };
 
 type BookingData = {
@@ -103,7 +114,7 @@ function isStepComplete(step: number, data: BookingData) {
 /** Add/remove/update helpers for the selected-rooms list, keyed by room id. */
 function addRoom(rooms: RoomSelection[], room: PackageRoom): RoomSelection[] {
   if (rooms.some((r) => r.room.id === room.id)) return rooms; // already selected
-  return [...rooms, { room, adultCount: 1, kidAges: [] }];
+  return [...rooms, { room, adultCount: 1, kidAges: [], foreignGuests: [] }];
 }
 function removeRoom(rooms: RoomSelection[], roomId: number): RoomSelection[] {
   return rooms.filter((r) => r.room.id !== roomId);
@@ -142,6 +153,11 @@ function Booking() {
   const { data: selectedPackage } = usePackage(data.packageId);
   const createBooking = useCreateBooking();
 
+  // The quote carries foreign guests as fare types WITHOUT their passports:
+  // the surcharge depends only on how many there are, and the quote endpoint
+  // accepts them that way. Keeping passports out means the price is live from
+  // the moment the counters are set, and typing a document number does not
+  // re-key the query and refetch on every keystroke.
   const quoteRequest =
     data.packageId !== undefined && data.rooms.length > 0
       ? {
@@ -150,10 +166,25 @@ function Booking() {
             room_id: r.room.id,
             adult_count: r.adultCount,
             kid_details: r.kidAges.map((age) => ({ age })),
+            ...(r.foreignGuests.length
+              ? {
+                  foreign_guests: r.foreignGuests.map((g) => ({
+                    guest_type: g.guest_type,
+                    passport_number: "",
+                  })),
+                }
+              : {}),
           })),
         }
       : undefined;
   const { data: quote, isFetching: quoting, error: quoteError } = useBookingQuote(quoteRequest);
+
+  // Blocking problems in the passport fields (missing, malformed, or the same
+  // passport in two cabins). The server enforces all of these; catching them
+  // here is what stops the customer reaching the gateway and being bounced.
+  const guestIssues = foreignGuestIssues(
+    data.rooms.map((r) => ({ roomNumber: r.room.room_number, guests: r.foreignGuests })),
+  );
 
   if (bookingResult) {
     return <ConfirmScreen booking={bookingResult} contactName={data.name} />;
@@ -164,6 +195,14 @@ function Booking() {
     try {
       const booking = await createBooking.mutateAsync({
         ...quoteRequest,
+        // Unlike the quote, the booking carries the real passports — they go
+        // on the boarding manifest, so the server requires them here.
+        rooms: quoteRequest.rooms.map((room, i) => ({
+          ...room,
+          ...(data.rooms[i].foreignGuests.length
+            ? { foreign_guests: serialiseForeignGuests(data.rooms[i].foreignGuests) }
+            : {}),
+        })),
         customer_name: contact.name,
         phone: contact.phone,
         email: contact.email,
@@ -307,6 +346,7 @@ function Booking() {
                     quoteError={quoteError as ApiError | null}
                     onConfirm={handleConfirm}
                     submitting={createBooking.isPending || redirecting}
+                    guestIssues={guestIssues}
                   />
                 )}
               </motion.div>
@@ -971,17 +1011,40 @@ function Counter({
 function RoomGuestsCard({
   index,
   selection,
+  adultSurcharge,
+  kidSurcharge,
   onChange,
 }: {
   index: number;
   selection: RoomSelection;
+  adultSurcharge: string;
+  kidSurcharge: string;
   onChange: (patch: Partial<RoomSelection>) => void;
 }) {
-  const { room, adultCount, kidAges } = selection;
+  const { room, adultCount, kidAges, foreignGuests } = selection;
   const maxAdults = room.room_type.max_adults;
   const maxKids = room.room_type.max_kids;
 
-  const setAdultCount = (n: number) => onChange({ adultCount: Math.max(1, Math.min(maxAdults, n)) });
+  /** Foreign guests are a subset of the cabin's pax, so lowering the adult or
+   *  kid count has to drop any now-orphaned guests — otherwise the party
+   *  silently becomes one the server rejects at submit ("2 foreign adults but
+   *  the room has only 1"), long after the customer changed the counter. */
+  const trimForeign = (adults: number, kids: number) => {
+    let adultsLeft = adults;
+    let kidsLeft = kids;
+    return foreignGuests.filter((g) => {
+      if (g.guest_type === "adult") return adultsLeft-- > 0;
+      return kidsLeft-- > 0;
+    });
+  };
+
+  const setAdultCount = (n: number) => {
+    const adults = Math.max(1, Math.min(maxAdults, n));
+    onChange({
+      adultCount: adults,
+      foreignGuests: trimForeign(adults, kidAges.length),
+    });
+  };
   const setKidCount = (n: number) => {
     const count = Math.max(0, Math.min(maxKids, n));
     onChange({
@@ -989,9 +1052,14 @@ function RoomGuestsCard({
         count > kidAges.length
           ? [...kidAges, ...Array(count - kidAges.length).fill(5)]
           : kidAges.slice(0, count),
+      foreignGuests: trimForeign(adultCount, count),
     });
   };
-  const removeKid = (i: number) => onChange({ kidAges: kidAges.filter((_, idx) => idx !== i) });
+  const removeKid = (i: number) =>
+    onChange({
+      kidAges: kidAges.filter((_, idx) => idx !== i),
+      foreignGuests: trimForeign(adultCount, kidAges.length - 1),
+    });
   const setKidAge = (i: number, age: number) =>
     onChange({
       kidAges: kidAges.map((a, idx) => (idx === i ? Math.max(0, Math.min(17, age)) : a)),
@@ -1128,14 +1196,36 @@ function RoomGuestsCard({
           )}
         </AnimatePresence>
       </div>
+
+      {/* Foreign nationals — collapsed by default; see ForeignGuestsSection. */}
+      <ForeignGuestsSection
+        roomNumber={room.room_number}
+        adultCount={adultCount}
+        kidCount={kidAges.length}
+        guests={foreignGuests}
+        adultSurcharge={adultSurcharge}
+        kidSurcharge={kidSurcharge}
+        onChange={(next) => onChange({ foreignGuests: next })}
+      />
     </div>
   );
 }
 
 /* ── Guest counters (one card per room) + special requests — rendered inside
       the final step ── */
-function GuestsCards({ data, update }: StepProps) {
+function GuestsCards({
+  data,
+  update,
+  selectedPackage,
+}: StepProps & {
+  selectedPackage: import("@/lib/api/types").PackageDetail | undefined;
+}) {
   const requestsId = useId();
+  // Advertised rates, straight from the package — the client never derives a
+  // price, it only shows what the server publishes. The quote remains the
+  // authority for what is actually charged.
+  const adultSurcharge = selectedPackage?.foreigner_adult_surcharge ?? "0.00";
+  const kidSurcharge = selectedPackage?.foreigner_kid_surcharge ?? "0.00";
 
   return (
     <div className="space-y-4">
@@ -1145,6 +1235,8 @@ function GuestsCards({ data, update }: StepProps) {
             key={selection.room.id}
             index={i}
             selection={selection}
+            adultSurcharge={adultSurcharge}
+            kidSurcharge={kidSurcharge}
             onChange={(patch) =>
               update({ rooms: updateRoom(data.rooms, selection.room.id, patch) })
             }
@@ -1180,6 +1272,51 @@ function GuestsCards({ data, update }: StepProps) {
   );
 }
 
+/** The foreign-national surcharge lines of one cabin's price breakdown.
+ *
+ *  Renders nothing for a domestic cabin — and nothing on a package with a zero
+ *  rate — so every existing booking's summary is unchanged. Counts and rates
+ *  both come from the server's breakdown, so the "2 × ৳3,000" label always
+ *  matches the amount beside it. */
+function ForeignSurchargeLines({
+  room,
+}: {
+  room: import("@/lib/api/types").RoomPriceBreakdown;
+}) {
+  const lines: { label: string; amount: string }[] = [];
+  if (room.foreign_adult_count > 0 && Number(room.foreigner_adult_surcharge) > 0) {
+    lines.push({
+      label: `Foreign national — adult (${room.foreign_adult_count} × ${formatBDT(
+        room.foreigner_adult_surcharge,
+      )})`,
+      amount: String(
+        Number(room.foreigner_adult_surcharge) * room.foreign_adult_count,
+      ),
+    });
+  }
+  if (room.foreign_kid_count > 0 && Number(room.foreigner_kid_surcharge) > 0) {
+    lines.push({
+      label: `Foreign national — child (${room.foreign_kid_count} × ${formatBDT(
+        room.foreigner_kid_surcharge,
+      )})`,
+      amount: String(Number(room.foreigner_kid_surcharge) * room.foreign_kid_count),
+    });
+  }
+  return (
+    <>
+      {lines.map((line) => (
+        <div key={line.label} className="flex justify-between text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <Globe className="size-3 text-gold shrink-0" />
+            {line.label}
+          </span>
+          <span className="text-foreground font-medium">{formatBDT(line.amount)}</span>
+        </div>
+      ))}
+    </>
+  );
+}
+
 /* ── Step 5: Payment ── */
 type StepPaymentProps = StepProps & {
   selectedPackage: import("@/lib/api/types").PackageDetail | undefined;
@@ -1188,6 +1325,10 @@ type StepPaymentProps = StepProps & {
   quoteError: ApiError | null;
   onConfirm: (contact: BookingContactValues) => void | Promise<void>;
   submitting: boolean;
+  /** Passport problems that would be rejected server-side. Non-empty blocks
+   *  Confirm & Pay, so the customer is never sent to the gateway on a booking
+   *  the API will refuse. */
+  guestIssues: string[];
 };
 
 function StepPayment({
@@ -1199,6 +1340,7 @@ function StepPayment({
   quoteError,
   onConfirm,
   submitting,
+  guestIssues,
 }: StepPaymentProps) {
   const partialAmountId = useId();
   const partialErrorId = `${partialAmountId}-error`;
@@ -1253,7 +1395,7 @@ function StepPayment({
         {/* ── Left: guests + lead guest ── */}
         <div className="lg:col-span-7 space-y-6">
           {/* Who's sailing */}
-          <GuestsCards data={data} update={update} />
+          <GuestsCards data={data} update={update} selectedPackage={selectedPackage} />
 
           {/* Lead guest */}
           <div className="rounded-2xl border border-border bg-card shadow-luxe p-6 space-y-5">
@@ -1453,6 +1595,7 @@ function StepPayment({
                           </span>
                         </div>
                       ))}
+                      <ForeignSurchargeLines room={room} />
                     </div>
                   ))}
                   <div className="pt-2.5 mt-1 border-t border-dashed border-border flex justify-between items-baseline">
@@ -1583,9 +1726,23 @@ function StepPayment({
                 </div>
               )}
 
+              {/* Passport problems, spelled out. The server would reject the
+                  booking anyway; naming the cabin and the guest is what turns
+                  a dead-end 400 into something the customer can fix. */}
+              {guestIssues.length > 0 && (
+                <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-3 text-[11px] text-destructive space-y-1">
+                  <div className="font-semibold">
+                    Complete the passport details to continue:
+                  </div>
+                  {guestIssues.map((issue) => (
+                    <div key={issue}>· {issue}</div>
+                  ))}
+                </div>
+              )}
+
               <button
                 type="submit"
-                disabled={submitting || !quote || partialInvalid}
+                disabled={submitting || !quote || partialInvalid || guestIssues.length > 0}
                 className="w-full flex items-center justify-center gap-2 px-8 py-3.5 rounded-full gradient-gold text-ocean text-[11px] uppercase tracking-[0.2em] font-semibold shadow-luxe hover-lift disabled:opacity-40 disabled:pointer-events-none"
               >
                 {submitting ? (
@@ -1605,6 +1762,53 @@ function StepPayment({
         </div>
       </div>
     </form>
+  );
+}
+
+/** Foreign guests of a confirmed booking, grouped by cabin.
+ *
+ *  Renders nothing when there are none — a domestic confirmation is untouched.
+ *  Passports arrive MASKED from the public API ("****4567"); this page never
+ *  holds the full number, and the note says so, because a customer who cannot
+ *  see their own passport back needs to know it was recorded correctly. */
+function ForeignGuestSummary({ booking }: { booking: BookingPublic }) {
+  const cabins = booking.rooms.filter((room) => room.foreign_guests?.length);
+  if (cabins.length === 0) return null;
+
+  return (
+    <div className="mx-7 md:mx-8 mb-8 rounded-xl border border-border overflow-hidden">
+      <div className="bg-ocean/5 px-5 py-3 border-b border-border eyebrow text-[10px] text-muted-foreground flex items-center gap-2">
+        <Globe className="size-3.5 text-gold" />
+        Foreign nationals
+      </div>
+      <div className="p-5 space-y-3 text-sm">
+        {cabins.map((room) =>
+          room.foreign_guests.map((guest, i) => (
+            <div
+              key={`${room.room_number}-${i}`}
+              className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-border/50 pb-2 last:border-0 last:pb-0"
+            >
+              <div className="min-w-0">
+                <span className="font-medium">{guest.full_name || "Guest"}</span>
+                <span className="text-muted-foreground text-xs">
+                  {" "}
+                  · Room {room.room_number} ·{" "}
+                  {guest.guest_type === "kid" ? "child fare" : "adult fare"}
+                  {guest.nationality ? ` · ${countryName(guest.nationality)}` : ""}
+                </span>
+              </div>
+              <span className="font-mono text-xs tracking-wide text-muted-foreground">
+                {guest.passport_number}
+              </span>
+            </div>
+          )),
+        )}
+        <p className="text-[11px] text-muted-foreground pt-1">
+          Passport numbers are partly hidden here for your security. The full
+          details are on your invoice and the ship's boarding manifest.
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -1988,6 +2192,11 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
             </div>
           </div>
 
+          {/* Foreign nationals — only when there are any, so a domestic
+              confirmation is exactly the page it was. Passports arrive already
+              masked from the API; this page never has the full number. */}
+          <ForeignGuestSummary booking={booking} />
+
           {/* Payment summary */}
           <div className="mx-7 md:mx-8 mb-8 rounded-xl border border-border overflow-hidden">
             <div className="bg-ocean/5 px-5 py-3 border-b border-border eyebrow text-[10px] text-muted-foreground">
@@ -2019,6 +2228,7 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
                         <span>{formatBDT(kid.charge)}</span>
                       </div>
                     ))}
+                    <ForeignSurchargeLines room={room} />
                   </div>
                 ))}
               <div className="pt-3 mt-1 border-t border-border flex justify-between items-baseline">
