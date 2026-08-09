@@ -45,13 +45,16 @@ import { useCreateBooking } from "@/hooks/queries/useCreateBooking";
 import { parseLocalDate } from "@/lib/dates";
 import { formatBDT } from "@/lib/money";
 import { bookingContactSchema, type BookingContactValues } from "@/lib/validation/bookingForm";
-import { ForeignGuestsSection } from "@/components/booking/ForeignGuests";
+import {
+  ForeignGuestsSection,
+  type ForeignGuestDraft,
+} from "@/components/booking/ForeignGuests";
 import {
   foreignGuestIssues,
   serialiseForeignGuests,
 } from "@/lib/validation/foreignGuests";
 import { countryName } from "@/lib/countries";
-import type { ApiError, BookingPublic, ForeignGuest, PackageRoom } from "@/lib/api/types";
+import type { ApiError, BookingPublic, PackageRoom } from "@/lib/api/types";
 
 // One selected cabin and its own party. A booking may hold several of these —
 // a family taking 2–3 rooms is ONE booking (one payment, one invoice), each
@@ -61,9 +64,11 @@ type RoomSelection = {
   adultCount: number;
   kidAges: number[];
   // Foreign nationals among this cabin's pax — a subset of adultCount/kidAges,
-  // never extra people. Empty on a domestic booking, which is the default and
-  // the overwhelming majority.
-  foreignGuests: ForeignGuest[];
+  // never extra people. Each is bound to the seat it belongs to (`slot`), which
+  // is what lets the UI list the cabin's occupants and have the customer tick
+  // them rather than count them. Empty on a domestic booking, which is the
+  // default and the overwhelming majority.
+  foreignGuests: ForeignGuestDraft[];
 };
 
 type BookingData = {
@@ -1025,18 +1030,14 @@ function RoomGuestsCard({
   const maxAdults = room.room_type.max_adults;
   const maxKids = room.room_type.max_kids;
 
-  /** Foreign guests are a subset of the cabin's pax, so lowering the adult or
-   *  kid count has to drop any now-orphaned guests — otherwise the party
+  /** Foreign guests are bound to a seat, so lowering the adult or kid count
+   *  has to drop the ones whose seat no longer exists — otherwise the party
    *  silently becomes one the server rejects at submit ("2 foreign adults but
    *  the room has only 1"), long after the customer changed the counter. */
-  const trimForeign = (adults: number, kids: number) => {
-    let adultsLeft = adults;
-    let kidsLeft = kids;
-    return foreignGuests.filter((g) => {
-      if (g.guest_type === "adult") return adultsLeft-- > 0;
-      return kidsLeft-- > 0;
-    });
-  };
+  const trimForeign = (adults: number, kids: number) =>
+    foreignGuests.filter((g) =>
+      g.slot < (g.guest_type === "adult" ? adults : kids),
+    );
 
   const setAdultCount = (n: number) => {
     const adults = Math.max(1, Math.min(maxAdults, n));
@@ -1055,10 +1056,18 @@ function RoomGuestsCard({
       foreignGuests: trimForeign(adultCount, count),
     });
   };
+  /** Removing a kid from the MIDDLE shifts every later kid down one seat, so
+   *  their foreign-guest rows have to shift with them — otherwise the passport
+   *  typed for "Child 3" would silently reattach to a different child (or to a
+   *  seat that no longer exists). The removed child's own row is dropped. */
   const removeKid = (i: number) =>
     onChange({
       kidAges: kidAges.filter((_, idx) => idx !== i),
-      foreignGuests: trimForeign(adultCount, kidAges.length - 1),
+      foreignGuests: foreignGuests
+        .filter((g) => !(g.guest_type === "kid" && g.slot === i))
+        .map((g) =>
+          g.guest_type === "kid" && g.slot > i ? { ...g, slot: g.slot - 1 } : g,
+        ),
     });
   const setKidAge = (i: number, age: number) =>
     onChange({
@@ -1213,7 +1222,7 @@ function RoomGuestsCard({
       <ForeignGuestsSection
         roomNumber={room.room_number}
         adultCount={adultCount}
-        kidCount={kidAges.length}
+        kidAges={kidAges}
         guests={foreignGuests}
         adultSurcharge={adultSurcharge}
         kidSurcharge={kidSurcharge}
