@@ -14,6 +14,7 @@ import { toast } from "sonner";
 
 import { BookingStatusCard } from "@/components/booking/BookingStatusCard";
 import { CancelBookingDialog } from "@/components/booking/CancelBookingDialog";
+import { PendingCancellationNotice } from "@/components/booking/PendingCancellationNotice";
 import { ResultShell } from "@/components/booking/ResultShell";
 import { useBooking } from "@/hooks/queries/useBooking";
 import { useInitiatePayment } from "@/hooks/queries/useInitiatePayment";
@@ -53,10 +54,16 @@ function BookingConfirmationPage() {
     }
   }
 
+  // A pending cancellation hides both actions: the server refuses payment on a
+  // booking that is about to be cancelled (it would only enlarge the payout to
+  // send back by hand), and offering "Cancel" again to someone who already
+  // cancelled reads as though their request never arrived.
+  const pendingCancellation = booking?.pending_cancellation ?? null;
   const canPay =
     booking &&
     !["cancelled", "completed"].includes(booking.status) &&
-    booking.due_amount !== "0.00";
+    booking.due_amount !== "0.00" &&
+    !pendingCancellation;
 
   const dueAmount = booking ? parseMoney(booking.due_amount) : 0;
   // Backend-computed deposit floor (UX mirror only — the API re-validates).
@@ -105,6 +112,8 @@ function BookingConfirmationPage() {
       )}
 
       {booking && <BookingStatusCard booking={booking} />}
+
+      {pendingCancellation && <PendingCancellationNotice request={pendingCancellation} />}
 
       {/* ── Payment panel ── */}
       {canPay && (
@@ -251,9 +260,10 @@ function BookingConfirmationPage() {
       )}
 
       {/* Cancellation. Quiet by design — it sits below the payment panel and is
-          hidden once the booking is closed. The dialog quotes the exact charge
-          and refund before anything is committed. */}
-      {booking && !["cancelled", "completed"].includes(booking.status) && (
+          hidden once the booking is closed, or once a request is already in
+          (the notice above covers that). The dialog quotes the exact charge and
+          refund before anything is committed. */}
+      {booking && !["cancelled", "completed"].includes(booking.status) && !pendingCancellation && (
         <button
           onClick={() => setCancelOpen(true)}
           className="w-full flex items-center justify-center gap-2 min-h-11 rounded-full border border-border text-sm text-muted-foreground hover:border-destructive hover:text-destructive transition-colors"

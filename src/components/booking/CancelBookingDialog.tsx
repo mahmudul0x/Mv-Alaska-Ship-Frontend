@@ -74,9 +74,13 @@ type Props = {
   booking: BookingPublic;
   open: boolean;
   onClose: () => void;
+  /** Called once a request is accepted. For pages that hold the booking in
+   *  plain state rather than a query, this is their cue to re-fetch — the
+   *  booking now carries a `pending_cancellation` the page must show. */
+  onSubmitted?: () => void;
 };
 
-export function CancelBookingDialog({ booking, open, onClose }: Props) {
+export function CancelBookingDialog({ booking, open, onClose, onSubmitted }: Props) {
   const preview = useCancellationPreview(booking.booking_code, open);
   const submit = useRequestCancellation(booking.booking_code);
 
@@ -161,6 +165,7 @@ export function CancelBookingDialog({ booking, open, onClose }: Props) {
         quote_token: quote.quote_token,
       });
       setStep("done");
+      onSubmitted?.();
     } catch (err) {
       const apiError = err as ApiError;
       if (apiError.fieldErrors) {

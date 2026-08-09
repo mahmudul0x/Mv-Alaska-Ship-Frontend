@@ -13,6 +13,7 @@ import {
 
 import { BookingStatusCard } from "@/components/booking/BookingStatusCard";
 import { CancelBookingDialog } from "@/components/booking/CancelBookingDialog";
+import { PendingCancellationNotice } from "@/components/booking/PendingCancellationNotice";
 import { ResultShell } from "@/components/booking/ResultShell";
 import { useBookingLookup } from "@/hooks/queries/useCancellation";
 import { getBookingInvoices } from "@/lib/api/bookings";
@@ -130,6 +131,9 @@ function ManageBookingPage() {
       {booking && (
         <>
           <BookingStatusCard booking={booking} />
+          {booking.pending_cancellation && (
+            <PendingCancellationNotice request={booking.pending_cancellation} />
+          )}
           <BookingActions booking={booking} onCancel={() => setCancelOpen(true)} />
           <div className="flex flex-wrap justify-center gap-3">
             <button
@@ -154,6 +158,21 @@ function ManageBookingPage() {
             booking={booking}
             open={cancelOpen}
             onClose={() => setCancelOpen(false)}
+            // The booking here is plain state from the lookup, not a query, so
+            // re-fetch it after a request goes in — otherwise the page keeps
+            // showing a live "Cancel" button to someone who just cancelled.
+            onSubmitted={async () => {
+              try {
+                setBooking(
+                  await lookup.mutateAsync({
+                    booking_code: code,
+                    phone_last4: phone,
+                  }),
+                );
+              } catch {
+                // The request itself succeeded; a failed refresh is cosmetic.
+              }
+            }}
           />
         </>
       )}
@@ -177,6 +196,7 @@ function BookingActions({ booking, onCancel }: { booking: BookingPublic; onCance
   const daysAway = Math.ceil((departure.getTime() - new Date().setHours(0, 0, 0, 0)) / 86_400_000);
   const isOver = ["cancelled", "completed"].includes(booking.status);
   const hasDeparted = daysAway < 0;
+  const pendingCancellation = Boolean(booking.pending_cancellation);
 
   return (
     <div className="rounded-2xl border border-border bg-card shadow-luxe overflow-hidden text-left">
@@ -229,7 +249,10 @@ function BookingActions({ booking, onCancel }: { booking: BookingPublic; onCance
           </div>
         </div>
 
-        {booking.due_amount !== "0.00" && !isOver && (
+        {/* Payment is refused server-side while a cancellation is pending —
+            more money on a booking about to be cancelled just makes a bigger
+            payout to chase by hand — so don't offer it either. */}
+        {booking.due_amount !== "0.00" && !isOver && !pendingCancellation && (
           <Link
             to="/booking/confirmation/$code"
             params={{ code: booking.booking_code }}
@@ -240,8 +263,9 @@ function BookingActions({ booking, onCancel }: { booking: BookingPublic; onCance
         )}
 
         {/* The cancel entry point. Deliberately quiet, and hidden entirely once
-            the booking is closed — the dialog explains the rest. */}
-        {!isOver && (
+            the booking is closed or a request is already in — the notice above
+            covers that case. */}
+        {!isOver && !pendingCancellation && (
           <button
             onClick={onCancel}
             className="w-full flex items-center justify-center gap-2 min-h-11 rounded-full border border-border text-sm text-muted-foreground hover:border-destructive hover:text-destructive transition-colors"

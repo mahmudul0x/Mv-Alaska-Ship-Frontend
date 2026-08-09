@@ -248,6 +248,13 @@ export interface BookingPublic {
   // Server-computed floor for the FIRST payment (Package.min_deposit_percent
   // of the total). "0.01" once a deposit exists — top-ups have no floor.
   min_first_payment: Money;
+  /** The customer's open cancellation request, or null.
+   *
+   *  A pending request deliberately does NOT change `status` — the booking
+   *  keeps its cabins until staff decide — so this is the only signal that one
+   *  exists. Pages must use it to replace the "Cancel booking" action, or the
+   *  customer sees an unchanged booking and assumes their request vanished. */
+  pending_cancellation: CancellationRequestPublic | null;
   // Only present on the create (201) response — absent on GET retrieve.
   price_breakdown?: PriceBreakdown;
 }
