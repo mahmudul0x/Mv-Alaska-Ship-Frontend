@@ -57,8 +57,20 @@ export type RoomAvailability = "available" | "booked" | "unavailable";
 export interface RoomImage {
   id: number;
   image: string;
+  /** CDN-rendered small version, for previews. Falls back to the full image
+   *  when media is not on Cloudinary (local development). */
+  thumbnail_url: string;
   caption: string;
   sort_order: number;
+}
+
+/** One image in a cabin preview. Rooms and cabin types are different models;
+ *  the API flattens both to this shape so the UI has no branch to get wrong. */
+export interface PreviewImage {
+  id: number;
+  image: string;
+  thumbnail_url: string;
+  caption: string;
 }
 
 export interface PackageRoom {
@@ -66,7 +78,16 @@ export interface PackageRoom {
   room_number: string;
   floor_number: number | null;
   room_type: RoomType;
+  /** This exact cabin's own photos. Often empty — cabins are photographed one
+   *  at a time and most never are. Prefer `preview_images`. */
   images: RoomImage[];
+  /** What to SHOW for this cabin: its own photos, or failing that the showcase
+   *  photos of an identical cabin of the same type. */
+  preview_images: PreviewImage[];
+  /** Where `preview_images` came from, so the UI can say "a cabin of this type"
+   *  rather than implying the photos are of this exact room. Null when there
+   *  are no photos anywhere. */
+  preview_source: "room" | "room_type" | null;
   availability: RoomAvailability;
 }
 

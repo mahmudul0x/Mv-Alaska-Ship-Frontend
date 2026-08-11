@@ -1,10 +1,11 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import type { LucideIcon } from "lucide-react";
 import {
   Armchair,
   ArrowUpDown,
   BedDouble,
+  Camera,
   Check,
   Compass,
   ConciergeBell,
@@ -14,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 
+import { RoomPreviewCard } from "@/components/booking/RoomPreviewCard";
 import { usePackageRooms } from "@/hooks/queries/usePackageRooms";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatBDT } from "@/lib/money";
@@ -196,16 +198,52 @@ function RoomsSkeleton({ mobile }: { mobile: boolean }) {
 }
 
 /* ── Cabin tile ── */
+/** How long the mouse must rest on a tile before its preview appears.
+ *  Without a delay, sweeping across a 31-cabin deck flashes 31 cards. */
+const PREVIEW_DELAY_MS = 160;
+
 function RoomCell({
   room,
   checked,
   onSelect,
+  isMobile,
 }: {
   room: PackageRoom;
   checked: boolean;
   onSelect: () => void;
+  /** Touch has no hover, and a tap must still select the cabin — so the
+   *  preview gets its own small camera badge there instead. */
+  isMobile: boolean;
 }) {
   const selectable = room.availability === "available";
+  const tileRef = useRef<HTMLLabelElement>(null);
+  const timer = useRef<number | null>(null);
+  const [preview, setPreview] = useState<{ rect: DOMRect; tapped: boolean } | null>(null);
+  const hasPreview = room.preview_images.length > 0;
+
+  function openPreview(tapped: boolean) {
+    const rect = tileRef.current?.getBoundingClientRect();
+    if (rect) setPreview({ rect, tapped });
+  }
+
+  function scheduleOpen() {
+    if (isMobile || !hasPreview) return;
+    timer.current = window.setTimeout(() => openPreview(false), PREVIEW_DELAY_MS);
+  }
+
+  function cancelOpen() {
+    if (timer.current) window.clearTimeout(timer.current);
+    timer.current = null;
+    setPreview((current) => (current?.tapped ? current : null));
+  }
+
+  useEffect(
+    () => () => {
+      if (timer.current) window.clearTimeout(timer.current);
+    },
+    [],
+  );
+
   const capacity =
     room.room_type.max_adults + (room.room_type.max_kids ? `+${room.room_type.max_kids}` : "");
   /* Spoken name. The tile's visible text ("309", "2+1 · ৳12,000") reads as a
@@ -222,11 +260,22 @@ function RoomCell({
      * an invisible cursor. The ring is ocean, not gold, so focus stays
      * distinguishable from the gold `checked` state. */
     <label
+      ref={tileRef}
+      // The native tooltip is the fallback for tiles with no photos; where the
+      // preview card takes over, showing both would stack an OS tooltip on top
+      // of it.
       title={
-        selectable
-          ? `Room ${room.room_number} · ${room.room_type.name} · ${formatBDT(room.room_type.base_price)}`
-          : `Room ${room.room_number} · ${AVAILABILITY_LABEL[room.availability]}`
+        hasPreview && !isMobile
+          ? undefined
+          : selectable
+            ? `Room ${room.room_number} · ${room.room_type.name} · ${formatBDT(room.room_type.base_price)}`
+            : `Room ${room.room_number} · ${AVAILABILITY_LABEL[room.availability]}`
       }
+      onMouseEnter={scheduleOpen}
+      onMouseLeave={cancelOpen}
+      // Keyboard users get the same preview: the tiles are already focusable.
+      onFocus={() => !isMobile && hasPreview && openPreview(false)}
+      onBlur={cancelOpen}
       style={{ height: cellSize() }}
       className={`focus-ring-within relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg border shadow-sm px-1 text-center transition-all ${
         !selectable
@@ -251,6 +300,32 @@ function RoomCell({
         >
           <Check className="size-2.5 text-ocean" strokeWidth={3} />
         </span>
+      )}
+
+      {/* Touch: a tap anywhere on the tile books the cabin, so the photos need
+          their own target. Placed bottom-left, away from the selected tick. */}
+      {isMobile && hasPreview && (
+        <button
+          type="button"
+          aria-label={`Photos of room ${room.room_number}`}
+          onClick={(event) => {
+            event.preventDefault(); // don't toggle the cabin
+            event.stopPropagation();
+            openPreview(true);
+          }}
+          className="absolute bottom-0.5 left-0.5 size-5 rounded-full bg-ocean/85 text-background grid place-items-center shadow-sm"
+        >
+          <Camera className="size-3" />
+        </button>
+      )}
+
+      {preview && (
+        <RoomPreviewCard
+          room={room}
+          anchor={preview.rect}
+          interactive={preview.tapped}
+          onClose={() => setPreview(null)}
+        />
       )}
       {/* aria-hidden: the tile's visual text is a terse duplicate of the radio's
           aria-label above — announcing both would read the room twice. */}
@@ -321,11 +396,15 @@ function Deck({
   selectedRoomIds,
   onToggleRoom,
   vertical,
+  isMobile,
 }: {
   plan: DeckPlan;
   roomsByNumber: Map<string, PackageRoom>;
   selectedRoomIds: Set<number>;
   onToggleRoom: (room: PackageRoom) => void;
+  /** Passed down rather than read per cell: one media-query subscription for
+   *  the deck instead of one per cabin. */
+  isMobile: boolean;
   /** Draw the ship bow-up (mobile) rather than bow-right. Only the chosen hull
    * is rendered — the other must not be left in the DOM. */
   vertical: boolean;
@@ -348,8 +427,7 @@ function Deck({
     14 + // stern label
     8 + // flex gap
     (plan.aft ? 80 + 8 : 0); // aft block + gap
-  const hullMinWidth =
-    HULL_CHROME + columns * MIN_CELL_W + (columns - 1) * ROW_GAP;
+  const hullMinWidth = HULL_CHROME + columns * MIN_CELL_W + (columns - 1) * ROW_GAP;
 
   const renderCell = (cell: PlanCell, i: number, vertical: boolean) => {
     if (cell.kind === "feature") {
@@ -379,6 +457,7 @@ function Deck({
         room={r}
         checked={selectedRoomIds.has(r.id)}
         onSelect={() => onToggleRoom(r)}
+        isMobile={isMobile}
       />
     );
   };
@@ -457,14 +536,13 @@ function Deck({
      * role=group + aria-labelledby: the room checkboxes are grouped so a screen
      * reader states which deck is being chosen from rather than announcing bare
      * checkboxes. */
-    <div
-      className="min-w-0"
-      role="group"
-      aria-labelledby={deckHeadingId}
-    >
+    <div className="min-w-0" role="group" aria-labelledby={deckHeadingId}>
       {/* Deck header */}
       <div className="flex items-baseline justify-between px-2 mb-2">
-        <span id={deckHeadingId} className="eyebrow text-[10px] text-ocean flex items-center gap-1.5">
+        <span
+          id={deckHeadingId}
+          className="eyebrow text-[10px] text-ocean flex items-center gap-1.5"
+        >
           <BedDouble aria-hidden="true" className="size-3 text-gold" />
           {plan.name} · {ordinal(plan.floor)} Floor
         </span>
@@ -479,99 +557,99 @@ function Deck({
        * crushing the cabins: HULL_MIN_W is the width at which every tile still
        * meets MIN_CELL_W, so below that the deck pans instead of collapsing. */}
       {!vertical && (
-      <div className="relative rounded-[36px] bg-linear-to-b from-sky-200/60 via-sky-100/50 to-sky-300/45 p-4 lg:p-6 overflow-x-auto overflow-y-hidden">
-        {waves}
+        <div className="relative rounded-[36px] bg-linear-to-b from-sky-200/60 via-sky-100/50 to-sky-300/45 p-4 lg:p-6 overflow-x-auto overflow-y-hidden">
+          {waves}
 
-        {/* White hull */}
-        <div
-          className="relative rounded-[52px_150px_150px_52px/52px_50%_50%_52px] border border-slate-300/80 bg-linear-to-b from-white via-slate-50 to-slate-200 shadow-[0_18px_40px_-18px_rgba(15,45,60,0.5)] p-2"
-          style={{ minWidth: hullMinWidth }}
-        >
-          {/* Wooden deck */}
+          {/* White hull */}
           <div
-            className="relative rounded-[44px_140px_140px_44px/44px_50%_50%_44px] p-3 pl-4 pr-28"
-            style={{ background: woodDeck("h") }}
+            className="relative rounded-[52px_150px_150px_52px/52px_50%_50%_52px] border border-slate-300/80 bg-linear-to-b from-white via-slate-50 to-slate-200 shadow-[0_18px_40px_-18px_rgba(15,45,60,0.5)] p-2"
+            style={{ minWidth: hullMinWidth }}
           >
-            <div className="flex items-stretch gap-2">
-              <div className="flex items-center shrink-0">
-                <span className="[writing-mode:vertical-rl] rotate-180 text-[8px] font-semibold uppercase tracking-[0.3em] text-white/80 px-0.5">
-                  Stern
-                </span>
+            {/* Wooden deck */}
+            <div
+              className="relative rounded-[44px_140px_140px_44px/44px_50%_50%_44px] p-3 pl-4 pr-28"
+              style={{ background: woodDeck("h") }}
+            >
+              <div className="flex items-stretch gap-2">
+                <div className="flex items-center shrink-0">
+                  <span className="[writing-mode:vertical-rl] rotate-180 text-[8px] font-semibold uppercase tracking-[0.3em] text-white/80 px-0.5">
+                    Stern
+                  </span>
+                </div>
+
+                {plan.aft && (
+                  <div
+                    className={`w-20 shrink-0 flex flex-col items-center justify-center rounded-l-[30px] rounded-r-xl px-2 text-center ${aftVariantClasses}`}
+                  >
+                    {aftBlockContent}
+                  </div>
+                )}
+
+                <div className="flex-1 min-w-0">
+                  {renderRow(plan.port)}
+                  <div className="my-1.5 rounded-full border border-white/60 bg-[#efe0c5]/90 py-1 text-center text-[8px] font-semibold uppercase tracking-[0.35em] text-[#8a6a42]">
+                    {ordinal(plan.floor)} floor corridor
+                  </div>
+                  {renderRow(plan.starboard)}
+                </div>
               </div>
 
+              {/* Bow: compass rose on open deck */}
+              <div className="absolute right-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5">
+                {compassRose}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Mobile: vertical ship on water — bow top, stern bottom ── */}
+      {vertical && (
+        <div className="relative rounded-[32px] bg-linear-to-b from-sky-200/60 via-sky-100/50 to-sky-300/45 p-4 overflow-hidden">
+          {waves}
+
+          {/* White hull */}
+          <div className="relative mx-auto w-full max-w-80 rounded-[50%_50%_64px_64px/160px_160px_64px_64px] border border-slate-300/80 bg-linear-to-b from-white via-slate-50 to-slate-200 shadow-[0_18px_40px_-18px_rgba(15,45,60,0.5)] p-2">
+            {/* Wooden deck */}
+            <div
+              className="relative rounded-[50%_50%_56px_56px/152px_152px_56px_56px] px-3 pb-6 pt-28"
+              style={{ background: woodDeck("v") }}
+            >
+              {/* Bow: compass rose on open deck */}
+              <div className="absolute top-7 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5">
+                {compassRose}
+              </div>
+
+              <div className="flex" style={{ gap: ROW_GAP }}>
+                {renderColumn(plan.port)}
+
+                {/* Corridor */}
+                <div className="relative w-7 shrink-0 self-stretch">
+                  <div className="absolute inset-y-1 left-1/2 border-l border-dashed border-white/60" />
+                  <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 [writing-mode:vertical-rl] rounded-full border border-white/60 bg-[#efe0c5]/95 px-0.5 py-2 text-[8px] font-semibold uppercase tracking-[0.35em] text-[#8a6a42]">
+                    Corridor
+                  </span>
+                </div>
+
+                {renderColumn(plan.starboard)}
+              </div>
+
+              {/* Aft common area */}
               {plan.aft && (
                 <div
-                  className={`w-20 shrink-0 flex flex-col items-center justify-center rounded-l-[30px] rounded-r-xl px-2 text-center ${aftVariantClasses}`}
+                  className={`mt-2 h-20 rounded-2xl grid place-items-center text-center px-3 ${aftVariantClasses}`}
                 >
                   {aftBlockContent}
                 </div>
               )}
 
-              <div className="flex-1 min-w-0">
-                {renderRow(plan.port)}
-                <div className="my-1.5 rounded-full border border-white/60 bg-[#efe0c5]/90 py-1 text-center text-[8px] font-semibold uppercase tracking-[0.35em] text-[#8a6a42]">
-                  {ordinal(plan.floor)} floor corridor
-                </div>
-                {renderRow(plan.starboard)}
+              {/* Stern label */}
+              <div className="mt-3 text-center text-[8px] font-semibold uppercase tracking-[0.3em] text-white/80">
+                Stern
               </div>
-            </div>
-
-            {/* Bow: compass rose on open deck */}
-            <div className="absolute right-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1.5">
-              {compassRose}
             </div>
           </div>
         </div>
-      </div>
-      )}
-
-      {/* ── Mobile: vertical ship on water — bow top, stern bottom ── */}
-      {vertical && (
-      <div className="relative rounded-[32px] bg-linear-to-b from-sky-200/60 via-sky-100/50 to-sky-300/45 p-4 overflow-hidden">
-        {waves}
-
-        {/* White hull */}
-        <div className="relative mx-auto w-full max-w-80 rounded-[50%_50%_64px_64px/160px_160px_64px_64px] border border-slate-300/80 bg-linear-to-b from-white via-slate-50 to-slate-200 shadow-[0_18px_40px_-18px_rgba(15,45,60,0.5)] p-2">
-          {/* Wooden deck */}
-          <div
-            className="relative rounded-[50%_50%_56px_56px/152px_152px_56px_56px] px-3 pb-6 pt-28"
-            style={{ background: woodDeck("v") }}
-          >
-            {/* Bow: compass rose on open deck */}
-            <div className="absolute top-7 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5">
-              {compassRose}
-            </div>
-
-            <div className="flex" style={{ gap: ROW_GAP }}>
-              {renderColumn(plan.port)}
-
-              {/* Corridor */}
-              <div className="relative w-7 shrink-0 self-stretch">
-                <div className="absolute inset-y-1 left-1/2 border-l border-dashed border-white/60" />
-                <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 [writing-mode:vertical-rl] rounded-full border border-white/60 bg-[#efe0c5]/95 px-0.5 py-2 text-[8px] font-semibold uppercase tracking-[0.35em] text-[#8a6a42]">
-                  Corridor
-                </span>
-              </div>
-
-              {renderColumn(plan.starboard)}
-            </div>
-
-            {/* Aft common area */}
-            {plan.aft && (
-              <div
-                className={`mt-2 h-20 rounded-2xl grid place-items-center text-center px-3 ${aftVariantClasses}`}
-              >
-                {aftBlockContent}
-              </div>
-            )}
-
-            {/* Stern label */}
-            <div className="mt-3 text-center text-[8px] font-semibold uppercase tracking-[0.3em] text-white/80">
-              Stern
-            </div>
-          </div>
-        </div>
-      </div>
       )}
     </div>
   );
@@ -632,10 +710,10 @@ export function RoomPicker({ packageId, selectedRoomIds, onToggleRoom }: Props) 
 
   const deckAvailable = (plan: DeckPlan) =>
     [...plan.port, ...plan.starboard].filter(
-      (c) =>
-        c.kind === "room" && roomsByNumber.get(c.number)?.availability === "available",
+      (c) => c.kind === "room" && roomsByNumber.get(c.number)?.availability === "available",
     ).length;
-  const tabLabel = (plan: DeckPlan) => (plan.floor > 0 ? `${ordinal(plan.floor)} Floor` : plan.name);
+  const tabLabel = (plan: DeckPlan) =>
+    plan.floor > 0 ? `${ordinal(plan.floor)} Floor` : plan.name;
 
   return (
     <div className="space-y-6">
@@ -674,6 +752,7 @@ export function RoomPicker({ packageId, selectedRoomIds, onToggleRoom }: Props) 
               selectedRoomIds={selectedIdSet}
               onToggleRoom={onToggleRoom}
               vertical={false}
+              isMobile={isMobile}
             />
           ))}
         </div>
@@ -681,44 +760,45 @@ export function RoomPicker({ packageId, selectedRoomIds, onToggleRoom }: Props) 
 
       {/* Mobile: floor tabs + the active deck only, so no long scrolling */}
       {isMobile && (
-      <div className="space-y-5">
-        <div className="flex flex-wrap items-center gap-2">
-          {decks.map((plan) => {
-            const active = plan.floor === activeDeck?.floor;
-            return (
-              <button
-                type="button"
-                key={`${plan.name}-${plan.floor}`}
-                onClick={() => setActiveFloor(plan.floor)}
-                className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
-                  active
-                    ? "bg-ocean text-background shadow-luxe"
-                    : "border border-border bg-card text-muted-foreground hover:border-gold/60 hover:text-foreground cursor-pointer"
-                }`}
-              >
-                {tabLabel(plan)}
-                <span
-                  className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none ${
-                    active ? "bg-gold/20 text-gold-soft" : "bg-emerald-500/10 text-emerald-600"
+        <div className="space-y-5">
+          <div className="flex flex-wrap items-center gap-2">
+            {decks.map((plan) => {
+              const active = plan.floor === activeDeck?.floor;
+              return (
+                <button
+                  type="button"
+                  key={`${plan.name}-${plan.floor}`}
+                  onClick={() => setActiveFloor(plan.floor)}
+                  className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-all ${
+                    active
+                      ? "bg-ocean text-background shadow-luxe"
+                      : "border border-border bg-card text-muted-foreground hover:border-gold/60 hover:text-foreground cursor-pointer"
                   }`}
                 >
-                  {deckAvailable(plan)}
-                </span>
-              </button>
-            );
-          })}
+                  {tabLabel(plan)}
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none ${
+                      active ? "bg-gold/20 text-gold-soft" : "bg-emerald-500/10 text-emerald-600"
+                    }`}
+                  >
+                    {deckAvailable(plan)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {activeDeck && (
+            <Deck
+              key={`${activeDeck.name}-${activeDeck.floor}`}
+              plan={activeDeck}
+              roomsByNumber={roomsByNumber}
+              selectedRoomIds={selectedIdSet}
+              onToggleRoom={onToggleRoom}
+              vertical
+              isMobile={isMobile}
+            />
+          )}
         </div>
-        {activeDeck && (
-          <Deck
-            key={`${activeDeck.name}-${activeDeck.floor}`}
-            plan={activeDeck}
-            roomsByNumber={roomsByNumber}
-            selectedRoomIds={selectedIdSet}
-            onToggleRoom={onToggleRoom}
-            vertical
-          />
-        )}
-      </div>
       )}
 
       {/* Selected rooms recap — one line per chosen cabin. Tapping a booked
