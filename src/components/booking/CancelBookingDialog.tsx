@@ -41,6 +41,10 @@ const BLOCK_COPY: Record<CancellationBlockReason, { title: string; body: string 
     title: "We already have your request",
     body: "Your cancellation request is with our team. You will get an email as soon as it is reviewed.",
   },
+  payment_in_progress: {
+    title: "You have a payment in progress",
+    body: "Please finish or close the payment page first — we cannot work out your refund while money is on its way. If you have just paid, wait a minute and try again; if you changed your mind about paying, this clears itself within half an hour.",
+  },
   no_policy: {
     title: "We cannot quote this online",
     body: "Please contact our reservations desk and we will handle the cancellation for you.",

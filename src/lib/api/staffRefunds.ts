@@ -122,6 +122,10 @@ export async function getStaffCancelQuote(bookingId: number) {
     shortfall_amount: string;
     suggests_group: boolean;
     booking_type: "individual" | "group";
+    /** A gateway session is still live. Staff are warned rather than blocked:
+     *  it can settle after this cancellation (SSLCommerz sessions cannot be
+     *  voided), arriving as further money to refund. */
+    payment_in_progress: boolean;
   }>(`/staff/bookings/${bookingId}/cancel/`);
   return data;
 }

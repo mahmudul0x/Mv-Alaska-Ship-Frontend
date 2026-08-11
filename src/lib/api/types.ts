@@ -355,6 +355,7 @@ export type CancellationBlockReason =
   | "in_progress"
   | "sailed"
   | "pending_request"
+  | "payment_in_progress"
   | "no_policy";
 
 /** What cancelling would cost. Every figure is computed server-side; the client

@@ -1203,6 +1203,13 @@ function StaffCancelPanel({ booking, onDone }: { booking: { id: number }; onDone
                 recorded only, never billed.
               </div>
             )}
+            {q.payment_in_progress && (
+              <div className="text-destructive">
+                ⚠ A payment is still open at the gateway. It can settle after you cancel — that
+                money would then need refunding too. Ask the customer to close the payment page, or
+                check back in a few minutes.
+              </div>
+            )}
             {q.suggests_group && q.booking_type === "individual" && (
               <div className="text-muted-foreground">
                 This party is large enough to be a group booking — if it is one, change its type
