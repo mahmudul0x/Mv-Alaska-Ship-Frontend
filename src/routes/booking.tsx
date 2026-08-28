@@ -759,14 +759,17 @@ function StepPackage({ data, update, onNext }: StepProps & { onNext: () => void 
       {/* The sister ship sits beside the header, not below the list: someone
           who cannot find their date here is deciding between VESSELS, and by
           the bottom of the page they have already given up. */}
-      <div className="grid lg:grid-cols-[1fr_auto] lg:items-start gap-6">
+      {/* Fixed right column and justify-self-end, so the card sits flush
+          against the right edge of the step rather than wherever the heading
+          happens to stop. */}
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start gap-6 lg:gap-10">
         <StepHeader
           step={0}
           title="Choose your"
           highlight="package."
           description="Browse our upcoming voyages and pick the departure that suits you. Every package includes all meals, guided excursions, and your private room."
         />
-        <SisterShipCard className="lg:w-72 lg:mt-2" />
+        <SisterShipCard className="lg:w-full lg:justify-self-end lg:mt-2" />
       </div>
       <PackagePicker
         selectedPackageId={data.packageId}
