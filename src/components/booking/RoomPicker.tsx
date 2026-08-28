@@ -258,6 +258,14 @@ function RoomCell({
     }, PREVIEW_CLOSE_MS);
   }
 
+  /** The pointer reached the card. Just call off the pending close — not
+   *  scheduleOpen, which would re-measure the tile and jog the card out from
+   *  under the cursor while it is being used. */
+  function cancelClose() {
+    if (closeTimer.current) window.clearTimeout(closeTimer.current);
+    closeTimer.current = null;
+  }
+
   function closeNow() {
     clearTimers();
     locked.current = false;
@@ -347,7 +355,7 @@ function RoomCell({
           anchor={preview.rect}
           interactive={preview.tapped}
           onClose={closeNow}
-          onMouseEnter={scheduleOpen}
+          onMouseEnter={cancelClose}
           onMouseLeave={scheduleClose}
           onLockChange={(value) => {
             locked.current = value;

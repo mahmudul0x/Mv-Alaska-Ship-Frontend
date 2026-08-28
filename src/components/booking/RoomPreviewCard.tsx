@@ -61,6 +61,16 @@ export function RoomPreviewCard({
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const [lightboxAt, setLightboxAt] = useState<number | null>(null);
 
+  function openLightbox(index: number) {
+    setLightboxAt(index);
+    onLockChange?.(true);
+  }
+
+  function closeLightbox() {
+    setLightboxAt(null);
+    onLockChange?.(false);
+  }
+
   // Measured after paint: the card's height depends on how many photos it got,
   // so "does it fit below?" cannot be answered before it exists.
   useLayoutEffect(() => {
@@ -73,10 +83,6 @@ export function RoomPreviewCard({
       left: Math.min(Math.max(MARGIN, left), window.innerWidth - CARD_WIDTH - MARGIN),
     });
   }, [anchor]);
-
-  useEffect(() => {
-    onLockChange?.(lightboxAt !== null);
-  }, [lightboxAt, onLockChange]);
 
   useEffect(() => {
     if (!interactive) return;
@@ -127,7 +133,7 @@ export function RoomPreviewCard({
                 <button
                   key={image.id}
                   type="button"
-                  onClick={() => setLightboxAt(index)}
+                  onClick={() => openLightbox(index)}
                   aria-label={`View photo ${index + 1} of ${images.length} full size`}
                   className="group relative aspect-4/3 bg-muted cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ocean"
                 >
@@ -206,7 +212,7 @@ export function RoomPreviewCard({
           images={images}
           roomNumber={room.room_number}
           index={lightboxAt}
-          onClose={() => setLightboxAt(null)}
+          onClose={closeLightbox}
           onNavigate={(delta) =>
             setLightboxAt((i) => (i === null ? i : (i + delta + images.length) % images.length))
           }
