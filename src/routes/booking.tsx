@@ -381,6 +381,17 @@ function Booking() {
             </div>
           </div>
 
+          {/* ── Right: the sister ship, until there is a summary to show ──
+              Nothing is selected on the package step, so the sidebar column
+              stands empty — and someone who cannot find their date here is
+              choosing between VESSELS, not dates. Below the package list they
+              would already have given up, so it goes beside it. */}
+          {!selectedPackage && !isWideStep && (
+            <aside className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-40 lg:self-start">
+              <SisterShipCard />
+            </aside>
+          )}
+
           {/* ── Right: sticky summary sidebar (hidden on payment step) ── */}
           {selectedPackage && !isWideStep && (
             <aside className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-40 lg:self-start">
@@ -756,21 +767,12 @@ type StepProps = { data: BookingData; update: (p: Partial<BookingData>) => void 
 function StepPackage({ data, update, onNext }: StepProps & { onNext: () => void }) {
   return (
     <div>
-      {/* The sister ship sits beside the header, not below the list: someone
-          who cannot find their date here is deciding between VESSELS, and by
-          the bottom of the page they have already given up. */}
-      {/* Fixed right column and justify-self-end, so the card sits flush
-          against the right edge of the step rather than wherever the heading
-          happens to stop. */}
-      <div className="grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start gap-6 lg:gap-10">
-        <StepHeader
-          step={0}
-          title="Choose your"
-          highlight="package."
-          description="Browse our upcoming voyages and pick the departure that suits you. Every package includes all meals, guided excursions, and your private room."
-        />
-        <SisterShipCard className="lg:w-full lg:justify-self-end lg:mt-2" />
-      </div>
+      <StepHeader
+        step={0}
+        title="Choose your"
+        highlight="package."
+        description="Browse our upcoming voyages and pick the departure that suits you. Every package includes all meals, guided excursions, and your private room."
+      />
       <PackagePicker
         selectedPackageId={data.packageId}
         onSelectPackage={(pkg) => {
