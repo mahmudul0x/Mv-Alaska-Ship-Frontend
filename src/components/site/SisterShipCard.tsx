@@ -1,6 +1,15 @@
 import { Anchor, ArrowUpRight } from "lucide-react";
 
-import shipImage from "@/assets/109.jpeg";
+import fallbackImage from "@/assets/109.jpeg";
+
+/** The sister ship's own photo, served from public/ rather than imported.
+ *
+ *  A static import is resolved at build time, so a missing file fails the
+ *  build; from public/ a missing file is just a broken <img>, which the
+ *  onError below turns back into the bundled fallback. Drop the photo at
+ *  public/mv-crown.jpg and it appears — no code change, no broken deploy in
+ *  between. */
+const SHIP_PHOTO = "/mv-crown.jpg";
 
 /** The company's other vessel. Defined once so the name and the URL cannot
  *  drift apart across the three places that point at it. */
@@ -27,16 +36,25 @@ export function SisterShipCard({ className = "" }: { className?: string }) {
       rel="noopener noreferrer"
       className={`group block rounded-2xl border border-border bg-card shadow-luxe overflow-hidden hover-lift ${className}`}
     >
-      <div className="relative h-32 overflow-hidden">
+      <div className="relative h-36 overflow-hidden bg-ocean">
         <img
-          src={shipImage}
-          alt=""
+          src={SHIP_PHOTO}
+          alt={SISTER_SHIP.name}
           loading="lazy"
+          onError={(event) => {
+            // Photo not added yet — fall back rather than showing a broken
+            // tile. Clearing the handler first stops a loop if the fallback
+            // itself ever fails.
+            const img = event.currentTarget;
+            if (img.src.endsWith(fallbackImage)) return;
+            img.onerror = null;
+            img.src = fallbackImage;
+          }}
           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
-        <div className="absolute inset-0 bg-linear-to-t from-ocean/90 via-ocean/40 to-transparent" />
-        <div className="absolute bottom-3 left-4 right-4 flex items-center gap-2 eyebrow text-gold-soft text-[10px]">
-          <Anchor className="size-3.5 shrink-0" />
+        <div className="absolute inset-0 bg-linear-to-t from-ocean/95 via-ocean/35 to-transparent" />
+        <div className="absolute bottom-2.5 left-4 right-4 flex items-start gap-2 eyebrow text-gold-soft text-[10px] leading-relaxed">
+          <Anchor className="size-3.5 shrink-0 mt-0.5" />
           Same company, another ship
         </div>
       </div>
