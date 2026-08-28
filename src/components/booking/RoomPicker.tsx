@@ -201,6 +201,10 @@ function RoomsSkeleton({ mobile }: { mobile: boolean }) {
 /** How long the mouse must rest on a tile before its preview appears.
  *  Without a delay, sweeping across a 31-cabin deck flashes 31 cards. */
 const PREVIEW_DELAY_MS = 160;
+/** Grace period after the pointer leaves the tile, so it can travel across the
+ *  gap and onto the card. The photos are clickable; a card that vanishes on the
+ *  way to them cannot be clicked. */
+const PREVIEW_CLOSE_MS = 140;
 
 function RoomCell({
   room,
@@ -217,9 +221,21 @@ function RoomCell({
 }) {
   const selectable = room.availability === "available";
   const tileRef = useRef<HTMLLabelElement>(null);
-  const timer = useRef<number | null>(null);
+  const openTimer = useRef<number | null>(null);
+  const closeTimer = useRef<number | null>(null);
+  /** True while the full-screen viewer is up. It covers the screen, so the
+   *  pointer necessarily leaves both tile and card — closing on that would
+   *  tear down the very photo being looked at. */
+  const locked = useRef(false);
   const [preview, setPreview] = useState<{ rect: DOMRect; tapped: boolean } | null>(null);
   const hasPreview = room.preview_images.length > 0;
+
+  function clearTimers() {
+    if (openTimer.current) window.clearTimeout(openTimer.current);
+    if (closeTimer.current) window.clearTimeout(closeTimer.current);
+    openTimer.current = null;
+    closeTimer.current = null;
+  }
 
   function openPreview(tapped: boolean) {
     const rect = tileRef.current?.getBoundingClientRect();
@@ -228,21 +244,27 @@ function RoomCell({
 
   function scheduleOpen() {
     if (isMobile || !hasPreview) return;
-    timer.current = window.setTimeout(() => openPreview(false), PREVIEW_DELAY_MS);
+    if (closeTimer.current) window.clearTimeout(closeTimer.current);
+    closeTimer.current = null;
+    openTimer.current = window.setTimeout(() => openPreview(false), PREVIEW_DELAY_MS);
   }
 
-  function cancelOpen() {
-    if (timer.current) window.clearTimeout(timer.current);
-    timer.current = null;
-    setPreview((current) => (current?.tapped ? current : null));
+  function scheduleClose() {
+    if (openTimer.current) window.clearTimeout(openTimer.current);
+    openTimer.current = null;
+    closeTimer.current = window.setTimeout(() => {
+      if (locked.current) return;
+      setPreview((current) => (current?.tapped ? current : null));
+    }, PREVIEW_CLOSE_MS);
   }
 
-  useEffect(
-    () => () => {
-      if (timer.current) window.clearTimeout(timer.current);
-    },
-    [],
-  );
+  function closeNow() {
+    clearTimers();
+    locked.current = false;
+    setPreview(null);
+  }
+
+  useEffect(() => clearTimers, []);
 
   const capacity =
     room.room_type.max_adults + (room.room_type.max_kids ? `+${room.room_type.max_kids}` : "");
@@ -272,10 +294,10 @@ function RoomCell({
             : `Room ${room.room_number} · ${AVAILABILITY_LABEL[room.availability]}`
       }
       onMouseEnter={scheduleOpen}
-      onMouseLeave={cancelOpen}
+      onMouseLeave={scheduleClose}
       // Keyboard users get the same preview: the tiles are already focusable.
       onFocus={() => !isMobile && hasPreview && openPreview(false)}
-      onBlur={cancelOpen}
+      onBlur={scheduleClose}
       style={{ height: cellSize() }}
       className={`focus-ring-within relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg border shadow-sm px-1 text-center transition-all ${
         !selectable
@@ -324,7 +346,19 @@ function RoomCell({
           room={room}
           anchor={preview.rect}
           interactive={preview.tapped}
-          onClose={() => setPreview(null)}
+          onClose={closeNow}
+          onMouseEnter={scheduleOpen}
+          onMouseLeave={scheduleClose}
+          onLockChange={(value) => {
+            locked.current = value;
+            if (value && closeTimer.current) {
+              window.clearTimeout(closeTimer.current);
+              closeTimer.current = null;
+            }
+            // Viewer dismissed and the pointer is elsewhere by now — let the
+            // card go rather than leaving it stranded on screen.
+            if (!value) scheduleClose();
+          }}
         />
       )}
       {/* aria-hidden: the tile's visual text is a terse duplicate of the radio's

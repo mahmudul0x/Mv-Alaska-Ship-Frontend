@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Info, Users, X } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
+import { Expand, Info, Users, X } from "lucide-react";
 
-import { RoomGallery } from "@/components/booking/RoomGallery";
+import { ImageLightbox, RoomGallery } from "@/components/booking/RoomGallery";
 import { formatBDT } from "@/lib/money";
 import type { PackageRoom, RoomAvailability } from "@/lib/api/types";
 
@@ -25,6 +26,14 @@ type Props = {
    *  shows a static card that follows the mouse away. */
   interactive?: boolean;
   onClose?: () => void;
+  /** The pointer travelling from the tile onto the card must not dismiss it —
+   *  the photos are only clickable if the card can be reached. */
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
+  /** Held open while the full-screen viewer is up: the viewer covers the
+   *  screen, so the pointer necessarily leaves the card, and closing on that
+   *  would unmount the very photo being looked at. */
+  onLockChange?: (locked: boolean) => void;
 };
 
 /**
@@ -39,9 +48,18 @@ type Props = {
  * therefore computed from the tile's viewport rect and flipped/clamped to stay
  * on screen.
  */
-export function RoomPreviewCard({ room, anchor, interactive = false, onClose }: Props) {
+export function RoomPreviewCard({
+  room,
+  anchor,
+  interactive = false,
+  onClose,
+  onMouseEnter,
+  onMouseLeave,
+  onLockChange,
+}: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const [lightboxAt, setLightboxAt] = useState<number | null>(null);
 
   // Measured after paint: the card's height depends on how many photos it got,
   // so "does it fit below?" cannot be answered before it exists.
@@ -55,6 +73,10 @@ export function RoomPreviewCard({ room, anchor, interactive = false, onClose }: 
       left: Math.min(Math.max(MARGIN, left), window.innerWidth - CARD_WIDTH - MARGIN),
     });
   }, [anchor]);
+
+  useEffect(() => {
+    onLockChange?.(lightboxAt !== null);
+  }, [lightboxAt, onLockChange]);
 
   useEffect(() => {
     if (!interactive) return;
@@ -82,6 +104,8 @@ export function RoomPreviewCard({ room, anchor, interactive = false, onClose }: 
       }}
       className="fixed z-100 rounded-xl border border-border bg-card shadow-luxe overflow-hidden text-left"
       onClick={(event) => event.stopPropagation()}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
       {images.length > 0 && (
         <div className="relative">
@@ -90,7 +114,7 @@ export function RoomPreviewCard({ room, anchor, interactive = false, onClose }: 
             // lightbox, which is the only way to actually look at a cabin
             // without a mouse.
             <RoomGallery
-              images={images.map((image) => ({ ...image, sort_order: 0 }))}
+              images={images}
               roomNumber={room.room_number}
               variant="strip"
               className="p-2"
@@ -100,20 +124,30 @@ export function RoomPreviewCard({ room, anchor, interactive = false, onClose }: 
               className={`grid gap-px bg-border ${images.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
             >
               {images.slice(0, 4).map((image, index) => (
-                <div key={image.id} className="relative aspect-4/3 bg-muted">
+                <button
+                  key={image.id}
+                  type="button"
+                  onClick={() => setLightboxAt(index)}
+                  aria-label={`View photo ${index + 1} of ${images.length} full size`}
+                  className="group relative aspect-4/3 bg-muted cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ocean"
+                >
                   <img
                     src={image.thumbnail_url || image.image}
                     alt=""
                     loading="lazy"
                     decoding="async"
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  {index === 3 && images.length > 4 && (
+                  {index === 3 && images.length > 4 ? (
                     <span className="absolute inset-0 grid place-items-center bg-midnight/60 text-background text-sm font-semibold">
                       +{images.length - 4}
                     </span>
+                  ) : (
+                    <span className="absolute inset-0 grid place-items-center bg-midnight/0 opacity-0 transition-all group-hover:bg-midnight/35 group-hover:opacity-100">
+                      <Expand className="size-4 text-background" />
+                    </span>
                   )}
-                </div>
+                </button>
               ))}
             </div>
           )}
@@ -165,7 +199,30 @@ export function RoomPreviewCard({ room, anchor, interactive = false, onClose }: 
     </div>
   );
 
-  if (!interactive) return createPortal(card, document.body);
+  const viewer = (
+    <AnimatePresence>
+      {lightboxAt !== null && (
+        <ImageLightbox
+          images={images}
+          roomNumber={room.room_number}
+          index={lightboxAt}
+          onClose={() => setLightboxAt(null)}
+          onNavigate={(delta) =>
+            setLightboxAt((i) => (i === null ? i : (i + delta + images.length) % images.length))
+          }
+        />
+      )}
+    </AnimatePresence>
+  );
+
+  if (!interactive) {
+    return (
+      <>
+        {createPortal(card, document.body)}
+        {viewer}
+      </>
+    );
+  }
 
   // Tapped open: a backdrop, so it can be dismissed the way a sheet should be.
   return createPortal(

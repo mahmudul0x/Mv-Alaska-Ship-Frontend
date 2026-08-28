@@ -3,10 +3,20 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
-import type { RoomImage } from "@/lib/api/types";
+/** The least an image needs to be viewable. A room's own photo, a cabin type's
+ *  showcase photo and anything added later all satisfy it, so the viewer never
+ *  has to know which model it came from. */
+export type LightboxImage = {
+  id: number;
+  image: string;
+  /** Small CDN-rendered version for thumbnails. The full `image` is what the
+   *  viewer shows. */
+  thumbnail_url?: string;
+  caption?: string;
+};
 
 type Props = {
-  images: RoomImage[];
+  images: LightboxImage[];
   roomNumber: string;
   /** "strip": scrollable row of every photo. "thumb": one small tile with a +N badge. */
   variant?: "strip" | "thumb";
@@ -41,7 +51,7 @@ export function RoomGallery({ images, roomNumber, variant = "strip", className =
               className="group relative h-20 w-28 shrink-0 cursor-pointer overflow-hidden rounded-lg ring-1 ring-border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ocean"
             >
               <img
-                src={img.image}
+                src={img.thumbnail_url || img.image}
                 alt={img.caption || `Room ${roomNumber} photo ${i + 1}`}
                 loading="lazy"
                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
@@ -56,7 +66,11 @@ export function RoomGallery({ images, roomNumber, variant = "strip", className =
           aria-label={`View ${images.length} photo${images.length > 1 ? "s" : ""} of room ${roomNumber}`}
           className={`relative h-10 w-14 shrink-0 cursor-pointer overflow-hidden rounded-lg ring-1 ring-border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ocean ${className}`}
         >
-          <img src={images[0].image} alt="" className="h-full w-full object-cover" />
+          <img
+            src={images[0].thumbnail_url || images[0].image}
+            alt=""
+            className="h-full w-full object-cover"
+          />
           {images.length > 1 && (
             <span className="absolute bottom-0.5 right-0.5 rounded bg-ocean/85 px-1 py-px text-[8px] font-semibold leading-none text-background">
               +{images.length - 1}
@@ -67,7 +81,7 @@ export function RoomGallery({ images, roomNumber, variant = "strip", className =
 
       <AnimatePresence>
         {openAt !== null && (
-          <Lightbox
+          <ImageLightbox
             images={images}
             roomNumber={roomNumber}
             index={openAt}
@@ -80,14 +94,19 @@ export function RoomGallery({ images, roomNumber, variant = "strip", className =
   );
 }
 
-function Lightbox({
+/** Full-screen photo viewer: arrows, Escape, backdrop click, scroll lock.
+ *
+ *  Exported because the deck-plan preview card and the checkout summary open
+ *  the same viewer — the alternative was three near-identical overlays that
+ *  would drift apart. `index` is controlled by the caller. */
+export function ImageLightbox({
   images,
   roomNumber,
   index,
   onClose,
   onNavigate,
 }: {
-  images: RoomImage[];
+  images: LightboxImage[];
   roomNumber: string;
   index: number;
   onClose: () => void;
