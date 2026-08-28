@@ -29,6 +29,12 @@ export interface Package {
   marketing_description: string;
   hero_image: string | null;
   highlights: string[];
+  /** Cabins on this sailing that are still bookable, and how many it has at
+   *  all. Computed server-side by the same rule the deck plan paints tiles
+   *  with, so the card's "N cabins free" cannot promise more than the room
+   *  picker will actually let someone select. */
+  cabins_free: number;
+  cabins_total: number;
 }
 
 export type KidChargeType = "free" | "fixed" | "full_adult";

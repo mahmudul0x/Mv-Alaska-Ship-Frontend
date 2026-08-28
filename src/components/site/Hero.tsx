@@ -1,7 +1,8 @@
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { SISTER_SHIP } from "@/components/site/SisterShipCard";
 import heroImg from "@/assets/hero-cruise.jpg";
 import img21 from "@/assets/21.jpeg";
 import img23 from "@/assets/23.jpeg";
@@ -22,31 +23,61 @@ const slides: Slide[] = [
     img: canalImg,
     video: shipVideo,
     eyebrow: "◆ The Premium Brand For River Cruising",
-    title: <>Luxury <em className="not-italic text-gradient-gold font-normal">Sundarbans</em><br />Cruise Experience</>,
+    title: (
+      <>
+        Luxury <em className="not-italic text-gradient-gold font-normal">Sundarbans</em>
+        <br />
+        Cruise Experience
+      </>
+    ),
     sub: "Explore the world's largest mangrove forest aboard Bangladesh's most luxurious government-approved cruise ship.",
   },
   {
     img: heroImg,
     eyebrow: "◆ Aboard M.V. Alaska",
-    title: <>Your home <em className="not-italic text-gradient-gold font-normal">on</em><br />the river.</>,
+    title: (
+      <>
+        Your home <em className="not-italic text-gradient-gold font-normal">on</em>
+        <br />
+        the river.
+      </>
+    ),
     sub: "Three decks of comfort in motion — watch Alaska glide through the delta.",
   },
   {
     img: img21,
     eyebrow: "◆ Sundown On The Sky Deck",
-    title: <>Golden hours <em className="not-italic text-gradient-gold font-normal">over</em><br />the wild delta.</>,
+    title: (
+      <>
+        Golden hours <em className="not-italic text-gradient-gold font-normal">over</em>
+        <br />
+        the wild delta.
+      </>
+    ),
     sub: "Open-air sky decks, candlelit dinners and a sunset that stretches across the horizon.",
   },
   {
     img: img23,
     eyebrow: "◆ Cinematic Mangrove Canals",
-    title: <>Drift through <em className="not-italic text-gradient-gold font-normal">untouched</em><br />green corridors.</>,
+    title: (
+      <>
+        Drift through <em className="not-italic text-gradient-gold font-normal">untouched</em>
+        <br />
+        green corridors.
+      </>
+    ),
     sub: "Glide silently through narrow tidal canals, escorted by expert naturalists and silent canoes.",
   },
   {
     img: tigerImg,
     eyebrow: "◆ Royal Bengal Encounters",
-    title: <>Where the <em className="not-italic text-gradient-gold font-normal">tiger</em><br />still rules.</>,
+    title: (
+      <>
+        Where the <em className="not-italic text-gradient-gold font-normal">tiger</em>
+        <br />
+        still rules.
+      </>
+    ),
     sub: "Documentary-grade wildlife expeditions across Kotka, Hiron Point and Kochikhali.",
   },
 ];
@@ -159,20 +190,37 @@ export function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 1.2 }}
-          className="mt-10 flex flex-wrap gap-4 justify-center"
+          className="mt-10 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center items-center"
         >
           <Link
             to="/booking"
-            className="px-8 py-4 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.2em] font-semibold shadow-gold hover-lift"
+            className="w-full sm:w-auto text-center px-8 py-4 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.2em] font-semibold shadow-gold hover-lift"
           >
             Book Your Journey
           </Link>
-          <Link
-            to="/packages"
-            className="px-8 py-4 rounded-full border border-background/30 text-background text-xs uppercase tracking-[0.2em] font-medium hover:border-gold hover:text-gold transition-colors"
-          >
-            Explore Packages
-          </Link>
+          {/* The two secondary actions share a row of their own, so they stay
+              side by side on a phone instead of wrapping into a stack of three
+              full-width buttons. Padding and tracking tighten on small screens
+              so both labels fit without breaking. */}
+          <div className="flex w-full sm:w-auto gap-3 sm:gap-4 justify-center">
+            <Link
+              to="/packages"
+              className="flex-1 sm:flex-none text-center whitespace-nowrap px-4 sm:px-8 py-4 rounded-full border border-background/30 text-background text-[10px] sm:text-xs uppercase tracking-[0.12em] sm:tracking-[0.2em] font-medium hover:border-gold hover:text-gold transition-colors"
+            >
+              Explore Packages
+            </Link>
+            {/* Leaves the site: new tab, outward arrow, and rel="noopener" —
+                without it the opened page gets a writable handle on this one. */}
+            <a
+              href={SISTER_SHIP.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 whitespace-nowrap px-4 sm:px-8 py-4 rounded-full border border-background/30 text-background text-[10px] sm:text-xs uppercase tracking-[0.12em] sm:tracking-[0.2em] font-medium hover:border-gold hover:text-gold transition-colors"
+            >
+              Visit {SISTER_SHIP.shortName}
+              <ArrowUpRight className="size-3.5 shrink-0" />
+            </a>
+          </div>
         </motion.div>
       </motion.div>
 
@@ -213,14 +261,15 @@ export function Hero() {
         </div>
       </div>
 
-
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 2 }}
         className="absolute left-6 bottom-32 z-10 hidden md:flex flex-col items-center gap-3 text-background/60"
       >
-        <div className="eyebrow [writing-mode:vertical-rl] rotate-180 text-[9px]">Scroll to discover</div>
+        <div className="eyebrow [writing-mode:vertical-rl] rotate-180 text-[9px]">
+          Scroll to discover
+        </div>
         <ChevronDown className="size-4 animate-bounce" />
       </motion.div>
     </section>

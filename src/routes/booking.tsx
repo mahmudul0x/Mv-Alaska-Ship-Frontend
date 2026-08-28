@@ -36,6 +36,7 @@ import logo from "@/assets/logo.png";
 import img109 from "@/assets/109.jpeg";
 import { AvailabilityCalendar } from "@/components/booking/AvailabilityCalendar";
 import { PackagePicker } from "@/components/booking/PackagePicker";
+import { SisterShipCard } from "@/components/site/SisterShipCard";
 import { RoomGallery } from "@/components/booking/RoomGallery";
 import { RoomPicker } from "@/components/booking/RoomPicker";
 import { getBookingInvoices, initiatePayment } from "@/lib/api/bookings";
@@ -755,12 +756,18 @@ type StepProps = { data: BookingData; update: (p: Partial<BookingData>) => void 
 function StepPackage({ data, update, onNext }: StepProps & { onNext: () => void }) {
   return (
     <div>
-      <StepHeader
-        step={0}
-        title="Choose your"
-        highlight="package."
-        description="Browse our upcoming voyages and pick the departure that suits you. Every package includes all meals, guided excursions, and your private room."
-      />
+      {/* The sister ship sits beside the header, not below the list: someone
+          who cannot find their date here is deciding between VESSELS, and by
+          the bottom of the page they have already given up. */}
+      <div className="grid lg:grid-cols-[1fr_auto] lg:items-start gap-6">
+        <StepHeader
+          step={0}
+          title="Choose your"
+          highlight="package."
+          description="Browse our upcoming voyages and pick the departure that suits you. Every package includes all meals, guided excursions, and your private room."
+        />
+        <SisterShipCard className="lg:w-72 lg:mt-2" />
+      </div>
       <PackagePicker
         selectedPackageId={data.packageId}
         onSelectPackage={(pkg) => {
