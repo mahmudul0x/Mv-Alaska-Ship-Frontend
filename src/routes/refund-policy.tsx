@@ -43,7 +43,9 @@ function RefundPolicy() {
     : FALLBACK_TIERS;
   // Quoted to the customer as our payout promise; the dashboard flags a refund
   // that passes it, so the number here is one we actually hold ourselves to.
-  const slaDays = data?.refund_sla_days ?? 14;
+  // The fallback matches the model default, and both sit inside the 7-to-10
+  // working day standard SSLCommerz require a merchant to publish.
+  const slaDays = data?.refund_sla_days ?? 10;
 
   return (
     <LegalPage
@@ -190,10 +192,10 @@ function RefundPolicy() {
 
       <Clause number="6" title="How long a refund takes">
         <p>
-          Once approved, we start your refund within <strong>{slaDays} working days</strong>. It is
-          reversed through our payment gateway back to the card or mobile wallet you paid with, and
-          your bank or wallet provider then usually posts it within a further{" "}
-          <strong>5 to 7 working days</strong>.
+          Once approved, your refund is reversed through our payment gateway back to the card or
+          mobile wallet you paid with, and reaches you{" "}
+          <strong>within {slaDays} working days</strong>. That window is end to end — it covers your
+          bank or wallet provider&rsquo;s own processing as well as ours.
         </p>
         <p>
           We email you a confirmation with the transaction reference as soon as the refund is sent —

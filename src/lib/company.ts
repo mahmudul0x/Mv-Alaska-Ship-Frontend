@@ -40,6 +40,10 @@ export const COMPANY = {
     emails: ["juitourism@gmail.com", "mvalaskacruise@gmail.com"],
     phones: ["+880 1712-823482", "+880 1831-694307", "+880 1550-699732"],
   },
+  /** The people answerable for the business. SSLCommerz's merchant review asks
+   *  for "company and management details" on the About Us page, and a customer
+   *  handing over card details is entitled to know who is behind the site. */
+  management: [{ name: "Md. Akter Hossain (Rony)", title: "Partner & Director, Operations" }],
   /** Registration identifiers. BIN and DBID are genuinely optional — a business
    *  that is not VAT-registered has no BIN — so the UI drops empty ones rather
    *  than printing a blank line. */

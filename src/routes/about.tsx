@@ -296,6 +296,9 @@ function About() {
             {registrationRows().map((row) => (
               <Row key={row.label} label={row.label} value={row.value} />
             ))}
+            {COMPANY.management.map((person) => (
+              <Row key={person.name} label={person.title} value={person.name} />
+            ))}
             <Row label="Registered office" value={fullAddress(COMPANY.address)} />
             <Row label="Branch office" value={fullAddress(COMPANY.branchAddress)} />
             <Row label="Email" value={COMPANY.support.emails.join(" · ")} />
