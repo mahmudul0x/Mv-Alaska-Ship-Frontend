@@ -5,10 +5,19 @@ import { ShieldCheck } from "lucide-react";
  *
  *  Served from public/ rather than imported: a static import is resolved at
  *  build time, so a missing file fails the build. Download the banner from the
- *  SSLCommerz merchant panel and save it here — until then the text fallback
- *  below still satisfies a reader, and nothing breaks.
- */
-const BANNER = "/sslcommerz-banner.png";
+ *  SSLCommerz merchant panel and save it as public/sslcommerz-banner.<ext>.
+ *
+ *  Several extensions are tried in turn because whoever saves the file has no
+ *  reason to know which one the code expects, and Windows hides the real one —
+ *  a banner saved as .jpg would otherwise silently never appear. Falls through
+ *  to the text list, which satisfies a reader on its own. */
+const BANNER_CANDIDATES = [
+  "/sslcommerz-banner.png",
+  "/sslcommerz-banner.jpg",
+  "/sslcommerz-banner.jpeg",
+  "/sslcommerz-banner.webp",
+  "/sslcommerz-banner.svg",
+];
 
 const METHODS = "Visa · Mastercard · AMEX · bKash · Nagad · Rocket · Upay · Internet banking";
 
@@ -20,18 +29,22 @@ const METHODS = "Visa · Mastercard · AMEX · bKash · Nagad · Rocket · Upay 
  * seeing who is handling the money.
  */
 export function PaymentMethods({ className = "" }: { className?: string }) {
-  const [bannerFailed, setBannerFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const banner = BANNER_CANDIDATES[attempt];
 
   return (
     <div className={className}>
       <div className="eyebrow text-[10px] text-background/50 mb-3">We accept</div>
 
-      {!bannerFailed ? (
+      {banner ? (
         <img
-          src={BANNER}
+          // key: without it React reuses the same <img> and the browser will
+          // not re-attempt a src it has already failed on.
+          key={banner}
+          src={banner}
           alt="Accepted payment methods — powered by SSLCommerz"
           loading="lazy"
-          onError={() => setBannerFailed(true)}
+          onError={() => setAttempt((i) => i + 1)}
           className="w-full rounded-lg bg-background/95 p-2"
         />
       ) : (
