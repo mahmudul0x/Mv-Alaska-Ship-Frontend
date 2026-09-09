@@ -116,7 +116,11 @@ function RefundPolicy() {
             Choose <strong>Cancel this booking</strong>. Before you confirm anything you are shown
             the exact cancellation charge and the exact refund due.
           </li>
-          <li>Tell us the reason and where to send the refund — bKash, Nagad or a bank account.</li>
+          <li>
+            Tell us why. Your refund goes back to the card or mobile wallet you paid with, so there
+            is nothing else to fill in — unless you would rather have it somewhere else, which you
+            can ask for on the same screen.
+          </li>
           <li>
             Submit. You will receive an acknowledgement email straight away, and{" "}
             <strong>your cabin stays reserved</strong> until our team reviews the request.
@@ -186,14 +190,19 @@ function RefundPolicy() {
 
       <Clause number="6" title="How long a refund takes">
         <p>
-          Once approved, refunds are sent within <strong>{slaDays} working days</strong> to the
-          bKash, Nagad or bank account you gave us. We email you a confirmation with the transaction
-          reference when the money goes out — quote it back to us if it has not reached you.
+          Once approved, we start your refund within <strong>{slaDays} working days</strong>. It is
+          reversed through our payment gateway back to the card or mobile wallet you paid with, and
+          your bank or wallet provider then usually posts it within a further{" "}
+          <strong>5 to 7 working days</strong>.
         </p>
         <p>
-          Refunds are processed manually rather than reversed through the payment gateway, which is
-          why we ask you where to send the money. Your provider may take a little additional time to
-          post it to your account.
+          We email you a confirmation with the transaction reference as soon as the refund is sent —
+          quote it back to us if it has not reached you.
+        </p>
+        <p>
+          If you asked us to pay you somewhere else instead, or your payment cannot be reversed for
+          any reason, we send it by bKash, Nagad or bank transfer to the account you gave us, within
+          the same window.
         </p>
       </Clause>
 

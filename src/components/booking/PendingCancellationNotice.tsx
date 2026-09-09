@@ -34,14 +34,21 @@ export function PendingCancellationNotice({ request }: { request: CancellationRe
           <dt className="text-muted-foreground">Refund due to you</dt>
           <dd className="font-display text-lg text-gold">{formatBDT(request.refund_amount)}</dd>
         </div>
-        {request.refund_account_masked && (
-          <div className="flex items-center justify-between px-4 py-2.5">
-            <dt className="text-muted-foreground">To be sent to</dt>
-            <dd className="text-sm">
-              {request.refund_method_label} {request.refund_account_masked}
-            </dd>
-          </div>
-        )}
+        <div className="flex items-center justify-between px-4 py-2.5">
+          <dt className="text-muted-foreground">To be sent to</dt>
+          <dd className="text-sm text-right">
+            {request.refund_account_masked ? (
+              <>
+                {request.refund_method_label} {request.refund_account_masked}
+              </>
+            ) : (
+              // No account asked for: the refund reverses to whatever paid for
+              // the booking. Saying so is the whole point of the row — silence
+              // here is what makes people phone to ask where their money went.
+              "The card or wallet you paid with"
+            )}
+          </dd>
+        </div>
       </dl>
 
       <p className="text-xs text-muted-foreground leading-relaxed">

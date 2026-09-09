@@ -128,6 +128,9 @@ export function CancelBookingDialog({ booking, open, onClose, onSubmitted }: Pro
   // Nothing paid → there is no payout to arrange, so the destination fields are
   // pointless friction. The server cancels this booking on the spot.
   const needsPayoutDetails = Boolean(quote?.requires_approval);
+  // Filling in an account is what asks for one — no separate toggle to get out
+  // of step with the fields it guards.
+  const wantsAlternativePayout = needsPayoutDetails && accountNumber.trim() !== "";
 
   function close() {
     setStep("quote");
@@ -158,13 +161,14 @@ export function CancelBookingDialog({ booking, open, onClose, onSubmitted }: Pro
         phone_confirm: phoneConfirm,
         reason_code: reasonCode,
         reason_note: reasonNote,
-        // Nothing paid → no payout, so these stay empty and the server ignores
-        // them (it cancels the booking outright instead of queuing a request).
-        refund_method: needsPayoutDetails ? method : undefined,
-        refund_account_name: needsPayoutDetails ? accountName : "",
-        refund_account_number: needsPayoutDetails ? accountNumber : "",
-        bank_name: bankName,
-        branch_name: branchName,
+        // Sent only when the customer actually asked to be paid somewhere
+        // else. Left empty, the server reverses the payment to the card or
+        // wallet it came from — which is the default, and the safer one.
+        refund_method: wantsAlternativePayout ? method : undefined,
+        refund_account_name: wantsAlternativePayout ? accountName : "",
+        refund_account_number: wantsAlternativePayout ? accountNumber : "",
+        bank_name: wantsAlternativePayout ? bankName : "",
+        branch_name: wantsAlternativePayout ? branchName : "",
         acknowledged_charge: acknowledged,
         quote_token: quote.quote_token,
       });
@@ -349,73 +353,97 @@ export function CancelBookingDialog({ booking, open, onClose, onSubmitted }: Pro
             {/* ── Page 2: where the money goes, and the agreement ── */}
             {quote?.allowed && step === "payout" && (
               <>
+                {/* The refund goes back the way it came, so there is nothing to
+                    fill in. Collecting a wallet number by default was friction
+                    that also created a way to mistype money into a stranger's
+                    account — and made us hold bank details we did not need. */}
                 {needsPayoutDetails && (
-                  <div className="rounded-xl bg-ocean/4 border border-border p-4 space-y-3">
-                    <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                      Where should we send {formatBDT(quote.refund_amount)}?
+                  <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 space-y-1">
+                    <div className="text-xs font-semibold">
+                      {formatBDT(quote.refund_amount)} goes back the way you paid
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      {METHODS.map((m) => (
-                        <button
-                          key={m.value}
-                          type="button"
-                          onClick={() => setMethod(m.value)}
-                          className={`min-h-11 rounded-lg border text-xs font-semibold transition-colors ${
-                            method === m.value
-                              ? "border-gold text-gold bg-background"
-                              : "border-border text-muted-foreground hover:border-gold/50"
-                          }`}
-                        >
-                          {m.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    <Field label="Account holder name" error={error("refund_account_name")}>
-                      <input
-                        value={accountName}
-                        onChange={(e) => setAccountName(e.target.value)}
-                        className={inputClass}
-                      />
-                    </Field>
-
-                    <Field
-                      label={isBank ? "Account number" : "Wallet mobile number"}
-                      error={error("refund_account_number")}
-                    >
-                      <input
-                        inputMode={isBank ? "text" : "numeric"}
-                        value={accountNumber}
-                        onChange={(e) => setAccountNumber(e.target.value)}
-                        placeholder={isBank ? "e.g. 1234567890123" : "01712345678"}
-                        className={inputClass}
-                      />
-                      {!isBank && (
-                        <p className="text-[11px] text-muted-foreground mt-1.5">
-                          This does not have to be the number on your booking.
-                        </p>
-                      )}
-                    </Field>
-
-                    {isBank && (
-                      <div className="grid sm:grid-cols-2 gap-3">
-                        <Field label="Bank name" error={error("bank_name")}>
-                          <input
-                            value={bankName}
-                            onChange={(e) => setBankName(e.target.value)}
-                            className={inputClass}
-                          />
-                        </Field>
-                        <Field label="Branch" error={error("branch_name")}>
-                          <input
-                            value={branchName}
-                            onChange={(e) => setBranchName(e.target.value)}
-                            className={inputClass}
-                          />
-                        </Field>
-                      </div>
-                    )}
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      We reverse it to the card or mobile wallet used for this booking — nothing for
+                      you to enter, and it cannot go to the wrong account.
+                    </p>
                   </div>
+                )}
+
+                {needsPayoutDetails && (
+                  <details className="rounded-xl bg-ocean/4 border border-border p-4 group">
+                    <summary className="text-xs cursor-pointer select-none marker:content-['']">
+                      <span className="text-gold-text font-semibold underline underline-offset-2">
+                        Send it somewhere else instead
+                      </span>
+                      <span className="text-muted-foreground">
+                        {" "}
+                        — only if you cannot use the original card or wallet
+                      </span>
+                    </summary>
+                    <div className="mt-3 space-y-3">
+                      <div className="grid grid-cols-3 gap-2">
+                        {METHODS.map((m) => (
+                          <button
+                            key={m.value}
+                            type="button"
+                            onClick={() => setMethod(m.value)}
+                            className={`min-h-11 rounded-lg border text-xs font-semibold transition-colors ${
+                              method === m.value
+                                ? "border-gold text-gold bg-background"
+                                : "border-border text-muted-foreground hover:border-gold/50"
+                            }`}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <Field label="Account holder name" error={error("refund_account_name")}>
+                        <input
+                          value={accountName}
+                          onChange={(e) => setAccountName(e.target.value)}
+                          className={inputClass}
+                        />
+                      </Field>
+
+                      <Field
+                        label={isBank ? "Account number" : "Wallet mobile number"}
+                        error={error("refund_account_number")}
+                      >
+                        <input
+                          inputMode={isBank ? "text" : "numeric"}
+                          value={accountNumber}
+                          onChange={(e) => setAccountNumber(e.target.value)}
+                          placeholder={isBank ? "e.g. 1234567890123" : "01712345678"}
+                          className={inputClass}
+                        />
+                        {!isBank && (
+                          <p className="text-[11px] text-muted-foreground mt-1.5">
+                            This does not have to be the number on your booking.
+                          </p>
+                        )}
+                      </Field>
+
+                      {isBank && (
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          <Field label="Bank name" error={error("bank_name")}>
+                            <input
+                              value={bankName}
+                              onChange={(e) => setBankName(e.target.value)}
+                              className={inputClass}
+                            />
+                          </Field>
+                          <Field label="Branch" error={error("branch_name")}>
+                            <input
+                              value={branchName}
+                              onChange={(e) => setBranchName(e.target.value)}
+                              className={inputClass}
+                            />
+                          </Field>
+                        </div>
+                      )}
+                    </div>
+                  </details>
                 )}
 
                 <label className="flex items-start gap-3 p-4 rounded-xl border border-border cursor-pointer hover:border-gold/50 transition-colors">
