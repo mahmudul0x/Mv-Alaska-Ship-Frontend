@@ -1414,6 +1414,10 @@ function StepPayment({
     data.paymentType === "partial" &&
     (!data.partialAmount || partialAmountNumber <= 0 || partialAmountNumber > dueAmount);
 
+  // Deliberately not persisted with the rest of the booking draft: consent is
+  // given for THIS submission, and reloading the page should ask again.
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+
   const payNow =
     data.paymentType === "partial" && partialAmountNumber > 0 ? partialAmountNumber : dueAmount;
   const payLater = Math.max(0, dueAmount - payNow);
@@ -1798,9 +1802,52 @@ function StepPayment({
                 </div>
               )}
 
+              {/* Consent, immediately above the button that acts on it. Each
+                  policy is a real link the customer can open and read before
+                  agreeing — an unlinked "I agree to the terms" is a claim
+                  nobody can check. Required by the payment gateway's merchant
+                  review, and the right thing regardless. */}
+              <label className="flex items-start gap-3 rounded-xl border border-border bg-muted/30 px-3.5 py-3 cursor-pointer hover:border-gold/50 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(event) => setAcceptedTerms(event.target.checked)}
+                  className="mt-0.5 size-4 shrink-0 accent-gold"
+                />
+                <span className="text-[11px] leading-relaxed text-muted-foreground">
+                  I have read and agree to the{" "}
+                  <Link
+                    to="/terms"
+                    target="_blank"
+                    className="text-gold-text font-semibold underline underline-offset-2"
+                  >
+                    Terms &amp; Conditions
+                  </Link>
+                  ,{" "}
+                  <Link
+                    to="/privacy"
+                    target="_blank"
+                    className="text-gold-text font-semibold underline underline-offset-2"
+                  >
+                    Privacy Policy
+                  </Link>{" "}
+                  and{" "}
+                  <Link
+                    to="/refund-policy"
+                    target="_blank"
+                    className="text-gold-text font-semibold underline underline-offset-2"
+                  >
+                    Refund &amp; Cancellation Policy
+                  </Link>
+                  .
+                </span>
+              </label>
+
               <button
                 type="submit"
-                disabled={submitting || !quote || partialInvalid || guestIssues.length > 0}
+                disabled={
+                  submitting || !quote || partialInvalid || guestIssues.length > 0 || !acceptedTerms
+                }
                 className="w-full flex items-center justify-center gap-2 px-8 py-3.5 rounded-full gradient-gold text-ocean text-[11px] uppercase tracking-[0.2em] font-semibold shadow-luxe hover-lift disabled:opacity-40 disabled:pointer-events-none"
               >
                 {submitting ? (

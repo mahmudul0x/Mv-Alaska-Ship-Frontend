@@ -10,7 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WildlifeRouteImport } from './routes/wildlife'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StaffRouteImport } from './routes/staff'
+import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PolicyRouteImport } from './routes/policy'
 import { Route as PackagesRouteImport } from './routes/packages'
 import { Route as ManageRouteImport } from './routes/manage'
@@ -45,9 +48,24 @@ const WildlifeRoute = WildlifeRouteImport.update({
   path: '/wildlife',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StaffRoute = StaffRouteImport.update({
   id: '/staff',
   path: '/staff',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RefundPolicyRoute = RefundPolicyRouteImport.update({
+  id: '/refund-policy',
+  path: '/refund-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PolicyRoute = PolicyRouteImport.update({
@@ -203,7 +221,10 @@ export interface FileRoutesByFullPath {
   '/manage': typeof ManageRoute
   '/packages': typeof PackagesRoute
   '/policy': typeof PolicyRoute
+  '/privacy': typeof PrivacyRoute
+  '/refund-policy': typeof RefundPolicyRoute
   '/staff': typeof StaffRouteWithChildren
+  '/terms': typeof TermsRoute
   '/wildlife': typeof WildlifeRoute
   '/cabins/$slug': typeof CabinsSlugRoute
   '/payment/cancel': typeof PaymentCancelRoute
@@ -235,6 +256,9 @@ export interface FileRoutesByTo {
   '/manage': typeof ManageRoute
   '/packages': typeof PackagesRoute
   '/policy': typeof PolicyRoute
+  '/privacy': typeof PrivacyRoute
+  '/refund-policy': typeof RefundPolicyRoute
+  '/terms': typeof TermsRoute
   '/wildlife': typeof WildlifeRoute
   '/cabins/$slug': typeof CabinsSlugRoute
   '/payment/cancel': typeof PaymentCancelRoute
@@ -267,7 +291,10 @@ export interface FileRoutesById {
   '/manage': typeof ManageRoute
   '/packages': typeof PackagesRoute
   '/policy': typeof PolicyRoute
+  '/privacy': typeof PrivacyRoute
+  '/refund-policy': typeof RefundPolicyRoute
   '/staff': typeof StaffRouteWithChildren
+  '/terms': typeof TermsRoute
   '/wildlife': typeof WildlifeRoute
   '/cabins_/$slug': typeof CabinsSlugRoute
   '/payment/cancel': typeof PaymentCancelRoute
@@ -301,7 +328,10 @@ export interface FileRouteTypes {
     | '/manage'
     | '/packages'
     | '/policy'
+    | '/privacy'
+    | '/refund-policy'
     | '/staff'
+    | '/terms'
     | '/wildlife'
     | '/cabins/$slug'
     | '/payment/cancel'
@@ -333,6 +363,9 @@ export interface FileRouteTypes {
     | '/manage'
     | '/packages'
     | '/policy'
+    | '/privacy'
+    | '/refund-policy'
+    | '/terms'
     | '/wildlife'
     | '/cabins/$slug'
     | '/payment/cancel'
@@ -364,7 +397,10 @@ export interface FileRouteTypes {
     | '/manage'
     | '/packages'
     | '/policy'
+    | '/privacy'
+    | '/refund-policy'
     | '/staff'
+    | '/terms'
     | '/wildlife'
     | '/cabins_/$slug'
     | '/payment/cancel'
@@ -397,7 +433,10 @@ export interface RootRouteChildren {
   ManageRoute: typeof ManageRoute
   PackagesRoute: typeof PackagesRoute
   PolicyRoute: typeof PolicyRoute
+  PrivacyRoute: typeof PrivacyRoute
+  RefundPolicyRoute: typeof RefundPolicyRoute
   StaffRoute: typeof StaffRouteWithChildren
+  TermsRoute: typeof TermsRoute
   WildlifeRoute: typeof WildlifeRoute
   CabinsSlugRoute: typeof CabinsSlugRoute
   PaymentCancelRoute: typeof PaymentCancelRoute
@@ -416,11 +455,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WildlifeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/staff': {
       id: '/staff'
       path: '/staff'
       fullPath: '/staff'
       preLoaderRoute: typeof StaffRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/refund-policy': {
+      id: '/refund-policy'
+      path: '/refund-policy'
+      fullPath: '/refund-policy'
+      preLoaderRoute: typeof RefundPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/policy': {
@@ -664,7 +724,10 @@ const rootRouteChildren: RootRouteChildren = {
   ManageRoute: ManageRoute,
   PackagesRoute: PackagesRoute,
   PolicyRoute: PolicyRoute,
+  PrivacyRoute: PrivacyRoute,
+  RefundPolicyRoute: RefundPolicyRoute,
   StaffRoute: StaffRouteWithChildren,
+  TermsRoute: TermsRoute,
   WildlifeRoute: WildlifeRoute,
   CabinsSlugRoute: CabinsSlugRoute,
   PaymentCancelRoute: PaymentCancelRoute,

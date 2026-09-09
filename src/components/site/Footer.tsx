@@ -1,8 +1,14 @@
 import { Link } from "@tanstack/react-router";
 import { Phone, Mail, MapPin, Instagram, Facebook, Youtube } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { PaymentMethods } from "./PaymentMethods";
+import { registrationRows } from "@/lib/company";
 
 export function Footer() {
+  // Registration identifiers the gateway's review expects to see published.
+  // Empty ones are dropped, so a business without a BIN prints no blank row.
+  const registration = registrationRows();
+
   return (
     <footer className="relative gradient-ocean text-background">
       <div className="gold-rule" />
@@ -104,18 +110,59 @@ export function Footer() {
         </div>
       </div>
 
+      {/* Legal + payment strip. The payment gateway's merchant review requires
+          every policy to be reachable from the footer and the accepted-methods
+          banner to be shown, and both belong here anyway — this is where people
+          look for them. */}
+      <div className="border-t border-white/8">
+        <div className="container-luxe py-8 grid gap-8 lg:grid-cols-[1fr_auto] lg:items-start">
+          <div>
+            <div className="eyebrow text-[10px] text-background/50 mb-3">Policies</div>
+            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-background/75">
+              <Link to="/terms" className="hover:text-gold transition-colors">
+                Terms &amp; Conditions
+              </Link>
+              <Link to="/privacy" className="hover:text-gold transition-colors">
+                Privacy Policy
+              </Link>
+              <Link to="/refund-policy" className="hover:text-gold transition-colors">
+                Refund &amp; Delivery Policy
+              </Link>
+              <Link to="/policy" className="hover:text-gold transition-colors">
+                Payment &amp; Cancellation
+              </Link>
+              <Link to="/contact" className="hover:text-gold transition-colors">
+                Contact Us
+              </Link>
+            </div>
+
+            {registration.length > 0 && (
+              <div className="mt-5 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-background/45">
+                {registration.map((row) => (
+                  <span key={row.label}>
+                    {row.label} <strong className="text-background/65">{row.value}</strong>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <PaymentMethods className="lg:text-right lg:flex lg:flex-col lg:items-end" />
+        </div>
+      </div>
+
       <div className="border-t border-white/8">
         <div className="container-luxe py-6 flex flex-col md:flex-row gap-3 items-center justify-between text-xs text-background/50">
           <div>© {new Date().getFullYear()} MV Alaska Cruise Ship. All rights reserved.</div>
           <div className="flex gap-6">
-            <Link to="/policy" className="hover:text-gold">
-              Privacy
+            <Link to="/about" className="hover:text-gold">
+              About Us
             </Link>
-            <Link to="/policy" className="hover:text-gold">
-              Terms
+            <Link to="/packages" className="hover:text-gold">
+              Packages
             </Link>
-            <Link to="/" className="hover:text-gold">
-              Sitemap
+            <Link to="/manage" className="hover:text-gold">
+              Manage Booking
             </Link>
           </div>
         </div>
