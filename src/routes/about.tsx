@@ -4,7 +4,7 @@ import { Landmark, Leaf, LifeBuoy, ShieldCheck } from "lucide-react";
 import { PageHero } from "@/components/site/PageHero";
 import { SectionHeader } from "@/components/site/SectionHeader";
 import { Stats } from "@/components/site/Stats";
-import { COMPANY, fullAddress, registrationRows } from "@/lib/company";
+import { COMPANY, fullAddress, isPlaceholder, registrationRows } from "@/lib/company";
 import deck from "@/assets/deck-sunset.jpg";
 import canal from "@/assets/M.V._ALASKA_AboutPageImage.jpeg";
 import shipVideo from "@/assets/MvalaskaVideo.mp4";
@@ -290,7 +290,7 @@ function About() {
           </p>
 
           <dl className="mt-10 rounded-2xl border border-border bg-card divide-y divide-border overflow-hidden">
-            {COMPANY.legalName !== "———" && (
+            {!isPlaceholder(COMPANY.legalName) && (
               <Row label="Registered name" value={COMPANY.legalName} />
             )}
             {registrationRows().map((row) => (

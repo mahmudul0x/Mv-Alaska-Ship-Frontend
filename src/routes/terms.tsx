@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { Clause, LegalPage } from "@/components/site/LegalPage";
-import { COMPANY, fullAddress, registrationRows } from "@/lib/company";
+import { COMPANY, fullAddress, isPlaceholder, registrationRows } from "@/lib/company";
 import deck from "@/assets/deck-sunset.jpg";
 
 export const Route = createFileRoute("/terms")({
@@ -41,7 +41,7 @@ function Terms() {
       <Clause number="1" title="Who we are">
         <p>
           This website is operated by <strong>{COMPANY.name}</strong>
-          {COMPANY.legalName !== "———" && <> (legally {COMPANY.legalName})</>}, of{" "}
+          {!isPlaceholder(COMPANY.legalName) && <> (legally {COMPANY.legalName})</>}, of{" "}
           {fullAddress(COMPANY.address)}.
         </p>
         {registration.length > 0 && (

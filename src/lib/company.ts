@@ -39,7 +39,7 @@ export const COMPANY = {
    *  that is not VAT-registered has no BIN — so the UI drops empty ones rather
    *  than printing a blank line. */
   registration: {
-    tradeLicence: PENDING,
+    tradeLicence: "19/544",
     tin: PENDING,
     bin: "",
     dbid: "",
@@ -59,7 +59,10 @@ export function registrationRows(): { label: string; value: string }[] {
     { label: "TIN", value: tin },
     { label: "BIN (VAT Reg.)", value: bin },
     { label: "DBID", value: dbid },
-  ].filter((row) => row.value);
+    // isPlaceholder, not just truthiness: PENDING is a run of em dashes, so a
+    // plain `row.value` test happily published "Trade Licence No. ———" to
+    // every visitor.
+  ].filter((row) => !isPlaceholder(row.value));
 }
 
 /** Structural, not `typeof COMPANY.address`: `as const` narrows each address to
