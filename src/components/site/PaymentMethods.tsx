@@ -32,18 +32,18 @@ export function PaymentMethods({ className = "" }: { className?: string }) {
           alt="Accepted payment methods — powered by SSLCommerz"
           loading="lazy"
           onError={() => setBannerFailed(true)}
-          className="w-full max-w-lg rounded-lg bg-background/95 p-2"
+          className="w-full rounded-lg bg-background/95 p-2"
         />
       ) : (
         // Banner not added yet. Say the same thing in words rather than leaving
         // a broken tile where the compliance requirement is.
-        <div className="max-w-lg rounded-lg bg-background/95 px-4 py-3 text-ocean">
-          <div className="text-xs font-semibold leading-relaxed">{METHODS}</div>
+        <div className="rounded-lg bg-background/95 px-4 py-3 text-ocean">
+          <div className="text-[11px] font-semibold leading-relaxed break-words">{METHODS}</div>
         </div>
       )}
 
-      <div className="mt-3 flex items-center gap-2 text-[11px] text-background/55">
-        <ShieldCheck className="size-3.5 text-gold shrink-0" />
+      <div className="mt-3 flex items-start gap-2 text-[11px] text-background/55 leading-relaxed">
+        <ShieldCheck className="size-3.5 text-gold shrink-0 mt-0.5" />
         Payments secured by SSLCommerz. We never see or store your card details.
       </div>
     </div>

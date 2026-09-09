@@ -107,6 +107,12 @@ export function Footer() {
               <span>71, KDA Avenue, Khulna, Bangladesh</span>
             </li>
           </ul>
+
+          {/* Sits here rather than in the strip below because the Offices
+              column ends early and leaves an empty band the width of it — and
+              because the accepted-methods banner is worth seeing before
+              someone has scrolled to the very bottom. */}
+          <PaymentMethods className="mt-8" />
         </div>
       </div>
 
@@ -115,7 +121,7 @@ export function Footer() {
           banner to be shown, and both belong here anyway — this is where people
           look for them. */}
       <div className="border-t border-white/8">
-        <div className="container-luxe py-8 grid gap-8 lg:grid-cols-[1fr_auto] lg:items-start">
+        <div className="container-luxe py-8">
           <div>
             <div className="eyebrow text-[10px] text-background/50 mb-3">Policies</div>
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-background/75">
@@ -146,8 +152,6 @@ export function Footer() {
               </div>
             )}
           </div>
-
-          <PaymentMethods className="lg:text-right lg:flex lg:flex-col lg:items-end" />
         </div>
       </div>
 
