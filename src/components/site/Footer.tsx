@@ -63,23 +63,34 @@ export function Footer() {
 
         <div className="lg:col-span-3">
           <div className="eyebrow text-gold mb-5">Reservations</div>
-          <ul className="space-y-3 text-sm text-background/75">
-            <li className="flex items-start gap-3">
-              <Phone className="size-4 text-gold shrink-0 mt-0.5" />
-              <div>
-                {COMPANY.support.phones.map((phone) => (
-                  <div key={phone}>{phone}</div>
-                ))}
-              </div>
-            </li>
-            <li className="flex items-start gap-3">
-              <Mail className="size-4 text-gold shrink-0 mt-0.5" />
-              <div className="break-all">
-                {COMPANY.support.emails.map((email) => (
-                  <div key={email}>{email}</div>
-                ))}
-              </div>
-            </li>
+          {/* Every line carries its own icon. Grouping them under one icon and
+              letting the rest hang indented left the column looking like the
+              markup had failed halfway down. Each is a real link too — a phone
+              number you cannot tap is not much use on the device most people
+              read this on. */}
+          <ul className="space-y-2.5 text-sm text-background/75">
+            {COMPANY.support.phones.map((phone) => (
+              <li key={phone}>
+                <a
+                  href={`tel:${phone.replace(/\s/g, "")}`}
+                  className="flex items-start gap-3 hover:text-gold transition-colors"
+                >
+                  <Phone className="size-4 text-gold shrink-0 mt-0.5" />
+                  {phone}
+                </a>
+              </li>
+            ))}
+            {COMPANY.support.emails.map((email) => (
+              <li key={email}>
+                <a
+                  href={`mailto:${email}`}
+                  className="flex items-start gap-3 hover:text-gold transition-colors"
+                >
+                  <Mail className="size-4 text-gold shrink-0 mt-0.5" />
+                  <span className="break-all">{email}</span>
+                </a>
+              </li>
+            ))}
           </ul>
           {/* Kept from the old Explore list: this is the only route to it —
               it is deliberately absent from the navbar. */}
