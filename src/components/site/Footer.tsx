@@ -1,5 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { Phone, Mail, MapPin, Instagram, Facebook, Ticket, Youtube } from "lucide-react";
+import {
+  Phone,
+  Mail,
+  MapPin,
+  Instagram,
+  Facebook,
+  ShieldCheck,
+  Ticket,
+  Youtube,
+} from "lucide-react";
 import logo from "@/assets/logo.png";
 import { PaymentMethods } from "./PaymentMethods";
 import { COMPANY, fullAddress, registrationRows } from "@/lib/company";
@@ -126,26 +135,38 @@ export function Footer() {
       {/* Its own band, directly under the columns rather than down at the
           copyright line. The gateway's banner is about 9:1, so it cannot live
           inside a column — at that width the card logos are a few pixels wide
-          and the compliance requirement is met in name only. */}
+          and the compliance requirement is met in name only. Its wording sits
+          in the fine-print row below. */}
       <PaymentMethods />
 
-      {/* Registration identifiers the gateway's review expects published. The
-          policy links moved up into their own column, so this strip is only
-          the numbers now — and disappears entirely until they are filled in. */}
-      {registration.length > 0 && (
-        <div className="border-t border-white/8">
-          <div className="container-luxe py-5 flex flex-wrap gap-x-6 gap-y-1.5 text-[11px] text-background/45">
-            {registration.map((row) => (
-              <span key={row.label}>
-                {row.label} <strong className="text-background/65">{row.value}</strong>
-              </span>
-            ))}
+      {/* One row of fine print rather than three stacked bands: the payment
+          reassurance and the registration identifiers are read at the same
+          moment, by the same person, and stacking them cost the footer about
+          a hundred pixels of nothing. Both are required published items — the
+          numbers by the gateway's merchant review, the reassurance by anyone
+          about to type a card number. */}
+      <div className="border-t border-white/8">
+        <div className="container-luxe py-3.5 flex flex-wrap items-center justify-between gap-x-8 gap-y-2 text-[11px] text-background/45">
+          <div className="flex items-center gap-2">
+            <ShieldCheck aria-hidden="true" className="size-3.5 text-gold shrink-0" />
+            Payments are processed by SSLCommerz over an encrypted connection. We never see or store
+            your card details.
           </div>
+          {/* Drops out entirely while the identifiers are still placeholders. */}
+          {registration.length > 0 && (
+            <div className="flex flex-wrap gap-x-6 gap-y-1.5">
+              {registration.map((row) => (
+                <span key={row.label}>
+                  {row.label} <strong className="text-background/65">{row.value}</strong>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       <div className="border-t border-white/8">
-        <div className="container-luxe py-6 flex flex-col md:flex-row gap-3 items-center justify-between text-xs text-background/50">
+        <div className="container-luxe py-5 flex flex-col md:flex-row gap-3 items-center justify-between text-xs text-background/50">
           <div>© {new Date().getFullYear()} MV Alaska Cruise Ship. All rights reserved.</div>
           <div className="flex gap-6">
             <Link to="/about" className="hover:text-gold">
