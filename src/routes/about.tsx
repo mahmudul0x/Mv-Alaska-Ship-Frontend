@@ -298,7 +298,7 @@ function About() {
             ))}
             <Row label="Registered office" value={fullAddress(COMPANY.address)} />
             <Row label="Branch office" value={fullAddress(COMPANY.branchAddress)} />
-            <Row label="Email" value={COMPANY.support.email} />
+            <Row label="Email" value={COMPANY.support.emails.join(" · ")} />
             <Row label="Phone" value={COMPANY.support.phones.join(" · ")} />
           </dl>
 

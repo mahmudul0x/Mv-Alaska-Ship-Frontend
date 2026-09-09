@@ -50,6 +50,7 @@ import { ForeignGuestsSection, type ForeignGuestDraft } from "@/components/booki
 import { foreignGuestIssues, serialiseForeignGuests } from "@/lib/validation/foreignGuests";
 import { countryName } from "@/lib/countries";
 import type { ApiError, BookingPublic, PackageRoom } from "@/lib/api/types";
+import { COMPANY, primaryEmail } from "@/lib/company";
 
 // One selected cabin and its own party. A booking may hold several of these —
 // a family taking 2–3 rooms is ONE booking (one payment, one invoice), each
@@ -722,13 +723,13 @@ function HelpCard() {
           +880 1712-823482
         </a>
         <a
-          href="mailto:mvalaskacruise@gmail.com"
+          href={`mailto:${primaryEmail}`}
           className="flex items-center gap-3 text-foreground hover:text-gold transition-colors"
         >
           <div className="size-7 rounded-full bg-ocean/10 grid place-items-center shrink-0">
             <Mail className="size-3 text-gold" />
           </div>
-          mvalaskacruise@gmail.com
+          {primaryEmail}
         </a>
       </div>
     </div>
@@ -2057,7 +2058,7 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
         </div>
         <div class="footer">
           <p>A confirmation email with your invoice will follow after payment.</p>
-          <p>+880 1712-823482 &nbsp;|&nbsp; mvalaskacruise@gmail.com</p>
+          <p>${COMPANY.support.phones[0]} &nbsp;|&nbsp; ${primaryEmail}</p>
         </div>
       </body></html>
     `);
@@ -2356,7 +2357,9 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
           {/* Footer note */}
           <div className="px-7 md:px-8 pb-8 text-xs text-muted-foreground text-center space-y-1">
             <p>A confirmation email with your invoice will follow after payment.</p>
-            <p>📞 +880 1712-823482 &nbsp;|&nbsp; ✉ mvalaskacruise@gmail.com</p>
+            <p>
+              📞 {COMPANY.support.phones[0]} &nbsp;|&nbsp; ✉ {primaryEmail}
+            </p>
           </div>
         </motion.div>
 

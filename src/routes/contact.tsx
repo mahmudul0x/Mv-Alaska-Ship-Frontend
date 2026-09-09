@@ -7,6 +7,7 @@ import { SectionHeader } from "@/components/site/SectionHeader";
 import { INQUIRY_TYPES, submitContactMessage, type InquiryType } from "@/lib/api/contact";
 import type { ApiError } from "@/lib/api/types";
 import canal from "@/assets/canal-mangrove.jpg";
+import { COMPANY, fullAddress } from "@/lib/company";
 
 // The reservations WhatsApp line — the "Send via WhatsApp" button opens a
 // pre-filled chat to this number. Digits only, international format, no "+".
@@ -17,7 +18,11 @@ export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
       { title: "Contact — MV Alaska Cruise Reservations" },
-      { name: "description", content: "Reach our reservations team in Dhaka and Khulna. WhatsApp, phone, email — we respond within hours." },
+      {
+        name: "description",
+        content:
+          "Reach our reservations team in Dhaka and Khulna. WhatsApp, phone, email — we respond within hours.",
+      },
     ],
   }),
 });
@@ -106,7 +111,11 @@ function Contact() {
     <>
       <PageHero
         eyebrow="Reservations"
-        title={<>Let's plan your <em className="not-italic">voyage</em>.</>}
+        title={
+          <>
+            Let's plan your <em className="not-italic">voyage</em>.
+          </>
+        }
         subtitle="Our concierge team responds within hours, in English or Bangla."
         image={canal}
       />
@@ -114,15 +123,26 @@ function Contact() {
       <section className="py-28 bg-background">
         <div className="container-luxe grid lg:grid-cols-12 gap-12">
           <div className="lg:col-span-5 space-y-8">
-            <SectionHeader eyebrow="Get in touch" title={<>Speak to our <em className="not-italic">concierge</em>.</>} />
+            <SectionHeader
+              eyebrow="Get in touch"
+              title={
+                <>
+                  Speak to our <em className="not-italic">concierge</em>.
+                </>
+              }
+            />
 
             <div className="space-y-6">
               {[
-                { icon: Phone, label: "Phone", lines: ["+880 1712-823482", "+880 1831-694307", "+880 1550-699732"] },
-                { icon: Mail, label: "Email", lines: ["mvalaskacruise@gmail.com"] },
+                { icon: Phone, label: "Phone", lines: [...COMPANY.support.phones] },
+                { icon: Mail, label: "Email", lines: [...COMPANY.support.emails] },
                 { icon: MessageCircle, label: "WhatsApp", lines: ["+880 1712-823482"] },
-                { icon: MapPin, label: "Dhaka Office", lines: ["13/A Planners Tower, Banglamotor, Dhaka"] },
-                { icon: MapPin, label: "Khulna Office", lines: ["71, KDA Avenue, Khulna, Bangladesh"] },
+                { icon: MapPin, label: "Khulna Office", lines: [fullAddress(COMPANY.address)] },
+                {
+                  icon: MapPin,
+                  label: "Dhaka Office",
+                  lines: [fullAddress(COMPANY.branchAddress)],
+                },
               ].map((c) => (
                 <div key={c.label} className="flex gap-4 pb-6 border-b border-border last:border-0">
                   <div className="size-11 rounded-full bg-secondary grid place-items-center shrink-0">
@@ -131,7 +151,9 @@ function Contact() {
                   <div>
                     <div className="eyebrow text-muted-foreground text-[10px]">{c.label}</div>
                     {c.lines.map((l) => (
-                      <div key={l} className="text-base mt-1">{l}</div>
+                      <div key={l} className="text-base mt-1">
+                        {l}
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -164,13 +186,33 @@ function Contact() {
               <form onSubmit={handleSubmit} className="space-y-5">
                 <h3 className="font-display text-3xl font-normal">Inquiry</h3>
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Field label="Full name" value={form.name} onChange={(v) => update("name", v)} required />
-                  <Field label="Email" type="email" value={form.email} onChange={(v) => update("email", v)} />
+                  <Field
+                    label="Full name"
+                    value={form.name}
+                    onChange={(v) => update("name", v)}
+                    required
+                  />
+                  <Field
+                    label="Email"
+                    type="email"
+                    value={form.email}
+                    onChange={(v) => update("email", v)}
+                  />
                   <Field label="Phone" value={form.phone} onChange={(v) => update("phone", v)} />
-                  <Field label="Departure date (optional)" type="date" value={form.date} onChange={(v) => update("date", v)} />
+                  <Field
+                    label="Departure date (optional)"
+                    type="date"
+                    value={form.date}
+                    onChange={(v) => update("date", v)}
+                  />
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
-                  <Field label="Number of guests (optional)" type="number" value={form.guests} onChange={(v) => update("guests", v)} />
+                  <Field
+                    label="Number of guests (optional)"
+                    type="number"
+                    value={form.guests}
+                    onChange={(v) => update("guests", v)}
+                  />
                   <div>
                     <label className="eyebrow text-muted-foreground text-[10px] block mb-2">
                       Inquiry type
@@ -192,7 +234,9 @@ function Contact() {
                   </div>
                 </div>
                 <div>
-                  <label className="eyebrow text-muted-foreground text-[10px] block mb-2">Message</label>
+                  <label className="eyebrow text-muted-foreground text-[10px] block mb-2">
+                    Message
+                  </label>
                   <textarea
                     value={form.message}
                     onChange={(e) => update("message", e.target.value)}
@@ -203,7 +247,9 @@ function Contact() {
                 </div>
 
                 {error && (
-                  <p className="text-sm text-destructive" role="alert">{error}</p>
+                  <p className="text-sm text-destructive" role="alert">
+                    {error}
+                  </p>
                 )}
 
                 <div className="flex flex-col sm:flex-row gap-3">

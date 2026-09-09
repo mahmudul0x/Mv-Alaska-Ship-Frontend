@@ -55,13 +55,16 @@ export function LegalPage({
               Contact our reservations desk — we answer every message.
             </p>
             <div className="mt-4 space-y-2 text-sm">
-              <a
-                href={`mailto:${COMPANY.support.email}`}
-                className="flex items-center gap-2.5 hover:text-gold-text transition-colors"
-              >
-                <Mail className="size-4 text-gold shrink-0" />
-                {COMPANY.support.email}
-              </a>
+              {COMPANY.support.emails.map((email) => (
+                <a
+                  key={email}
+                  href={`mailto:${email}`}
+                  className="flex items-center gap-2.5 hover:text-gold-text transition-colors"
+                >
+                  <Mail className="size-4 text-gold shrink-0" />
+                  {email}
+                </a>
+              ))}
               {COMPANY.support.phones.map((phone) => (
                 <a
                   key={phone}

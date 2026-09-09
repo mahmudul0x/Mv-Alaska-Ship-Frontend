@@ -19,20 +19,25 @@ export const COMPANY = {
   /** Trading name, as customers know it. */
   name: "MV Alaska Cruise",
   /** Registered name, exactly as printed on the trade licence. */
-  legalName: PENDING,
+  legalName: "Jui Tourism and Shipping Lines",
+  /** The registered address, as printed on the VAT certificate — this is the
+   *  one the payment gateway checks against the documents, so it is Khulna and
+   *  not the Dhaka office, however much more of the business runs from Dhaka. */
   address: {
-    line1: "13/A Planners Tower, Banglamotor",
-    city: "Dhaka",
+    line1: "71 KDA Avenue, Sony Rangs Building",
+    city: "Khulna-9100",
     country: "Bangladesh",
   },
   /** Second office, shown alongside the registered address. */
   branchAddress: {
-    line1: "71, KDA Avenue",
-    city: "Khulna",
+    line1: "13/A Planners Tower, Banglamotor",
+    city: "Dhaka",
     country: "Bangladesh",
   },
   support: {
-    email: "mvalaskacruise@gmail.com",
+    /** Most-preferred first: the first is what a single-slot mailto link uses
+     *  and what is printed at the top of any list. */
+    emails: ["juitourism@gmail.com", "mvalaskacruise@gmail.com"],
     phones: ["+880 1712-823482", "+880 1831-694307", "+880 1550-699732"],
   },
   /** Registration identifiers. BIN and DBID are genuinely optional — a business
@@ -40,8 +45,8 @@ export const COMPANY = {
    *  than printing a blank line. */
   registration: {
     tradeLicence: "19/544",
-    tin: PENDING,
-    bin: "",
+    tin: "427546566086",
+    bin: "007500079-0801",
     dbid: "",
   },
   /** Last time the policy documents were revised. Shown on each policy page:
@@ -50,6 +55,9 @@ export const COMPANY = {
 } as const;
 
 export const isPlaceholder = (value: string) => !value || value === PENDING;
+
+/** The address a single-slot mailto link should use. */
+export const primaryEmail = COMPANY.support.emails[0];
 
 /** The registration rows worth printing, skipping the ones not held. */
 export function registrationRows(): { label: string; value: string }[] {

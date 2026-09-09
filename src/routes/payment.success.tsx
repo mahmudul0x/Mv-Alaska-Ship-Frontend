@@ -5,6 +5,7 @@ import { BookingLoadError } from "@/components/booking/BookingLoadError";
 import { BookingStatusCard } from "@/components/booking/BookingStatusCard";
 import { ResultShell } from "@/components/booking/ResultShell";
 import { useBooking } from "@/hooks/queries/useBooking";
+import { primaryEmail } from "@/lib/company";
 
 export const Route = createFileRoute("/payment/success")({
   component: PaymentSuccessPage,
@@ -68,8 +69,8 @@ function PaymentSuccessPage() {
     >
       {!bookingCode && (
         <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">
-          No booking reference was provided. If you've just paid, check your email for your
-          booking code, or call us on{" "}
+          No booking reference was provided. If you've just paid, check your email for your booking
+          code, or call us on{" "}
           <a href="tel:+8801712823482" className="text-gold hover:underline">
             +880 1712-823482
           </a>
@@ -106,7 +107,7 @@ function PaymentSuccessPage() {
       {booking?.status === "pending" && !isPolling && (
         <div className="text-center text-sm text-muted-foreground">
           Still processing — please check your email shortly, or{" "}
-          <a href="mailto:mvalaskacruise@gmail.com" className="text-gold hover:underline">
+          <a href={`mailto:${primaryEmail}`} className="text-gold hover:underline">
             contact us
           </a>{" "}
           if this doesn't update.

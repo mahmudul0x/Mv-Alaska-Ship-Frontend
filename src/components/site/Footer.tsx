@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Phone, Mail, MapPin, Instagram, Facebook, Ticket, Youtube } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { PaymentMethods } from "./PaymentMethods";
-import { registrationRows } from "@/lib/company";
+import { COMPANY, fullAddress, registrationRows } from "@/lib/company";
 
 export function Footer() {
   // Registration identifiers the gateway's review expects to see published.
@@ -58,14 +58,18 @@ export function Footer() {
             <li className="flex items-start gap-3">
               <Phone className="size-4 text-gold shrink-0 mt-0.5" />
               <div>
-                <div>+880 1712-823482</div>
-                <div>+880 1831-694307</div>
-                <div>+880 1550-699732</div>
+                {COMPANY.support.phones.map((phone) => (
+                  <div key={phone}>{phone}</div>
+                ))}
               </div>
             </li>
-            <li className="flex items-center gap-3">
-              <Mail className="size-4 text-gold" />
-              mvalaskacruise@gmail.com
+            <li className="flex items-start gap-3">
+              <Mail className="size-4 text-gold shrink-0 mt-0.5" />
+              <div className="break-all">
+                {COMPANY.support.emails.map((email) => (
+                  <div key={email}>{email}</div>
+                ))}
+              </div>
             </li>
           </ul>
           {/* Kept from the old Explore list: this is the only route to it —
@@ -82,14 +86,14 @@ export function Footer() {
         <div className="lg:col-span-3">
           <div className="eyebrow text-gold mb-5">Offices</div>
           <ul className="space-y-4 text-sm text-background/75">
-            <li className="flex items-start gap-3">
-              <MapPin className="size-4 text-gold shrink-0 mt-0.5" />
-              <span>13/A Planners Tower, Banglamotor, Dhaka, Bangladesh</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <MapPin className="size-4 text-gold shrink-0 mt-0.5" />
-              <span>71, KDA Avenue, Khulna, Bangladesh</span>
-            </li>
+            {/* Registered address first — the payment gateway's review looks
+                for the one printed on the trade licence. */}
+            {[COMPANY.address, COMPANY.branchAddress].map((office) => (
+              <li key={office.line1} className="flex items-start gap-3">
+                <MapPin className="size-4 text-gold shrink-0 mt-0.5" />
+                <span>{fullAddress(office)}</span>
+              </li>
+            ))}
           </ul>
 
           {/* Icon-only links carry no text, so each needs an explicit accessible
