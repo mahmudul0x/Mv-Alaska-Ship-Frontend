@@ -282,6 +282,10 @@ export interface BookingPublic {
    *  exists. Pages must use it to replace the "Cancel booking" action, or the
    *  customer sees an unchanged booking and assumes their request vanished. */
   pending_cancellation: CancellationRequestPublic | null;
+  /** Most the payment gateway will take in one transaction. A large group
+   *  booking really does exceed it, and the gateway only refuses AFTER the
+   *  redirect — so cap the amount box and say so here instead. */
+  max_online_payment: Money;
   // Only present on the create (201) response — absent on GET retrieve.
   price_breakdown?: PriceBreakdown;
 }

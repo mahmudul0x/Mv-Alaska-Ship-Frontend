@@ -66,19 +66,28 @@ function BookingConfirmationPage() {
     !pendingCancellation;
 
   const dueAmount = booking ? parseMoney(booking.due_amount) : 0;
+  // The gateway refuses anything over its per-transaction ceiling, and only
+  // after the redirect. Cap the box and say so here, so a big group booking is
+  // steered into instalments rather than bounced off a gateway error page.
+  const maxOnline = booking ? parseMoney(booking.max_online_payment ?? "0") : 0;
+  const overGatewayCap = maxOnline > 0 && dueAmount > maxOnline;
   // Backend-computed deposit floor (UX mirror only — the API re-validates).
   // Applies to the first payment; top-ups can be any positive amount.
   const minPayment = booking
     ? Math.min(parseMoney(booking.min_first_payment ?? "0"), dueAmount)
     : 0;
   const partialNumber = Number.parseFloat(partialAmount || "0");
+  const partialCeiling = overGatewayCap ? maxOnline : dueAmount;
   const partialInvalid =
     paymentType === "partial" &&
     (!partialAmount ||
       partialNumber <= 0 ||
-      partialNumber > dueAmount ||
+      partialNumber > partialCeiling ||
       partialNumber < minPayment);
-  const payingNow = paymentType === "partial" && partialNumber > 0 ? partialNumber : dueAmount;
+  // Over the cap the "full" option cannot succeed, so it is not offered and
+  // instalments are the only path.
+  const effectiveType = overGatewayCap ? "partial" : paymentType;
+  const payingNow = effectiveType === "partial" && partialNumber > 0 ? partialNumber : dueAmount;
 
   return (
     <ResultShell
@@ -136,52 +145,65 @@ function BookingConfirmationPage() {
           </div>
 
           <div className="p-6 space-y-5">
-            <div className="grid sm:grid-cols-2 gap-3">
-              {(["full", "partial"] as const).map((type) => {
-                const checked = paymentType === type;
-                return (
-                  <label
-                    key={type}
-                    className={`relative flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
-                      checked
-                        ? "border-gold bg-ocean/4 shadow-[0_0_0_1px_var(--gold)]"
-                        : "border-border hover:border-gold/50"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="paymentType"
-                      className="sr-only"
-                      checked={checked}
-                      onChange={() => setPaymentType(type)}
-                    />
-                    <div
-                      className={`size-9 rounded-lg grid place-items-center shrink-0 transition-colors ${checked ? "gradient-gold" : "bg-muted"}`}
+            {overGatewayCap && (
+              <div className="rounded-xl border border-gold/40 bg-gold/5 px-4 py-3 text-xs leading-relaxed">
+                Our payment gateway accepts up to{" "}
+                <strong>{formatBDT(booking!.max_online_payment)}</strong> in one transaction, and
+                your balance is larger than that. Pay it in two or more instalments below — or call
+                us and we will arrange it another way.
+              </div>
+            )}
+
+            <div className={`grid gap-3 ${overGatewayCap ? "" : "sm:grid-cols-2"}`}>
+              {(overGatewayCap ? (["partial"] as const) : (["full", "partial"] as const)).map(
+                (type) => {
+                  const checked = paymentType === type;
+                  return (
+                    <label
+                      key={type}
+                      className={`relative flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
+                        checked
+                          ? "border-gold bg-ocean/4 shadow-[0_0_0_1px_var(--gold)]"
+                          : "border-border hover:border-gold/50"
+                      }`}
                     >
-                      <CreditCard
-                        className={`size-4 ${checked ? "text-ocean" : "text-muted-foreground"}`}
+                      <input
+                        type="radio"
+                        name="paymentType"
+                        className="sr-only"
+                        checked={checked}
+                        onChange={() => setPaymentType(type)}
                       />
-                    </div>
-                    <div>
-                      <span className="text-sm font-semibold capitalize block">{type} payment</span>
-                      <span className="text-xs text-muted-foreground leading-snug">
-                        {type === "full"
-                          ? "Settle the full balance now"
-                          : "Pay part of the balance"}
-                      </span>
-                    </div>
-                  </label>
-                );
-              })}
+                      <div
+                        className={`size-9 rounded-lg grid place-items-center shrink-0 transition-colors ${checked ? "gradient-gold" : "bg-muted"}`}
+                      >
+                        <CreditCard
+                          className={`size-4 ${checked ? "text-ocean" : "text-muted-foreground"}`}
+                        />
+                      </div>
+                      <div>
+                        <span className="text-sm font-semibold capitalize block">
+                          {type} payment
+                        </span>
+                        <span className="text-xs text-muted-foreground leading-snug">
+                          {type === "full"
+                            ? "Settle the full balance now"
+                            : "Pay part of the balance"}
+                        </span>
+                      </div>
+                    </label>
+                  );
+                },
+              )}
             </div>
 
-            {paymentType === "partial" && (
+            {effectiveType === "partial" && (
               <div className="p-4 rounded-xl bg-ocean/3 border border-border space-y-3">
                 <label className="eyebrow text-muted-foreground text-[10px] block">
                   Amount to pay now —{" "}
                   {minPayment > 1
-                    ? `min ${formatBDT(String(minPayment))}, max ${formatBDT(booking!.due_amount)}`
-                    : `max ${formatBDT(booking!.due_amount)}`}
+                    ? `min ${formatBDT(String(minPayment))}, max ${formatBDT(String(partialCeiling))}`
+                    : `max ${formatBDT(String(partialCeiling))}`}
                 </label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
@@ -190,7 +212,7 @@ function BookingConfirmationPage() {
                   <input
                     type="number"
                     min={minPayment || 0}
-                    max={dueAmount || undefined}
+                    max={partialCeiling || undefined}
                     value={partialAmount}
                     onChange={(e) => setPartialAmount(e.target.value)}
                     placeholder="e.g. 5000"
@@ -201,9 +223,9 @@ function BookingConfirmationPage() {
                   <div className="flex gap-2">
                     {[25, 50, 75].map((pct) => {
                       // Never quick-fill below the required deposit floor.
-                      const amount = Math.max(
-                        Math.round((dueAmount * pct) / 100),
-                        Math.ceil(minPayment),
+                      const amount = Math.min(
+                        Math.max(Math.round((dueAmount * pct) / 100), Math.ceil(minPayment)),
+                        Math.floor(partialCeiling),
                       );
                       return (
                         <button
@@ -228,7 +250,9 @@ function BookingConfirmationPage() {
                   <div className="text-xs text-destructive">
                     {minPayment > 1 && partialNumber < minPayment
                       ? `The first payment must be at least ${formatBDT(String(minPayment))}.`
-                      : "Enter an amount between 1 and the outstanding balance."}
+                      : partialNumber > partialCeiling
+                        ? `The most you can pay in one transaction is ${formatBDT(String(partialCeiling))}.`
+                        : "Enter an amount between 1 and the outstanding balance."}
                   </div>
                 )}
               </div>
