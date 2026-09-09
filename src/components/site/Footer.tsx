@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Phone, Mail, MapPin, Instagram, Facebook, Youtube } from "lucide-react";
+import { Phone, Mail, MapPin, Instagram, Facebook, Ticket, Youtube } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { PaymentMethods } from "./PaymentMethods";
 import { registrationRows } from "@/lib/company";
@@ -53,24 +53,23 @@ export function Footer() {
           </div>
         </div>
 
+        {/* Policies, not a second copy of the navbar. Every page listed here is
+            already one click away in the header, whereas the policies are
+            reachable from nowhere else — and the payment gateway's merchant
+            review expects to find them in the footer. */}
         <div className="lg:col-span-2">
-          <div className="eyebrow text-gold mb-5">Explore</div>
+          <div className="eyebrow text-gold mb-5">Policies</div>
           <ul className="space-y-3 text-sm text-background/75">
             {[
-              ["About", "/about"],
-              ["Cabins", "/cabins"],
-              ["Packages", "/packages"],
-              ["Wildlife", "/wildlife"],
-              ["Dining", "/dining"],
-              ["Gallery", "/gallery"],
-              ["Policy", "/policy"],
-              // Where a customer who has already booked comes back to: cabins,
-              // dates, invoices and cancellation, from a booking code.
-              ["Manage booking", "/manage"],
-            ].map(([l, h]) => (
-              <li key={h}>
-                <Link to={h} className="hover:text-gold transition-colors">
-                  {l}
+              ["Terms & Conditions", "/terms"],
+              ["Privacy Policy", "/privacy"],
+              ["Refund & Delivery Policy", "/refund-policy"],
+              ["Payment & Cancellation", "/policy"],
+              ["Contact Us", "/contact"],
+            ].map(([label, href]) => (
+              <li key={href}>
+                <Link to={href} className="hover:text-gold transition-colors">
+                  {label}
                 </Link>
               </li>
             ))}
@@ -93,6 +92,15 @@ export function Footer() {
               mvalaskacruise@gmail.com
             </li>
           </ul>
+          {/* Kept from the old Explore list: this is the only route to it —
+              it is deliberately absent from the navbar. */}
+          <Link
+            to="/manage"
+            className="mt-5 inline-flex items-center gap-2 text-sm text-gold-soft hover:text-gold transition-colors border-b border-gold/30 hover:border-gold pb-1"
+          >
+            <Ticket className="size-4 shrink-0" />
+            Manage your booking
+          </Link>
         </div>
 
         <div className="lg:col-span-3">
@@ -116,44 +124,20 @@ export function Footer() {
         </div>
       </div>
 
-      {/* Legal + payment strip. The payment gateway's merchant review requires
-          every policy to be reachable from the footer and the accepted-methods
-          banner to be shown, and both belong here anyway — this is where people
-          look for them. */}
-      <div className="border-t border-white/8">
-        <div className="container-luxe py-8">
-          <div>
-            <div className="eyebrow text-[10px] text-background/50 mb-3">Policies</div>
-            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-background/75">
-              <Link to="/terms" className="hover:text-gold transition-colors">
-                Terms &amp; Conditions
-              </Link>
-              <Link to="/privacy" className="hover:text-gold transition-colors">
-                Privacy Policy
-              </Link>
-              <Link to="/refund-policy" className="hover:text-gold transition-colors">
-                Refund &amp; Delivery Policy
-              </Link>
-              <Link to="/policy" className="hover:text-gold transition-colors">
-                Payment &amp; Cancellation
-              </Link>
-              <Link to="/contact" className="hover:text-gold transition-colors">
-                Contact Us
-              </Link>
-            </div>
-
-            {registration.length > 0 && (
-              <div className="mt-5 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-background/45">
-                {registration.map((row) => (
-                  <span key={row.label}>
-                    {row.label} <strong className="text-background/65">{row.value}</strong>
-                  </span>
-                ))}
-              </div>
-            )}
+      {/* Registration identifiers the gateway's review expects published. The
+          policy links moved up into their own column, so this strip is only
+          the numbers now — and disappears entirely until they are filled in. */}
+      {registration.length > 0 && (
+        <div className="border-t border-white/8">
+          <div className="container-luxe py-5 flex flex-wrap gap-x-6 gap-y-1.5 text-[11px] text-background/45">
+            {registration.map((row) => (
+              <span key={row.label}>
+                {row.label} <strong className="text-background/65">{row.value}</strong>
+              </span>
+            ))}
           </div>
         </div>
-      </div>
+      )}
 
       <div className="border-t border-white/8">
         <div className="container-luxe py-6 flex flex-col md:flex-row gap-3 items-center justify-between text-xs text-background/50">
