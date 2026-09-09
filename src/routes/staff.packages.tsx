@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Ban,
@@ -16,6 +16,7 @@ import {
   Plus,
   Search,
   Trash2,
+  Upload,
   Users,
   Wallet,
 } from "lucide-react";
@@ -32,6 +33,7 @@ import {
 import { GuideReportMenu } from "@/components/staff/GuideReportMenu";
 import { CancelDepartureDialog } from "@/components/staff/CancelDepartureDialog";
 import {
+  clearStaffPackageHero,
   createStaffPackage,
   deleteStaffPackage,
   downloadGuideReport,
@@ -39,6 +41,7 @@ import {
   getStaffPackages,
   togglePackageBooking,
   updateStaffPackage,
+  uploadStaffPackageHero,
 } from "@/lib/api/staff";
 import { parseLocalDate } from "@/lib/dates";
 import { formatBDT, parseMoney } from "@/lib/money";
@@ -561,8 +564,31 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
 
   const set = (patch: Partial<StaffPackageWrite>) => setForm((f) => ({ ...f, ...patch }));
 
+  // The picked file, and what to show for it. `heroPreview` is a blob URL for a
+  // new pick, the saved URL for an existing package, and null once removed —
+  // which is why removal is its own state and not just `heroFile === null`.
+  const [heroFile, setHeroFile] = useState<File | null>(null);
+  const [heroPreview, setHeroPreview] = useState<string | null>(pkg?.hero_image ?? null);
+  const [heroCleared, setHeroCleared] = useState(false);
+
+  // A blob URL is a handle the browser holds until it is told otherwise, so
+  // each one is released when it stops being the preview.
+  useEffect(() => {
+    if (!heroFile) return;
+    const url = URL.createObjectURL(heroFile);
+    setHeroPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [heroFile]);
+
   const saveMutation = useMutation({
-    mutationFn: () => (pkg ? updateStaffPackage(pkg.id, form) : createStaffPackage(form)),
+    mutationFn: async () => {
+      // Create first, then the picture: a new package has no id to attach it
+      // to, and the upload is a separate multipart request either way.
+      const saved = pkg ? await updateStaffPackage(pkg.id, form) : await createStaffPackage(form);
+      if (heroFile) return uploadStaffPackageHero(saved.id, heroFile);
+      if (heroCleared && pkg?.hero_image) return clearStaffPackageHero(saved.id);
+      return saved;
+    },
     onSuccess: () => {
       toast.success(pkg ? "Package updated." : "Package created.");
       queryClient.invalidateQueries({ queryKey: ["staff"] });
@@ -674,6 +700,59 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
             placeholder={"Mangrove safari\nSunset dinner"}
             className={`${staffInputClass} resize-none`}
           />
+        </StaffField>
+
+        {/* The picture the public package card shows. Sits with the marketing
+            copy because that is what it is — the card's photograph, not an
+            operational setting. */}
+        <StaffField label="Cover photo">
+          <div className="flex items-start gap-3">
+            <div className="size-20 rounded-xl overflow-hidden bg-muted grid place-items-center shrink-0 border border-border">
+              {heroPreview ? (
+                <img src={heroPreview} alt="" className="size-full object-cover" />
+              ) : (
+                <PackageIcon className="size-6 text-muted-foreground" />
+              )}
+            </div>
+            <div className="min-w-0 space-y-2">
+              <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-xs cursor-pointer hover:border-gold transition-colors">
+                <Upload className="size-3.5 shrink-0" />
+                {heroPreview ? "Choose a different photo" : "Choose a photo"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null;
+                    if (!file) return;
+                    setHeroFile(file);
+                    setHeroCleared(false);
+                    // Let the same file be picked again after a removal —
+                    // without this the input holds the old value and fires no
+                    // change event.
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {heroPreview && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHeroFile(null);
+                    setHeroPreview(null);
+                    setHeroCleared(true);
+                  }}
+                  className="block text-[11px] text-destructive hover:underline"
+                >
+                  Remove photo
+                </button>
+              )}
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                Shown on the package card, the booking page and the home page. Landscape works best.
+                Without one the card falls back to a stock photograph.
+              </p>
+            </div>
+          </div>
         </StaffField>
 
         <button

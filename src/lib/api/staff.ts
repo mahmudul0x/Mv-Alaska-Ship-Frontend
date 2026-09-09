@@ -69,6 +69,30 @@ export async function deleteStaffPackage(id: number) {
   await staffClient.delete(`/staff/packages/${id}/`);
 }
 
+/** The photograph the public package card shows.
+ *
+ *  Sent on its own rather than folded into the create/update payload: those go
+ *  as JSON, and `highlights` is a real array that would arrive from a multipart
+ *  body as the string "[object Object]". A package can also be created before
+ *  anyone has chosen a picture, so the two were never one step anyway. */
+export async function uploadStaffPackageHero(id: number, file: File): Promise<StaffPackage> {
+  const form = new FormData();
+  form.append("hero_image", file);
+  // staffClient defaults to Content-Type: application/json, which would mangle
+  // a FormData body — declare multipart so axios lets the browser set the
+  // real boundary header.
+  const { data } = await staffClient.patch(`/staff/packages/${id}/`, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+/** Back to the stock photograph. Null is what the API reads as "remove". */
+export async function clearStaffPackageHero(id: number): Promise<StaffPackage> {
+  const { data } = await staffClient.patch(`/staff/packages/${id}/`, { hero_image: null });
+  return data;
+}
+
 export async function togglePackageBooking(id: number, open: boolean) {
   await staffClient.post(`/staff/packages/${id}/${open ? "open" : "close"}-booking/`);
 }
