@@ -115,14 +115,14 @@ export function Footer() {
               <span>71, KDA Avenue, Khulna, Bangladesh</span>
             </li>
           </ul>
-
-          {/* Sits here rather than in the strip below because the Offices
-              column ends early and leaves an empty band the width of it — and
-              because the accepted-methods banner is worth seeing before
-              someone has scrolled to the very bottom. */}
-          <PaymentMethods className="mt-8" />
         </div>
       </div>
+
+      {/* Its own band, directly under the columns rather than down at the
+          copyright line. The gateway's banner is about 9:1, so it cannot live
+          inside a column — at that width the card logos are a few pixels wide
+          and the compliance requirement is met in name only. */}
+      <PaymentMethods />
 
       {/* Registration identifiers the gateway's review expects published. The
           policy links moved up into their own column, so this strip is only
