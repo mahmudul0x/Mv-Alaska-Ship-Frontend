@@ -22,16 +22,18 @@ import {
   updateStaffContactMessage,
 } from "@/lib/api/staff";
 import type { ContactMessageStatus, StaffContactMessage } from "@/lib/api/staffTypes";
+import { useT } from "@/lib/i18n";
+import type { StringKey } from "@/lib/i18n/strings";
 
 export const Route = createFileRoute("/staff/messages")({
   component: MessagesPage,
 });
 
-const FILTERS: { value: ContactMessageStatus | "all"; label: string }[] = [
-  { value: "new", label: "New" },
-  { value: "read", label: "Read" },
-  { value: "archived", label: "Archived" },
-  { value: "all", label: "All" },
+const FILTERS: { value: ContactMessageStatus | "all"; label: StringKey }[] = [
+  { value: "new", label: "messages.new" },
+  { value: "read", label: "messages.read" },
+  { value: "archived", label: "messages.archived" },
+  { value: "all", label: "common.all" },
 ];
 
 const STATUS_STYLE: Record<ContactMessageStatus, string> = {
@@ -50,13 +52,13 @@ const INQUIRY_STYLE: Record<string, string> = {
 };
 
 function MessagesPage() {
+  const t = useT();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<ContactMessageStatus | "all">("new");
 
   const { data, isLoading } = useQuery({
     queryKey: ["staff", "contact-messages", filter],
-    queryFn: () =>
-      getStaffContactMessages(filter === "all" ? undefined : filter),
+    queryFn: () => getStaffContactMessages(filter === "all" ? undefined : filter),
   });
 
   const statusMutation = useMutation({
@@ -71,7 +73,7 @@ function MessagesPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteStaffContactMessage(id),
     onSuccess: () => {
-      toast.success("Message deleted.");
+      toast.success(t("messages.deleted"));
       queryClient.invalidateQueries({ queryKey: ["staff", "contact-messages"] });
     },
     onError: (err) => toast.error(errorText(err)),
@@ -81,10 +83,7 @@ function MessagesPage() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      <PageHeader
-        title="Messages"
-        subtitle="Inquiries submitted through the website contact form."
-      />
+      <PageHeader title={t("messages.title")} subtitle={t("messages.subtitle")} />
 
       <div className="flex flex-wrap gap-2">
         {FILTERS.map((f) => (
@@ -97,7 +96,7 @@ function MessagesPage() {
                 : "bg-muted text-muted-foreground hover:text-ocean"
             }`}
           >
-            {f.label}
+            {t(f.label)}
           </button>
         ))}
       </div>
@@ -148,6 +147,7 @@ function MessageCard({
   onDelete: () => void;
   busy: boolean;
 }) {
+  const t = useT();
   const created = new Date(msg.created_at).toLocaleString(undefined, {
     dateStyle: "medium",
     timeStyle: "short",
@@ -219,14 +219,26 @@ function MessageCard({
 
         <div className="flex flex-wrap gap-2 pt-1">
           {msg.status !== "read" && msg.status !== "archived" && (
-            <ActionButton icon={MailOpen} label="Mark read" onClick={() => onStatus("read")} />
+            <ActionButton
+              icon={MailOpen}
+              label={t("messages.markRead")}
+              onClick={() => onStatus("read")}
+            />
           )}
           {msg.status === "archived" ? (
-            <ActionButton icon={ArchiveRestore} label="Unarchive" onClick={() => onStatus("read")} />
+            <ActionButton
+              icon={ArchiveRestore}
+              label={t("messages.unarchive")}
+              onClick={() => onStatus("read")}
+            />
           ) : (
-            <ActionButton icon={Archive} label="Archive" onClick={() => onStatus("archived")} />
+            <ActionButton
+              icon={Archive}
+              label={t("messages.archive")}
+              onClick={() => onStatus("archived")}
+            />
           )}
-          <ActionButton icon={Trash2} label="Delete" onClick={onDelete} danger />
+          <ActionButton icon={Trash2} label={t("common.delete")} onClick={onDelete} danger />
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, EyeOff, ImagePlus, Images, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 
 import {
   deleteStaffGalleryImage,
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/staff/gallery")({
 });
 
 function StaffGallery() {
+  const t = useT();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -45,11 +47,9 @@ function StaffGallery() {
 
   const uploadMutation = useMutation({
     mutationFn: async (files: File[]) => {
-      if (!activeShip) throw new Error("No ship available to attach photos to.");
+      if (!activeShip) throw new Error(t("gallery.noShip"));
       setUploading(true);
-      const nextOrder = images.length
-        ? Math.max(...images.map((i) => i.sort_order)) + 1
-        : 0;
+      const nextOrder = images.length ? Math.max(...images.map((i) => i.sort_order)) + 1 : 0;
       // Sequential, so sort_order stays deterministic and one failure
       // doesn't abort the files already uploaded.
       for (const [i, file] of files.entries()) {
@@ -76,7 +76,7 @@ function StaffGallery() {
     mutationFn: ({ id, caption }: { id: number; caption: string }) =>
       updateStaffGalleryImage(id, { caption }),
     onSuccess: () => {
-      toast.success("Caption saved.");
+      toast.success(t("gallery.captionSaved"));
       invalidate();
     },
     onError: (err) => toast.error(errorText(err)),
@@ -86,9 +86,7 @@ function StaffGallery() {
     mutationFn: (img: StaffGalleryImage) =>
       updateStaffGalleryImage(img.id, { is_active: !img.is_active }),
     onSuccess: (img) => {
-      toast.success(
-        img.is_active ? "Photo is now visible on the website." : "Photo hidden from the website.",
-      );
+      toast.success(img.is_active ? t("gallery.nowVisible") : t("gallery.nowHidden"));
       invalidate();
     },
     onError: (err) => toast.error(errorText(err)),
@@ -104,7 +102,7 @@ function StaffGallery() {
   const deleteMutation = useMutation({
     mutationFn: deleteStaffGalleryImage,
     onSuccess: () => {
-      toast.success("Photo deleted.");
+      toast.success(t("gallery.photoDeleted"));
       invalidate();
     },
     onError: (err) => toast.error(errorText(err)),
@@ -112,20 +110,19 @@ function StaffGallery() {
 
   return (
     <section className="p-6 lg:p-8 space-y-6">
-      <PageHeader
-        title="Gallery"
-        subtitle="The photos shown on the public Gallery page — upload, write a caption on each, reorder, hide or delete."
-      >
+      <PageHeader title={t("gallery.title")} subtitle={t("gallery.subtitle")}>
         <div className="flex items-center gap-2">
           {ships.length > 1 && (
             <select
               className={`${staffInputClass} w-auto`}
               value={activeShip ?? ""}
               onChange={(e) => setShipId(Number(e.target.value))}
-              title="Ship new uploads belong to"
+              title={t("gallery.shipFor")}
             >
               {ships.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
               ))}
             </select>
           )}
@@ -146,7 +143,11 @@ function StaffGallery() {
             disabled={uploading || !activeShip}
             className="flex items-center gap-2 px-4 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-40"
           >
-            {uploading ? <Loader2 className="size-3.5 animate-spin" /> : <ImagePlus className="size-3.5" />}
+            {uploading ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <ImagePlus className="size-3.5" />
+            )}
             Add photos
           </button>
         </div>
@@ -178,7 +179,7 @@ function StaffGallery() {
             <div className="relative group">
               <img
                 src={img.image_url}
-                alt={img.caption || "Gallery photo"}
+                alt={img.caption || t("gallery.photoAlt")}
                 className="h-40 w-full object-cover"
                 loading="lazy"
               />
@@ -189,16 +190,16 @@ function StaffGallery() {
               )}
               <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
-                  title={img.is_active ? "Hide from website" : "Show on website"}
+                  title={img.is_active ? t("gallery.hideFromSite") : t("gallery.showOnSite")}
                   onClick={() => toggleMutation.mutate(img)}
                   className="size-7 grid place-items-center rounded-full bg-black/55 text-white hover:bg-gold hover:text-ocean transition-colors"
                 >
                   {img.is_active ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
                 </button>
                 <button
-                  title="Delete photo"
+                  title={t("gallery.deletePhoto")}
                   onClick={() => {
-                    if (window.confirm("Delete this photo from the gallery? This cannot be undone.")) {
+                    if (window.confirm(t("gallery.confirmDelete"))) {
                       deleteMutation.mutate(img.id);
                     }
                   }}
@@ -212,7 +213,7 @@ function StaffGallery() {
             <figcaption className="p-3 space-y-2">
               <textarea
                 defaultValue={img.caption}
-                placeholder="Write a caption for this photo…"
+                placeholder={t("gallery.caption")}
                 rows={2}
                 className="w-full bg-background border border-border rounded-lg py-1.5 px-2 text-[11px] resize-none focus:outline-none focus:border-gold"
                 onBlur={(e) => {

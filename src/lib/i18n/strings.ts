@@ -107,6 +107,64 @@ export const STRINGS = {
     bn: "{count}টি ফেরত কথা দেওয়া আছে, এখনো পাঠানো হয়নি",
   },
   "overview.wouldBeRefunded": { en: "{amount} would be refunded", bn: "{amount} ফেরত যাবে" },
+
+  // ── Login ───────────────────────────────────────────────────────────────
+  "login.username": { en: "Username", bn: "ইউজারনেম" },
+  "login.password": { en: "Password", bn: "পাসওয়ার্ড" },
+  "login.signIn": { en: "Sign in", bn: "সাইন ইন" },
+  "login.failed": {
+    en: "Login failed. Check your credentials.",
+    bn: "লগইন হয়নি। ইউজারনেম আর পাসওয়ার্ড মিলিয়ে দেখুন।",
+  },
+  "login.staffOnly": {
+    en: "Staff access only · MV Alaska Cruise Ship",
+    bn: "শুধু স্টাফদের জন্য · এম.ভি. আলাস্কা ক্রুজ শিপ",
+  },
+
+  // ── Messages ────────────────────────────────────────────────────────────
+  "messages.title": { en: "Messages", bn: "বার্তা" },
+  "messages.subtitle": {
+    en: "Inquiries submitted through the website contact form.",
+    bn: "ওয়েবসাইটের যোগাযোগ ফর্ম থেকে আসা বার্তা।",
+  },
+  "messages.markRead": { en: "Mark read", bn: "পড়া হয়েছে" },
+  "messages.archive": { en: "Archive", bn: "সংরক্ষণাগারে" },
+  "messages.unarchive": { en: "Unarchive", bn: "ফিরিয়ে আনুন" },
+  "messages.archived": { en: "Archived", bn: "সংরক্ষিত" },
+  "messages.deleted": { en: "Message deleted.", bn: "বার্তাটি মুছে ফেলা হয়েছে।" },
+  "messages.new": { en: "New", bn: "নতুন" },
+  "messages.read": { en: "Read", bn: "পড়া হয়েছে" },
+
+  // ── Gallery ─────────────────────────────────────────────────────────────
+  "gallery.title": { en: "Gallery", bn: "গ্যালারি" },
+  "gallery.subtitle": {
+    en: "The photos shown on the public Gallery page — upload, write a caption on each, reorder, hide or delete.",
+    bn: "পাবলিক গ্যালারি পেজে যে ছবিগুলো দেখায় — আপলোড করুন, ক্যাপশন লিখুন, ক্রম বদলান, লুকান বা মুছুন।",
+  },
+  "gallery.shipFor": { en: "Ship new uploads belong to", bn: "নতুন ছবি কোন জাহাজের" },
+  "gallery.noShip": {
+    en: "No ship available to attach photos to.",
+    bn: "ছবি যোগ করার মতো কোনো জাহাজ নেই।",
+  },
+  "gallery.caption": { en: "Write a caption for this photo…", bn: "এই ছবির জন্য ক্যাপশন লিখুন…" },
+  "gallery.captionSaved": { en: "Caption saved.", bn: "ক্যাপশন সংরক্ষিত হয়েছে।" },
+  "gallery.showOnSite": { en: "Show on website", bn: "ওয়েবসাইটে দেখান" },
+  "gallery.hideFromSite": { en: "Hide from website", bn: "ওয়েবসাইট থেকে লুকান" },
+  "gallery.nowVisible": {
+    en: "Photo is now visible on the website.",
+    bn: "ছবিটি এখন ওয়েবসাইটে দেখা যাচ্ছে।",
+  },
+  "gallery.nowHidden": {
+    en: "Photo hidden from the website.",
+    bn: "ছবিটি ওয়েবসাইট থেকে লুকানো হয়েছে।",
+  },
+  "gallery.deletePhoto": { en: "Delete photo", bn: "ছবি মুছুন" },
+  "gallery.photoDeleted": { en: "Photo deleted.", bn: "ছবি মুছে ফেলা হয়েছে।" },
+  "gallery.confirmDelete": {
+    en: "Delete this photo from the gallery? This cannot be undone.",
+    bn: "গ্যালারি থেকে এই ছবিটি মুছে ফেলবেন? এটি আর ফেরানো যাবে না।",
+  },
+  "gallery.photoAlt": { en: "Gallery photo", bn: "গ্যালারির ছবি" },
 } as const;
 
 export type StringKey = keyof typeof STRINGS;

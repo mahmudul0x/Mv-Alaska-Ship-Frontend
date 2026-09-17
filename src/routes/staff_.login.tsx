@@ -1,13 +1,21 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Anchor, Loader2, Lock, User } from "lucide-react";
+import { LanguageProvider, useT } from "@/lib/i18n";
 
 import { staffLogin } from "@/lib/api/staff";
 import { isStaffLoggedIn, setStaffSession } from "@/lib/staffAuth";
 import type { ApiError } from "@/lib/api/types";
 
 export const Route = createFileRoute("/staff_/login")({
-  component: StaffLoginPage,
+  // Its own provider: the login screen sits outside the staff layout, so it
+  // is outside the layout's provider too. The choice is read from the same
+  // stored preference, so signing in does not switch language under you.
+  component: () => (
+    <LanguageProvider>
+      <StaffLoginPage />
+    </LanguageProvider>
+  ),
   beforeLoad: () => {
     if (isStaffLoggedIn()) throw redirect({ to: "/staff" });
   },
@@ -15,6 +23,7 @@ export const Route = createFileRoute("/staff_/login")({
 });
 
 function StaffLoginPage() {
+  const t = useT();
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -34,7 +43,7 @@ function StaffLoginPage() {
       setError(
         apiError.fieldErrors
           ? Object.values(apiError.fieldErrors).flat().join(" ")
-          : apiError.detail || "Login failed. Check your credentials.",
+          : apiError.detail || t("login.failed"),
       );
     } finally {
       setSubmitting(false);
@@ -49,15 +58,14 @@ function StaffLoginPage() {
             <Anchor className="size-7 text-ocean" />
           </div>
           <h1 className="font-display text-3xl text-background">MV Alaska</h1>
-          <p className="eyebrow text-gold-soft text-[10px] mt-1">Staff Dashboard</p>
+          <p className="eyebrow text-gold-soft text-[10px] mt-1">{t("shell.dashboard")}</p>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="bg-card rounded-2xl shadow-luxe p-6 space-y-4"
-        >
+        <form onSubmit={handleSubmit} className="bg-card rounded-2xl shadow-luxe p-6 space-y-4">
           <div>
-            <label className="eyebrow text-muted-foreground text-[10px] block mb-2">Username</label>
+            <label className="eyebrow text-muted-foreground text-[10px] block mb-2">
+              {t("login.username")}
+            </label>
             <div className="relative">
               <User className="size-4 text-gold absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
@@ -70,7 +78,9 @@ function StaffLoginPage() {
             </div>
           </div>
           <div>
-            <label className="eyebrow text-muted-foreground text-[10px] block mb-2">Password</label>
+            <label className="eyebrow text-muted-foreground text-[10px] block mb-2">
+              {t("login.password")}
+            </label>
             <div className="relative">
               <Lock className="size-4 text-gold absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
@@ -92,13 +102,11 @@ function StaffLoginPage() {
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.2em] font-semibold shadow-luxe disabled:opacity-50"
           >
             {submitting && <Loader2 className="size-4 animate-spin" />}
-            Sign in
+            {t("login.signIn")}
           </button>
         </form>
 
-        <p className="text-center text-xs text-background/40 mt-6">
-          Staff access only · MV Alaska Cruise Ship
-        </p>
+        <p className="text-center text-xs text-background/40 mt-6">{t("login.staffOnly")}</p>
       </div>
     </div>
   );
