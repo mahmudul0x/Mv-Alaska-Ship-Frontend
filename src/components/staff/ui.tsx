@@ -3,13 +3,110 @@ import { X } from "lucide-react";
 
 import type { ApiError, BookingStatus } from "@/lib/api/types";
 
-export function errorText(err: unknown) {
-  const apiError = err as ApiError;
-  return apiError.fieldErrors
-    ? Object.entries(apiError.fieldErrors)
-        .map(([k, v]) => `${k}: ${v.join(" ")}`)
-        .join(" · ")
-    : apiError.detail || "Something went wrong.";
+/** Field names whose automatic label would be wrong or unhelpful. Everything
+ *  else is derived, so a new field gets a decent label without being listed. */
+const FIELD_LABELS: Record<string, string> = {
+  ship: "Ship",
+  booking_cutoff_datetime: "Booking cutoff",
+  min_deposit_percent: "Minimum deposit",
+  balance_due_days_before_start: "Balance due deadline",
+  duration_days: "Duration in days",
+  duration_nights: "Duration in nights",
+  marketing_title: "Title",
+  marketing_description: "Description",
+  hero_image: "Cover photo",
+  discount_type: "Offer type",
+  discount_value: "Offer amount",
+  offer_label: "Offer name",
+  offer_ends_at: "Offer end date",
+  is_booking_open: "Booking open",
+  non_field_errors: "",
+  detail: "",
+};
+
+function labelFor(field: string): string {
+  const mapped = FIELD_LABELS[field];
+  if (mapped !== undefined) return mapped;
+  const spaced = field.replace(/_/g, " ");
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+/** DRF's stock validation sentences, which name no field and read like a
+ *  library talking to a programmer. The server's OWN messages are already
+ *  written for a person and are left alone. */
+function humanise(label: string, message: string): string {
+  const named = label ? `${label}` : "This";
+  if (message === "This field is required.") return `${named} is required.`;
+  if (message === "This field may not be null.") return `${named} is required.`;
+  if (message === "This field may not be blank.") return `${named} cannot be left empty.`;
+  if (message.startsWith("Date has wrong format")) {
+    return `${named} must be a real date, written as YYYY-MM-DD.`;
+  }
+  if (message.startsWith("Datetime has wrong format")) {
+    return `${named} must be a real date and time.`;
+  }
+  if (message === "A valid number is required.") return `${named} must be a number.`;
+  if (message === "A valid integer is required.") return `${named} must be a whole number.`;
+  // Captured rather than sliced at a character count: counting the prefix by
+  // hand is off by one the first time anyone reads it back.
+  const atLeast = /^Ensure this value is greater than or equal to (.+?)\.?$/.exec(message);
+  if (atLeast) return `${named} cannot be below ${atLeast[1]}.`;
+  const atMost = /^Ensure this value is less than or equal to (.+?)\.?$/.exec(message);
+  if (atMost) return `${named} cannot be above ${atMost[1]}.`;
+  if (message.startsWith('"') && message.includes("is not a valid choice")) {
+    return `${named} is not one of the allowed options.`;
+  }
+  if (message === "Not a valid string.") return `${named} is not valid.`;
+  // A real sentence from our own validation. Only name the field when the
+  // sentence does not already — "End date must be after start date" gains
+  // nothing from being introduced as "End date: End date must be…".
+  if (!label || message.toLowerCase().startsWith(label.toLowerCase())) return message;
+  return `${label}: ${message}`;
+}
+
+/** Nothing came back from the server, or nothing worth repeating. Status codes
+ *  are not something staff should have to look up. */
+const BY_STATUS: Record<number, string> = {
+  0: "Couldn't reach the server. Check your internet connection and try again.",
+  401: "Your session has expired — please sign in again.",
+  403: "You don't have permission to do that.",
+  404: "That item no longer exists. It may have been deleted by someone else.",
+  405: "That action isn't allowed here.",
+  413: "That file is too large. Try a smaller one.",
+  429: "Too many attempts in a row. Wait a minute, then try again.",
+  500: "Something broke on the server. Try once more — if it keeps happening, report it.",
+  502: "The server is restarting. Give it a moment and try again.",
+  503: "The server is restarting. Give it a moment and try again.",
+  504: "The server took too long to answer. Try again.",
+};
+
+/**
+ * One sentence a person can act on, from whatever the API returned.
+ *
+ * Staff see this in a toast and nowhere else, so it has to carry the whole
+ * story: which field, what is wrong with it, and — when the server said
+ * nothing useful — what is actually happening.
+ */
+export function errorText(err: unknown): string {
+  const apiError = err as ApiError | undefined;
+  if (!apiError) return "Something went wrong. Please try again.";
+
+  if (apiError.fieldErrors) {
+    const parts = Object.entries(apiError.fieldErrors).flatMap(([field, messages]) =>
+      messages.map((message) => humanise(labelFor(field), message)),
+    );
+    // Toasts are read at a glance. Beyond three problems, the count is more
+    // use than the list — the form shows them all anyway.
+    if (parts.length > 3) {
+      return `${parts.slice(0, 3).join(" ")} (+${parts.length - 3} more problem${
+        parts.length - 3 === 1 ? "" : "s"
+      })`;
+    }
+    if (parts.length) return parts.join(" ");
+  }
+
+  if (apiError.detail) return apiError.detail;
+  return BY_STATUS[apiError.status] ?? "Something went wrong. Please try again.";
 }
 
 export function DialogShell({
@@ -34,7 +131,10 @@ export function DialogShell({
       >
         <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between z-10">
           <h2 className="font-display text-xl">{title}</h2>
-          <button onClick={onClose} className="size-8 rounded-full grid place-items-center hover:bg-muted">
+          <button
+            onClick={onClose}
+            className="size-8 rounded-full grid place-items-center hover:bg-muted"
+          >
             <X className="size-4" />
           </button>
         </div>
@@ -53,13 +153,7 @@ export function Info({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function StaffField({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+export function StaffField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
       <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">{label}</span>
