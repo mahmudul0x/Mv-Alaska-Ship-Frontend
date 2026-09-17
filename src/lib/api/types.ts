@@ -45,13 +45,7 @@ export interface Package {
    *  carrying its own copy — a form that accepts what the server refuses
    *  sends the customer all the way to the pay button before saying no. */
   min_deposit_percent: Money;
-  /** Null while the sailing is still ahead of us. "finished" once it has
-   *  returned, "cancelled" if it was called off — booking_status cannot say
-   *  this, being only open/closed, and those two are very different news. */
-  archive_reason: ArchiveReason | null;
 }
-
-export type ArchiveReason = "finished" | "cancelled";
 
 export type OfferType = "percent" | "fixed";
 
