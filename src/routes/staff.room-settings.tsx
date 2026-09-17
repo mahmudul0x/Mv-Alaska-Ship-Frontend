@@ -1391,69 +1391,43 @@ function FareBasisCard({ ship }: { ship: StaffShip }) {
         )}
       </div>
 
-      <div className="p-5 grid md:grid-cols-2 gap-5">
-        <label className="block">
-          <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
-            Default adult fare (BDT)
-          </span>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-              ৳
+      <div className="p-5 space-y-4">
+        {/* The switch sits above both boxes, not beside one of them: it decides
+            whether the second box exists at all, and reading it first is the
+            only order that makes sense. */}
+        <label className="flex items-start gap-2.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={whole}
+            onChange={(e) => setWhole(e.target.checked)}
+            className="mt-0.5 size-4 shrink-0 accent-gold"
+          />
+          <span className="text-sm leading-snug">
+            Sell cabins whole
+            <span className="block text-[10px] text-muted-foreground mt-0.5">
+              A cabin costs its full berth count however many people take it.
             </span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={fare}
-              placeholder="e.g. 20000"
-              onChange={(e) => setFare(e.target.value)}
-              className={`${staffInputClass} pl-8`}
-            />
-          </div>
-          <span className="mt-1.5 block text-[10px] text-muted-foreground leading-snug">
-            Pre-fills a new package. Each sailing can still be priced differently.
           </span>
         </label>
 
-        <div className="space-y-3">
-          <label className="flex items-start gap-2.5 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={whole}
-              onChange={(e) => setWhole(e.target.checked)}
-              className="mt-0.5 size-4 shrink-0 accent-gold"
-            />
-            <span className="text-sm leading-snug">
-              Sell cabins whole
-              <span className="block text-[10px] text-muted-foreground mt-0.5">
-                A cabin costs its full berth count however many people take it.
-              </span>
-            </span>
-          </label>
-
+        {/* The two amounts on one row, so they line up and read as the pair
+            they are — what a berth costs, and what an empty one gives back. */}
+        <div className="grid md:grid-cols-2 gap-5 items-start">
+          <MoneyField
+            label="Default adult fare (BDT)"
+            value={fare}
+            onChange={setFare}
+            placeholder="e.g. 20000"
+            hint="Pre-fills a new package. Each sailing can still be priced differently."
+          />
           {whole && (
-            <label className="block">
-              <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
-                Allowance per empty berth (BDT)
-              </span>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                  ৳
-                </span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={allowance}
-                  placeholder="e.g. 5000"
-                  onChange={(e) => setAllowance(e.target.value)}
-                  className={`${staffInputClass} pl-8`}
-                />
-              </div>
-              <span className="mt-1.5 block text-[10px] text-muted-foreground leading-snug">
-                The food an absent guest would have eaten over the trip.
-              </span>
-            </label>
+            <MoneyField
+              label="Allowance per empty berth (BDT)"
+              value={allowance}
+              onChange={setAllowance}
+              placeholder="e.g. 5000"
+              hint="The food an absent guest would have eaten over the trip."
+            />
           )}
         </div>
       </div>
@@ -1476,5 +1450,43 @@ function FareBasisCard({ ship }: { ship: StaffShip }) {
         </button>
       </div>
     </div>
+  );
+}
+
+/** A taka amount with its label and its one line of explanation. Two of these
+ *  side by side stay the same height and keep their hints aligned, which hand
+ *  written pairs of the same markup did not. */
+function MoneyField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  hint,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  hint: string;
+}) {
+  return (
+    <label className="block">
+      <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">{label}</span>
+      <div className="relative">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+          ৳
+        </span>
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          value={value}
+          placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          className={`${staffInputClass} pl-8`}
+        />
+      </div>
+      <span className="mt-1.5 block text-[10px] text-muted-foreground leading-snug">{hint}</span>
+    </label>
   );
 }
