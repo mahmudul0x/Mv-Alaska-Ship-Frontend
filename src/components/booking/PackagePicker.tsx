@@ -1,6 +1,7 @@
 import { ArrowRight, CalendarDays, Check, Clock, MapPin, Moon } from "lucide-react";
 
 import { OfferBadge } from "@/components/site/OfferBadge";
+import { PackagePrice } from "@/components/site/PackagePrice";
 import { usePackages } from "@/hooks/queries/usePackages";
 import { parseLocalDate } from "@/lib/dates";
 import { formatBDT } from "@/lib/money";
@@ -184,12 +185,7 @@ export function PackagePicker({ selectedPackageId, onSelectPackage }: Props) {
                 )}
 
                 <div className="mt-auto flex items-end justify-between border-t border-dashed border-border pt-3.5">
-                  <div>
-                    <div className="eyebrow text-[9px] text-muted-foreground">From / adult</div>
-                    <div className="font-display text-xl text-gold-text leading-none mt-1">
-                      {formatBDT(pkg.adult_price)}
-                    </div>
-                  </div>
+                  <PackagePrice pkg={pkg} size="sm" tone="gold" />
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] transition-colors ${
                       disabled

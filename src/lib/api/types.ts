@@ -56,6 +56,14 @@ export interface PackageOffer {
   /** Percent off, or taka off per cabin. */
   value: Money;
   ends_at: string | null;
+  /** The was-and-now pair the cards strike through, both computed server-side
+   *  — the browser does no arithmetic on money.
+   *
+   *  `after` is null for a fixed-amount offer, deliberately: a flat discount
+   *  comes off the CABIN, so there is no honest per-adult "now" price. Such an
+   *  offer states itself in its own terms on the badge instead. */
+  adult_price_before: Money;
+  adult_price_after: Money | null;
 }
 
 export type KidChargeType = "free" | "fixed" | "full_adult";

@@ -4,6 +4,7 @@ import { Clock, MapPin, Check, ArrowUpRight, DoorOpen, Loader2 } from "lucide-re
 import { PageHero } from "@/components/site/PageHero";
 import { SectionHeader } from "@/components/site/SectionHeader";
 import { OfferBadge } from "@/components/site/OfferBadge";
+import { PackagePrice } from "@/components/site/PackagePrice";
 import { CTA } from "@/components/site/CTA";
 import { ItineraryMap, type Stop } from "@/components/site/ItineraryMap";
 import { usePackages } from "@/hooks/queries/usePackages";
@@ -538,10 +539,7 @@ function PackagesPage() {
                     ))}
                   </ul>
                   <div className="mt-auto pt-6 flex items-end justify-between border-t border-border">
-                    <div>
-                      <div className="eyebrow text-muted-foreground text-[10px]">From / adult</div>
-                      <div className="font-display text-3xl">{formatBDT(pkg.adult_price)}</div>
-                    </div>
+                    <PackagePrice pkg={pkg} size="lg" />
                     {pkg.is_bookable ? (
                       <Link
                         to="/booking"

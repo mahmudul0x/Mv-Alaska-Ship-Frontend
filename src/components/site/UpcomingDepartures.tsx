@@ -4,6 +4,7 @@ import { ArrowUpRight, BedDouble, CalendarDays, Clock, MapPin } from "lucide-rea
 
 import { SectionHeader } from "./SectionHeader";
 import { OfferBadge } from "./OfferBadge";
+import { PackagePrice } from "./PackagePrice";
 import { usePackages } from "@/hooks/queries/usePackages";
 import { parseLocalDate } from "@/lib/dates";
 import { formatBDT } from "@/lib/money";
@@ -125,8 +126,7 @@ function DepartureCard({ pkg, index }: { pkg: Package; index: number }) {
         </div>
 
         <div className="mt-5">
-          <div className="eyebrow text-muted-foreground text-[10px]">From / adult</div>
-          <div className="font-display text-2xl text-foreground">{formatBDT(pkg.adult_price)}</div>
+          <PackagePrice pkg={pkg} size="md" />
         </div>
 
         {/* mt-auto: cards in a row have different description lengths, and the
