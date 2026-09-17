@@ -90,6 +90,22 @@ export interface StaffRefund {
   /** Pending past the SLA the customer was promised — a broken promise, not
    *  merely a task. */
   overdue: boolean;
+  /** The settled gateway transactions this refund is issued against. Several
+   *  when the booking was paid in instalments — SSLCommerz refunds a
+   *  transaction, so a deposit and a balance are two separate payouts. */
+  gateway_transactions: GatewayTransaction[];
+}
+
+export interface GatewayTransaction {
+  /** Ours (`BK-…-P3`) — what the merchant panel's search box takes. */
+  transaction_id: string;
+  /** The bank-level id SSLCommerz issues on settlement; what a refund is
+   *  actually raised against, by hand today and by the refund API later. */
+  bank_tran_id: string;
+  amount: Money;
+  /** "BKASH-BKash", "VISA-Dutch Bangla Bank" — for recognising the row. */
+  card_type: string;
+  paid_at: string | null;
 }
 
 export interface StaffRefundCreate {

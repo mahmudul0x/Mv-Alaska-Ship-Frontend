@@ -7,6 +7,7 @@ import {
   Loader2,
   Percent,
   Receipt,
+  ShieldAlert,
   Ship,
   TrendingUp,
   Undo2,
@@ -180,6 +181,23 @@ function OverviewPage() {
           {TODAY_LABEL}
         </div>
       </PageHeader>
+
+      {/* A payment the gateway flagged, or that we could not process, is money
+          or a cabin stuck with nobody told. The queue lives on Refunds, but
+          its tab is hidden while empty — so this is how anyone finds out it is
+          not empty. Only ever rendered when there is something to say. */}
+      {(data.payments_needing_review ?? 0) > 0 && (
+        <Link
+          to="/staff/refunds"
+          className="flex items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-4 hover:border-destructive/60 transition-colors"
+        >
+          <ShieldAlert className="size-4 text-destructive shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <strong>{t("rv.bannerCount", { n: n(data.payments_needing_review ?? 0) })}</strong>{" "}
+            <span className="text-muted-foreground">{t("rv.bannerNote")}</span>
+          </div>
+        </Link>
+      )}
 
       {/* Stat cards */}
       <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">

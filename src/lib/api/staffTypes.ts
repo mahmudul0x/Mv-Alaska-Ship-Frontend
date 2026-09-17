@@ -120,7 +120,19 @@ export interface StaffPayment {
   status: string;
   paid_at: string | null;
   created_at: string;
+  /** The gateway flagged this, or we could not process it. Either way a human
+   *  has to look: it is holding money, a cabin, or both. */
+  needs_manual_review: boolean;
+  /** 1 = SSLCommerz called it high risk. Null when they said nothing, or when
+   *  their answer could not be read — which reads as unknown, never as safe. */
+  gateway_risk_level: number | null;
+  /** Why it is in the queue, in a sentence, written when it was flagged. */
+  last_reconcile_error: string;
+  reconcile_attempts: number;
+  last_reconcile_at: string | null;
 }
+
+export type PaymentResolution = "success" | "failed" | "cancelled";
 
 export interface StaffStatusLog {
   old_status: string;
@@ -437,6 +449,9 @@ export interface StaffOverview {
   refund_liability_count: number;
   refund_liability_total: Money;
   /** Cancellation requests waiting on a human decision. */
+  /** Payments the gateway flagged high-risk, or that the IPN could not
+   *  process. Optional so an older backend simply renders no banner. */
+  payments_needing_review?: number;
   pending_cancellation_count: number;
   pending_cancellation_refund_total: Money;
   bookings_today: number;

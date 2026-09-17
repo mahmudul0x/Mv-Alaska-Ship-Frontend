@@ -5,8 +5,10 @@ import { toast } from "sonner";
 import {
   AlertTriangle,
   Banknote,
+  Check,
   CheckCircle2,
   Clock3,
+  Copy,
   Download,
   FileText,
   Loader2,
@@ -26,6 +28,8 @@ import {
   errorText,
   staffInputClass,
 } from "@/components/staff/ui";
+import { getPaymentsNeedingReview, resolveStaffPayment } from "@/lib/api/staff";
+import type { PaymentResolution, StaffPayment } from "@/lib/api/staffTypes";
 import {
   approveCancellation,
   createRefund,
@@ -40,38 +44,40 @@ import {
   voidRefund,
 } from "@/lib/api/staffRefunds";
 import type { StaffCancellationRequest, StaffRefund } from "@/lib/api/staffRefundTypes";
+import type { StringKey } from "@/lib/i18n/strings";
 import { currentLang, useLanguage, useT } from "@/lib/i18n";
-import { dateTime, money, num } from "@/lib/i18n/format";
+import { date, dateTime, money, num } from "@/lib/i18n/format";
+import { copyToClipboard } from "@/lib/clipboard";
 
 export const Route = createFileRoute("/staff/refunds")({
   component: RefundsPage,
 });
 
-const REQUEST_FILTERS = [
-  { value: "pending", label: "Pending" },
-  { value: "approved", label: "Approved" },
-  { value: "rejected", label: "Rejected" },
-  { value: "", label: "All" },
+const REQUEST_FILTERS: { value: string; label: StringKey }[] = [
+  { value: "pending", label: "rf.filterPending" },
+  { value: "approved", label: "rf.filterApproved" },
+  { value: "rejected", label: "rf.filterRejected" },
+  { value: "", label: "common.all" },
 ];
 
-const REFUND_FILTERS = [
-  { value: "pending", label: "Owed" },
-  { value: "paid", label: "Paid" },
-  { value: "void", label: "Void" },
-  { value: "", label: "All" },
+const REFUND_FILTERS: { value: string; label: StringKey }[] = [
+  { value: "pending", label: "rf.filterOwed" },
+  { value: "paid", label: "rf.filterPaid" },
+  { value: "void", label: "rf.filterVoid" },
+  { value: "", label: "common.all" },
 ];
 
-const PAYOUT_METHODS = [
+const PAYOUT_METHODS: { value: string; label: StringKey | "bKash" | "Nagad" }[] = [
   { value: "bkash", label: "bKash" },
   { value: "nagad", label: "Nagad" },
   { value: "bank_transfer", label: "rf.bankTransfer" },
-  { value: "cash", label: "Cash" },
+  { value: "cash", label: "rf.cash" },
   { value: "gateway", label: "rf.paymentGateway" },
 ];
 
 function RefundsPage() {
   const { t, lang } = useLanguage();
-  const [tab, setTab] = useState<"queue" | "register">("queue");
+  const [tab, setTab] = useState<"queue" | "register" | "review">("queue");
 
   const requestSummary = useQuery({
     queryKey: ["staff", "cancellation-summary"],
@@ -81,6 +87,13 @@ function RefundsPage() {
     queryKey: ["staff", "refund-summary"],
     queryFn: getRefundSummary,
   });
+  // Fetched here rather than inside the tab so the tab itself can be hidden
+  // when the queue is empty.
+  const review = useQuery({
+    queryKey: ["staff", "payments", "review"],
+    queryFn: getPaymentsNeedingReview,
+  });
+  const reviewCount = review.data?.length ?? 0;
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -122,7 +135,7 @@ function RefundsPage() {
           value={money(refundSummary.data?.paid_total ?? "0.00", lang)}
           icon={Banknote}
           tone="emerald"
-          hint={`${refundSummary.data?.paid_count ?? 0} settled`}
+          hint={t("rf.settledCount", { n: num(refundSummary.data?.paid_count ?? 0, lang) })}
         />
       </div>
 
@@ -141,23 +154,249 @@ function RefundsPage() {
       )}
 
       <div className="flex gap-2">
-        {(["queue", "register"] as const).map((value) => (
-          <button
-            key={value}
-            onClick={() => setTab(value)}
-            className={`px-4 min-h-11 rounded-full text-xs uppercase tracking-[0.14em] font-semibold transition-colors ${
-              tab === value
-                ? "bg-ocean text-background"
-                : "border border-border text-muted-foreground hover:border-gold hover:text-gold"
-            }`}
-          >
-            {value === "queue" ? t("rf.queueTab") : t("rf.registerTab")}
-          </button>
-        ))}
+        {(["queue", "register", "review"] as const).map((value) =>
+          // The review tab only exists when something is in it: a permanently
+          // empty tab teaches people to stop looking at it.
+          value === "review" && !reviewCount ? null : (
+            <button
+              key={value}
+              onClick={() => setTab(value)}
+              className={`px-4 min-h-11 rounded-full text-xs uppercase tracking-[0.14em] font-semibold transition-colors ${
+                tab === value
+                  ? "bg-ocean text-background"
+                  : "border border-border text-muted-foreground hover:border-gold hover:text-gold"
+              }`}
+            >
+              {value === "queue"
+                ? t("rf.queueTab")
+                : value === "register"
+                  ? t("rf.registerTab")
+                  : `${t("rv.title")} (${num(reviewCount, lang)})`}
+            </button>
+          ),
+        )}
       </div>
 
-      {tab === "queue" ? <CancellationQueue /> : <RefundRegister />}
+      {tab === "queue" ? (
+        <CancellationQueue />
+      ) : tab === "review" ? (
+        <ReviewQueue />
+      ) : (
+        <RefundRegister />
+      )}
     </div>
+  );
+}
+
+/* ── Payments the gateway flagged, or that we could not process ─────────── */
+
+/** The manual-review queue, which until now existed only as a database flag
+ *  and a log line.
+ *
+ *  Two different things land here and they need opposite reactions:
+ *
+ *  - **High risk.** SSLCommerz's own fraud check said so, and their document
+ *    is explicit: hold the service and verify the customer. The money is real
+ *    and stays credited — what is withheld is trust in it, so this is a
+ *    "check who they are before they board", not a payment problem.
+ *  - **Could not be processed.** The IPN threw, so the payment sits PENDING
+ *    holding its cabin, and money may have been captured without being
+ *    credited. Only the merchant panel can say which.
+ */
+function ReviewQueue() {
+  const { t, lang } = useLanguage();
+  const queryClient = useQueryClient();
+  const [resolving, setResolving] = useState<StaffPayment | null>(null);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["staff", "payments", "review"],
+    queryFn: getPaymentsNeedingReview,
+  });
+
+  function refresh() {
+    queryClient.invalidateQueries({ queryKey: ["staff", "payments", "review"] });
+    queryClient.invalidateQueries({ queryKey: ["staff", "overview"] });
+    queryClient.invalidateQueries({ queryKey: ["staff", "bookings"] });
+  }
+
+  const rows = data ?? [];
+
+  return (
+    <>
+      <p className="text-xs text-muted-foreground max-w-2xl">{t("rv.subtitle")}</p>
+
+      <SectionCard bodyClassName="divide-y divide-border">
+        {isLoading && (
+          <div className="p-10 text-center">
+            <Loader2 className="size-5 animate-spin mx-auto text-muted-foreground" />
+          </div>
+        )}
+        {!isLoading && rows.length === 0 && (
+          <div className="p-10 text-center text-sm text-muted-foreground">{t("rv.none")}</div>
+        )}
+        {rows.map((payment) => {
+          const risky = payment.gateway_risk_level === 1;
+          return (
+            <div key={payment.id} className="px-5 py-4 space-y-2.5">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="min-w-[190px]">
+                  <div className="font-mono text-sm">{payment.booking_code}</div>
+                  <div className="text-xs text-muted-foreground font-mono">
+                    {payment.transaction_id}
+                  </div>
+                </div>
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                    risky ? "bg-destructive/10 text-destructive" : "bg-gold/15 text-gold-text"
+                  }`}
+                >
+                  {risky ? t("rv.highRisk") : t("rv.stuck")}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {t("rv.attempts", { n: num(payment.reconcile_attempts, lang) })}
+                </span>
+                <div className="ml-auto flex items-center gap-3">
+                  <div className="font-display text-lg">{money(payment.amount, lang)}</div>
+                  <button
+                    onClick={() => setResolving(payment)}
+                    className="min-h-11 px-4 rounded-full gradient-gold text-ocean text-[11px] uppercase tracking-wider font-semibold"
+                  >
+                    {t("rv.resolve")}
+                  </button>
+                </div>
+              </div>
+
+              {/* Why it is here, in the words written when it was flagged. */}
+              {payment.last_reconcile_error && (
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  {payment.last_reconcile_error}
+                </p>
+              )}
+              <p className="text-[11px] text-gold-text leading-relaxed">
+                {risky ? t("rv.riskNote") : t("rv.stuckNote")}
+              </p>
+            </div>
+          );
+        })}
+      </SectionCard>
+
+      {resolving && (
+        <ResolvePaymentDialog
+          payment={resolving}
+          onClose={() => setResolving(null)}
+          onDone={() => {
+            setResolving(null);
+            refresh();
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+/** Three outcomes, each written as what the panel showed rather than as a
+ *  status name — "settle this payment" is a decision about someone's money,
+ *  and the person clicking it should be answering a question of fact. */
+function ResolvePaymentDialog({
+  payment,
+  onClose,
+  onDone,
+}: {
+  payment: StaffPayment;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const { t, lang } = useLanguage();
+  const [choice, setChoice] = useState<PaymentResolution | "">("");
+  const [note, setNote] = useState("");
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      resolveStaffPayment(payment.id, { status: choice as PaymentResolution, note }),
+    onSuccess: () => {
+      toast.success(t("rv.resolved"));
+      onDone();
+    },
+    onError: (err) => toast.error(errorText(err)),
+  });
+
+  const OPTIONS: { value: PaymentResolution; label: StringKey }[] = [
+    { value: "success", label: "rv.moneyArrived" },
+    { value: "failed", label: "rv.noMoney" },
+    { value: "cancelled", label: "rv.customerCancelled" },
+  ];
+
+  function submit() {
+    // Crediting money is the one choice here that cannot be walked back by
+    // another click, so it asks first.
+    if (choice === "success" && !confirm(t("rv.confirmSettle"))) return;
+    mutation.mutate();
+  }
+
+  return (
+    <DialogShell title={t("rv.resolve")} onClose={onClose}>
+      <div className="space-y-4">
+        <div className="rounded-xl bg-muted/50 p-4 text-sm space-y-1">
+          <div className="flex justify-between gap-3">
+            <span className="text-muted-foreground">{t("bk.bookingCode")}</span>
+            <span className="font-mono">{payment.booking_code}</span>
+          </div>
+          <div className="flex justify-between gap-3">
+            <span className="text-muted-foreground">{t("rf.tranId")}</span>
+            <span className="font-mono text-xs">{payment.transaction_id}</span>
+          </div>
+          <div className="flex justify-between gap-3">
+            <span className="text-muted-foreground">{t("bk.amount")}</span>
+            <span className="font-semibold">{money(payment.amount, lang)}</span>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="eyebrow text-muted-foreground text-[10px]">{t("rv.whatPanelShowed")}</div>
+          {OPTIONS.map((opt) => (
+            <label
+              key={opt.value}
+              className={`flex items-start gap-2.5 rounded-xl border p-3 cursor-pointer transition-all ${
+                choice === opt.value
+                  ? "border-gold bg-ocean/4"
+                  : "border-border hover:border-gold/50"
+              }`}
+            >
+              <input
+                type="radio"
+                name="resolution"
+                className="mt-0.5 size-4 shrink-0 accent-gold"
+                checked={choice === opt.value}
+                onChange={() => setChoice(opt.value)}
+              />
+              <span className="text-sm leading-snug">{t(opt.label)}</span>
+            </label>
+          ))}
+        </div>
+
+        <StaffField label={t("rv.noteLabel")}>
+          <textarea
+            rows={2}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className={staffInputClass}
+          />
+        </StaffField>
+
+        <button
+          disabled={!choice || mutation.isPending}
+          onClick={submit}
+          className="w-full min-h-11 flex items-center justify-center gap-2 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.15em] font-semibold disabled:opacity-40"
+        >
+          {mutation.isPending ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <CheckCircle2 className="size-4" />
+          )}
+          {t("rv.resolve")}
+        </button>
+      </div>
+    </DialogShell>
   );
 }
 
@@ -202,7 +441,7 @@ function CancellationQueue() {
                 : "border border-border text-muted-foreground hover:border-gold"
             }`}
           >
-            {f.label}
+            {t(f.label)}
           </button>
         ))}
         <input
@@ -469,7 +708,7 @@ function RefundRegister() {
                 : "border border-border text-muted-foreground hover:border-gold"
             }`}
           >
-            {f.label}
+            {t(f.label)}
           </button>
         ))}
         <input
@@ -571,6 +810,8 @@ function RefundRegister() {
                 </div>
               )}
             </div>
+
+            {refund.status === "pending" && <PanelTransactions refund={refund} />}
           </div>
         ))}
       </SectionCard>
@@ -619,6 +860,93 @@ function VoidButton({ refund, onDone }: { refund: StaffRefund; onDone: () => voi
       className="min-h-11 px-3 rounded-full border border-border text-[11px] text-muted-foreground hover:border-destructive hover:text-destructive"
     >
       <XCircle className="size-3.5" />
+    </button>
+  );
+}
+
+/** The transactions this payout has to be issued against, on the row itself.
+ *
+ *  SSLCommerz refunds a TRANSACTION; this ledger records a booking-level
+ *  liability. Without the ids here the only route to them was Refund register
+ *  → booking code → Bookings → find the booking → open it → copy the payment —
+ *  six steps whose failure mode is refunding a different customer's money.
+ *
+ *  Shown only while a refund is still pending, which is exactly when someone
+ *  is about to go and do it. Once paid, the reference number on the row is the
+ *  record that matters.
+ */
+function PanelTransactions({ refund }: { refund: StaffRefund }) {
+  const { t, lang } = useLanguage();
+  const txns = refund.gateway_transactions;
+
+  if (txns.length === 0) {
+    // Nothing settled through the gateway: cash at the desk, or a booking
+    // whose payment predates the payload being stored. The payout is still
+    // owed — it just cannot be a gateway reversal.
+    return (
+      <div className="w-full rounded-lg bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
+        {t("rf.noGatewayTxn")}
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full rounded-lg bg-muted/40 px-3 py-2.5 space-y-1.5">
+      <div className="eyebrow text-[9px] text-muted-foreground">
+        {txns.length > 1 ? t("rf.refundAgainstEach") : t("rf.refundAgainst")}
+      </div>
+      {txns.map((txn) => (
+        <div key={txn.transaction_id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <CopyField label={t("rf.bankTranId")} value={txn.bank_tran_id} mono />
+          <CopyField label={t("rf.tranId")} value={txn.transaction_id} mono />
+          <span className="text-[11px] text-muted-foreground">
+            {money(txn.amount, lang)}
+            {txn.card_type ? ` · ${txn.card_type}` : ""}
+            {txn.paid_at ? ` · ${date(txn.paid_at, lang)}` : ""}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** One id with a click-to-copy button. Copying beats selecting by hand: these
+ *  are 27 characters of unbroken base-36 that a person will mis-transcribe. */
+function CopyField({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  const t = useT();
+  const [copied, setCopied] = useState(false);
+
+  if (!value) {
+    return (
+      <span className="text-[11px] text-muted-foreground">
+        {label}: <span className="italic">{t("common.none")}</span>
+      </span>
+    );
+  }
+
+  async function copy() {
+    if (await copyToClipboard(value)) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } else {
+      toast.error(t("rf.copyFailed"));
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      title={t("rf.copy")}
+      className="group inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 text-[11px] hover:border-gold transition-colors"
+    >
+      <span className="text-muted-foreground">{label}</span>
+      <span className={mono ? "font-mono" : ""}>{value}</span>
+      {copied ? (
+        <Check className="size-3 text-emerald-600" />
+      ) : (
+        <Copy className="size-3 text-muted-foreground group-hover:text-gold" />
+      )}
     </button>
   );
 }
@@ -679,7 +1007,7 @@ function MarkPaidDialog({
           >
             {PAYOUT_METHODS.map((m) => (
               <option key={m.value} value={m.value}>
-                {m.label}
+                {m.label.includes(".") ? t(m.label as StringKey) : m.label}
               </option>
             ))}
           </select>

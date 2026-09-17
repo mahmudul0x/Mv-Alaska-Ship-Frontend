@@ -1228,6 +1228,91 @@ export const STRINGS = {
   },
   "shell.expand": { en: "Expand sidebar", bn: "সাইডবার খুলুন" },
   "shell.collapse": { en: "Collapse sidebar", bn: "সাইডবার গুটান" },
+
+  /* Refunds — the gateway transactions a payout is issued against */
+  "rf.refundAgainst": { en: "Refund against this transaction", bn: "যে লেনদেনে ফেরত দিতে হবে" },
+  "rf.refundAgainstEach": {
+    en: "Refund against EACH of these transactions",
+    bn: "এই প্রতিটি লেনদেনেই আলাদা করে ফেরত দিতে হবে",
+  },
+  "rf.bankTranId": { en: "Bank txn", bn: "ব্যাংক লেনদেন" },
+  "rf.tranId": { en: "Our ref", bn: "আমাদের রেফ" },
+  "rf.copy": { en: "Click to copy", bn: "কপি করতে ক্লিক করুন" },
+  "rf.copyFailed": {
+    en: "Could not copy — select and copy by hand.",
+    bn: "কপি হলো না — হাতে সিলেক্ট করে কপি করুন।",
+  },
+  "rf.noGatewayTxn": {
+    en: "No gateway transaction on this booking — it cannot be refunded through the SSLCommerz panel. Pay it out another way and record the reference.",
+    bn: "এই বুকিংয়ে গেটওয়ের কোনো লেনদেন নেই — SSLCommerz প্যানেল থেকে ফেরত দেওয়া যাবে না। অন্যভাবে টাকা দিয়ে রেফারেন্সটা লিখে রাখুন।",
+  },
+
+  /* Refunds — filter chips and payout methods the first pass left in English */
+  "rf.filterPending": { en: "Pending", bn: "অপেক্ষমাণ" },
+  "rf.filterApproved": { en: "Approved", bn: "অনুমোদিত" },
+  "rf.filterRejected": { en: "Rejected", bn: "নাকচ" },
+  "rf.filterOwed": { en: "Owed", bn: "বাকি" },
+  "rf.filterPaid": { en: "Paid", bn: "পরিশোধিত" },
+  "rf.filterVoid": { en: "Void", bn: "বাতিল" },
+  "rf.cash": { en: "Cash", bn: "নগদ টাকা" },
+  "rf.settledCount": { en: "{n} settled", bn: "{n}টি মিটিয়ে দেওয়া" },
+
+  /* Payments the gateway flagged, or that we could not process */
+  "rv.title": { en: "Payments needing a check", bn: "যাচাই দরকার এমন পেমেন্ট" },
+  "rv.subtitle": {
+    en: "The gateway flagged these, or we could not process them. Each one is holding money, a cabin, or both.",
+    bn: "গেটওয়ে এগুলো চিহ্নিত করেছে, অথবা আমরা প্রক্রিয়া করতে পারিনি। প্রতিটাই টাকা, কেবিন, বা দুটোই আটকে রেখেছে।",
+  },
+  "rv.none": {
+    en: "Nothing needs checking — every payment resolved on its own.",
+    bn: "কিছু যাচাই করার নেই — প্রতিটি পেমেন্ট নিজে থেকেই মিটে গেছে।",
+  },
+  "rv.highRisk": { en: "Gateway flagged HIGH RISK", bn: "গেটওয়ে উচ্চ ঝুঁকি বলেছে" },
+  "rv.stuck": { en: "Could not be processed", bn: "প্রক্রিয়া করা যায়নি" },
+  "rv.riskNote": {
+    en: "The money is real and credited. What is held is trust in it — verify who the customer is before they board.",
+    bn: "টাকাটা আসল এবং জমা হয়েছে। আটকে আছে শুধু ভরসা — জাহাজে ওঠার আগে গ্রাহক কে তা যাচাই করুন।",
+  },
+  "rv.stuckNote": {
+    en: "Check the SSLCommerz merchant panel, then say what it showed. Until you do, this payment holds its cabin out of inventory.",
+    bn: "SSLCommerz প্যানেলে দেখে নিয়ে কী পেলেন তা জানান। ততক্ষণ এই পেমেন্ট কেবিনটা আটকে রাখবে।",
+  },
+  "rv.resolve": { en: "Resolve", bn: "মীমাংসা করুন" },
+  "rv.whatPanelShowed": {
+    en: "What did the merchant panel show?",
+    bn: "মার্চেন্ট প্যানেলে কী দেখলেন?",
+  },
+  "rv.moneyArrived": {
+    en: "The money arrived — credit the customer",
+    bn: "টাকা এসেছে — গ্রাহকের নামে জমা করুন",
+  },
+  "rv.noMoney": {
+    en: "No money moved — close it and free the cabin",
+    bn: "কোনো টাকা আসেনি — বন্ধ করে কেবিন ছেড়ে দিন",
+  },
+  "rv.customerCancelled": {
+    en: "The customer cancelled — close it and free the cabin",
+    bn: "গ্রাহক বাতিল করেছেন — বন্ধ করে কেবিন ছেড়ে দিন",
+  },
+  "rv.noteLabel": {
+    en: "What you saw (recorded for audit)",
+    bn: "যা দেখলেন (নথির জন্য লেখা থাকবে)",
+  },
+  "rv.resolved": { en: "Payment resolved.", bn: "পেমেন্টের মীমাংসা হয়েছে।" },
+  "rv.confirmSettle": {
+    en: "Credit this payment to the customer? Only do this if the merchant panel shows the money actually arrived.",
+    bn: "এই পেমেন্ট গ্রাহকের নামে জমা করবেন? প্যানেলে টাকা আসলেই এসেছে দেখলে তবেই করুন।",
+  },
+  "rv.attempts": { en: "{n} gateway attempts", bn: "{n} বার গেটওয়েতে চেষ্টা" },
+
+  "rv.bannerCount": {
+    en: "{n} payment(s) need a check.",
+    bn: "{n}টি পেমেন্ট যাচাই করা দরকার।",
+  },
+  "rv.bannerNote": {
+    en: "The gateway flagged them, or we could not process them — each is holding money, a cabin, or both. Open Refunds to clear them.",
+    bn: "গেটওয়ে এগুলো চিহ্নিত করেছে, অথবা আমরা প্রক্রিয়া করতে পারিনি — প্রতিটাই টাকা, কেবিন, বা দুটোই আটকে রেখেছে। মেটাতে Refunds পাতায় যান।",
+  },
 } as const;
 
 export type StringKey = keyof typeof STRINGS;

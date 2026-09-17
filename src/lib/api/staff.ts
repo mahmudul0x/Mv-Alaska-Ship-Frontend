@@ -21,6 +21,7 @@ import type {
   StaffPackage,
   StaffPackageRoom,
   StaffPackageWrite,
+  PaymentResolution,
   StaffPayment,
   StaffRoom,
   StaffRoomImage,
@@ -499,4 +500,27 @@ export async function updateStaffFoodMenuItem(
 
 export async function deleteStaffFoodMenuItem(id: number) {
   await staffClient.delete(`/staff/food-menu-items/${id}/`);
+}
+
+/* --- Payments the gateway flagged, or that we could not process --- */
+
+/** The manual-review queue. Each row is holding money, a cabin, or both, so
+ *  this is unpaginated on purpose: it should be short, and a second page of
+ *  stuck payments is a problem to see all of, not to scroll. */
+export async function getPaymentsNeedingReview(): Promise<StaffPayment[]> {
+  const { data } = await staffClient.get("/staff/payments/", {
+    params: { needs_manual_review: "true" },
+  });
+  return data.results ?? data;
+}
+
+/** Drive a stuck payment to a terminal state, having checked the merchant
+ *  panel. Never a bare PATCH: the server takes a row lock and writes an audit
+ *  trail, because settling one credits real money to a customer. */
+export async function resolveStaffPayment(
+  id: number,
+  payload: { status: PaymentResolution; note?: string },
+): Promise<StaffPayment> {
+  const { data } = await staffClient.post(`/staff/payments/${id}/resolve/`, payload);
+  return data;
 }
