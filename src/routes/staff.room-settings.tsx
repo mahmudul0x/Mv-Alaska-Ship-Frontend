@@ -395,76 +395,92 @@ function ForeignerSurchargeSection() {
     );
   }
 
-  return (
-    <section className="space-y-4 pt-6">
-      <div className="flex items-start gap-2.5 rounded-xl border border-gold/30 bg-gold/5 px-4 py-3 text-xs text-muted-foreground">
-        <Info className="size-4 text-gold shrink-0 mt-0.5" />
-        <p>
-          Charged <strong className="text-foreground">once per foreign guest</strong>, on top of
-          their normal adult or child fare. A foreign child is surcharged even on a free age tier.
-          Set both to <strong className="text-foreground">0</strong> to charge foreign nationals
-          exactly what local guests pay — their passport is still collected for the boarding
-          manifest.
-        </p>
-      </div>
+  const bothZero = Number(adult) === 0 && Number(kid) === 0;
 
-      <div className="rounded-xl border border-border bg-card p-5 space-y-4 max-w-xl">
-        <div className="grid sm:grid-cols-2 gap-4">
-          <label className="block">
-            <span className="text-xs font-medium flex items-center gap-1.5">
-              <UserRound className="size-3.5 text-ocean/60" /> Per foreign adult (BDT)
+  return (
+    <section className="pt-6">
+      <div
+        className={`rounded-2xl border bg-card overflow-hidden transition-all max-w-3xl ${
+          dirty ? "border-gold/50 shadow-luxe" : "border-border"
+        }`}
+      >
+        <div className="px-5 py-4 border-b border-border flex items-center gap-3">
+          <div className="size-9 rounded-xl bg-gold/15 grid place-items-center shrink-0">
+            <Globe className="size-4.5 text-gold-text" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-display text-base leading-tight truncate">Foreigner surcharge</div>
+            <div className="text-[10px] text-muted-foreground">
+              One rate for every sailing, charged once per foreign guest
+            </div>
+          </div>
+          {dirty && (
+            <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-gold/15 text-gold shrink-0">
+              Unsaved
             </span>
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              value={adult}
-              onChange={(e) => setDraft({ adult: e.target.value, kid })}
-              className={`${staffInputClass} mt-1.5`}
-            />
-          </label>
-          <label className="block">
-            <span className="text-xs font-medium flex items-center gap-1.5">
-              <Baby className="size-3.5 text-ocean/60" /> Per foreign child (BDT)
-            </span>
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              value={kid}
-              onChange={(e) => setDraft({ adult, kid: e.target.value })}
-              className={`${staffInputClass} mt-1.5`}
-            />
-          </label>
+          )}
         </div>
 
-        <div className="flex items-center justify-between gap-4 pt-1">
-          <p className="text-[11px] text-muted-foreground">
-            {/* The reassurance that makes a global rate safe to touch: staff
-                need to know an edit cannot reach money already collected. */}
+        <div className="p-5 space-y-4">
+          <div className="grid sm:grid-cols-2 gap-5 items-start">
+            <MoneyField
+              label="Per foreign adult (BDT)"
+              value={adult}
+              onChange={(value) => setDraft({ adult: value, kid })}
+              placeholder="0.00"
+              hint="Added once, on top of the adult fare they already pay."
+            />
+            <MoneyField
+              label="Per foreign child (BDT)"
+              value={kid}
+              onChange={(value) => setDraft({ adult, kid: value })}
+              placeholder="0.00"
+              hint="Charged even when the child's age tier is free."
+            />
+          </div>
+
+          {/* What the numbers above actually mean, in words, updating as they
+              change. It replaces a paragraph of standing instructions that
+              described every case at once — including the ones not in force. */}
+          <div className="rounded-xl bg-muted/40 px-4 py-3 text-xs text-muted-foreground leading-relaxed">
+            {bothZero ? (
+              <>
+                <strong className="text-foreground">No surcharge right now.</strong> Foreign guests
+                pay exactly what everyone else pays — their passport is still collected for the
+                boarding manifest.
+              </>
+            ) : (
+              <>
+                A foreign adult pays{" "}
+                <strong className="text-foreground">{formatBDT(adult || "0")}</strong> more than a
+                local guest, and a foreign child{" "}
+                <strong className="text-foreground">{formatBDT(kid || "0")}</strong> more — once
+                each, whatever cabin they take.
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="px-5 pb-5 flex items-center justify-between gap-4 flex-wrap">
+          {/* The reassurance that makes a global rate safe to touch: staff need
+              to know an edit cannot reach money already collected. */}
+          <span className="text-[10px] text-muted-foreground">
             Applies to new bookings only — bookings already made keep the rate they were charged.
-          </p>
+          </span>
           <button
             onClick={() => mutation.mutate()}
             disabled={!dirty || mutation.isPending}
-            className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-full gradient-gold text-ocean text-xs font-semibold shadow-luxe disabled:opacity-40 disabled:pointer-events-none"
+            className="shrink-0 inline-flex items-center gap-2 px-6 py-2.5 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.15em] font-semibold shadow-luxe disabled:opacity-30 disabled:shadow-none"
           >
             {mutation.isPending ? (
               <Loader2 className="size-3.5 animate-spin" />
             ) : (
               <Save className="size-3.5" />
             )}
-            Save
+            {dirty ? "Save changes" : "Saved"}
           </button>
         </div>
       </div>
-
-      {data && Number(data.adult_amount) === 0 && Number(data.kid_amount) === 0 && (
-        <p className="text-xs text-muted-foreground">
-          No surcharge is being charged right now. Foreign guests are asked for a passport but pay
-          the same fare as everyone else.
-        </p>
-      )}
     </section>
   );
 }
