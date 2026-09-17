@@ -31,12 +31,14 @@ import {
   SectionCard,
   StatCard,
   StatusBadge,
-  STATUS_LABEL,
+  useStatusLabel,
   STATUS_ORDER,
 } from "@/components/staff/ui";
 import { getStaffOverview } from "@/lib/api/staff";
 import type { BookingStatus } from "@/lib/api/types";
 import { formatBDT, parseMoney } from "@/lib/money";
+import { useLanguage } from "@/lib/i18n";
+import { money, num, percent } from "@/lib/i18n/format";
 
 export const Route = createFileRoute("/staff/")({
   component: OverviewPage,
@@ -59,6 +61,8 @@ const TODAY_LABEL = new Intl.DateTimeFormat("en-GB", {
 }).format(new Date());
 
 function OverviewPage() {
+  const { t, lang } = useLanguage();
+  const statusLabel = useStatusLabel();
   const { data, isLoading } = useQuery({
     queryKey: ["staff", "overview"],
     queryFn: getStaffOverview,
@@ -67,85 +71,89 @@ function OverviewPage() {
   if (isLoading || !data) {
     return (
       <div className="p-16 flex items-center justify-center gap-3 text-muted-foreground">
-        <Loader2 className="size-5 animate-spin text-gold" /> Loading overview…
+        <Loader2 className="size-5 animate-spin text-gold" /> {t("overview.loading")}
       </div>
     );
   }
 
   const totalBookings = Object.values(data.bookings_by_status).reduce((a, b) => a + b, 0);
+  // Money and counts go through the language-aware formatters, so Bangla shows
+  // ৳ ২০,০০০.০০ rather than Bangla labels wrapped around English digits.
+  const bdt = (amount: string) => money(amount, lang);
+  const n = (value: number) => num(value, lang);
 
   const stats = [
     {
-      label: "Upcoming packages",
-      value: String(data.upcoming_packages),
+      label: t("overview.upcomingPackages"),
+      value: n(data.upcoming_packages),
       icon: CalendarRange,
-      hint: "Open & departing soon",
+      hint: t("overview.upcomingHint"),
     },
     {
-      label: "Active bookings",
-      value: String(data.active_bookings),
+      label: t("overview.activeBookings"),
+      value: n(data.active_bookings),
       icon: ClipboardList,
-      hint: (
-        <>
-          <span className="font-medium text-foreground">{data.bookings_today}</span> today ·{" "}
-          <span className="font-medium text-foreground">{data.bookings_this_week}</span> this week
-        </>
-      ),
+      hint: t("overview.todayWeek", {
+        today: n(data.bookings_today),
+        week: n(data.bookings_this_week),
+      }),
     },
     {
-      label: "Total collected",
-      value: formatBDT(data.total_collected),
+      label: t("overview.totalCollected"),
+      value: bdt(data.total_collected),
       icon: Banknote,
       tone: "emerald" as const,
-      hint: `of ${formatBDT(data.total_revenue_expected)} expected`,
+      hint: t("overview.ofExpected", { amount: bdt(data.total_revenue_expected) }),
     },
     {
-      label: "Outstanding due",
-      value: formatBDT(data.total_due),
+      label: t("overview.outstandingDue"),
+      value: bdt(data.total_due),
       icon: Wallet,
       highlight: true,
-      hint: "To collect on the ship",
+      hint: t("overview.dueHint"),
     },
     {
-      label: "Collection rate",
-      value: `${data.collection_rate}%`,
+      label: t("overview.collectionRate"),
+      value: percent(data.collection_rate, lang),
       icon: Percent,
-      hint: "Paid vs. expected",
+      hint: t("overview.collectionRateHint"),
     },
     {
-      label: "Awaiting payment",
-      value: String(data.pending_payment_bookings),
+      label: t("overview.awaitingPayment"),
+      value: n(data.pending_payment_bookings),
       icon: Receipt,
-      hint: "Pending bookings",
+      hint: t("overview.awaitingHint"),
     },
     {
-      label: "Refunds owed",
-      value: String(data.refunds_owed_count),
+      label: t("overview.refundsOwed"),
+      value: n(data.refunds_owed_count),
       icon: Undo2,
       tone: "destructive" as const,
       hint:
         data.refunds_owed_count > 0
-          ? `${formatBDT(data.refunds_owed_paid_total)} to return — call the customers`
-          : "No refunds pending",
+          ? t("overview.toReturn", { amount: bdt(data.refunds_owed_paid_total) })
+          : t("overview.refundsNone"),
     },
     // The exact debt, from the refund ledger — sharper than the flag above,
     // which only says "this cancelled booking has money on it".
     {
-      label: "Refund liability",
-      value: formatBDT(data.refund_liability_total ?? "0.00"),
+      label: t("overview.refundLiability"),
+      value: bdt(data.refund_liability_total ?? "0.00"),
       icon: Undo2,
       tone: "destructive" as const,
-      hint: `${data.refund_liability_count ?? 0} payout(s) promised, not yet sent`,
+      hint: t("overview.promisedPayouts", { count: n(data.refund_liability_count ?? 0) }),
     },
     {
-      label: "Cancellation requests",
-      value: String(data.pending_cancellation_count ?? 0),
+      label: t("overview.cancellationRequests"),
+      value: n(data.pending_cancellation_count ?? 0),
       icon: Receipt,
       highlight: (data.pending_cancellation_count ?? 0) > 0,
       hint:
         (data.pending_cancellation_count ?? 0) > 0
-          ? `${formatBDT(data.pending_cancellation_refund_total)} would be refunded`
-          : "Nothing awaiting a decision",
+          ? t("overview.wouldBeRefunded", {
+              amount: bdt(data.pending_cancellation_refund_total),
+            })
+          : t("overview.nothingPending"),
     },
   ];
 
@@ -160,13 +168,13 @@ function OverviewPage() {
 
   const donutData = STATUS_ORDER.map((status) => ({
     status,
-    name: STATUS_LABEL[status],
+    name: statusLabel[status],
     value: data.bookings_by_status[status] ?? 0,
   })).filter((d) => d.value > 0);
 
   return (
     <div className="p-6 lg:p-8 space-y-8">
-      <PageHeader title="Overview" subtitle="Live snapshot of bookings and collections.">
+      <PageHeader title={t("overview.title")} subtitle={t("overview.subtitle")}>
         <div className="flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs text-muted-foreground">
           <CalendarRange className="size-3.5 text-gold" />
           {TODAY_LABEL}
@@ -183,13 +191,15 @@ function OverviewPage() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Collection chart */}
         <SectionCard
-          title="Collection by package (BDT)"
+          title={t("overview.collectionByPackage")}
           icon={TrendingUp}
           className="lg:col-span-2"
           bodyClassName="p-5"
         >
           {chartData.length === 0 ? (
-            <div className="py-16 text-center text-sm text-muted-foreground">No packages yet.</div>
+            <div className="py-16 text-center text-sm text-muted-foreground">
+              {t("overview.noPackages")}
+            </div>
           ) : (
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
@@ -256,9 +266,11 @@ function OverviewPage() {
         </SectionCard>
 
         {/* Booking status donut */}
-        <SectionCard title="Bookings by status" bodyClassName="p-5">
+        <SectionCard title={t("overview.bookingsByStatus")} bodyClassName="p-5">
           {donutData.length === 0 ? (
-            <div className="py-16 text-center text-sm text-muted-foreground">No bookings yet.</div>
+            <div className="py-16 text-center text-sm text-muted-foreground">
+              {t("overview.noBookings")}
+            </div>
           ) : (
             <>
               <div className="h-44 relative">
@@ -313,7 +325,7 @@ function OverviewPage() {
 
       {/* Per-ship breakdown */}
       {data.by_ship.length > 0 && (
-        <SectionCard title="Fleet breakdown" icon={Ship}>
+        <SectionCard title={t("overview.fleetBreakdown")} icon={Ship}>
           <div className="grid sm:grid-cols-2 xl:grid-cols-3 divide-y sm:divide-y-0 divide-border">
             {data.by_ship.map((ship) => (
               <div key={ship.ship_id} className="p-5 sm:border-r sm:border-border last:border-r-0">
@@ -321,8 +333,8 @@ function OverviewPage() {
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <ShipStat label="Upcoming" value={String(ship.upcoming_packages)} />
                   <ShipStat label="Active bookings" value={String(ship.active_bookings)} />
-                  <ShipStat label="Collected" value={formatBDT(ship.paid_total)} />
-                  <ShipStat label="Due" value={formatBDT(ship.due_total)} tone="gold" />
+                  <ShipStat label={t("label.collected")} value={bdt(ship.paid_total)} />
+                  <ShipStat label={t("label.due")} value={bdt(ship.due_total)} tone="gold" />
                 </div>
               </div>
             ))}
@@ -333,7 +345,7 @@ function OverviewPage() {
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Recent bookings */}
         <SectionCard
-          title="Recent bookings"
+          title={t("overview.recentBookings")}
           action={
             <Link to="/staff/bookings" className="text-xs text-gold hover:underline">
               View all →
@@ -343,7 +355,7 @@ function OverviewPage() {
           <div className="divide-y divide-border">
             {data.recent_bookings.length === 0 ? (
               <div className="py-10 text-center text-sm text-muted-foreground">
-                No bookings yet.
+                {t("overview.noBookings")}
               </div>
             ) : (
               data.recent_bookings.map((b) => (
@@ -359,7 +371,7 @@ function OverviewPage() {
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <StatusBadge status={b.status} />
-                    <div className="text-right font-medium">{formatBDT(b.total_amount)}</div>
+                    <div className="text-right font-medium">{bdt(b.total_amount)}</div>
                   </div>
                 </div>
               ))
@@ -368,7 +380,7 @@ function OverviewPage() {
         </SectionCard>
 
         {/* Recent payments */}
-        <SectionCard title="Recent payments">
+        <SectionCard title={t("overview.recentPayments")}>
           <div className="divide-y divide-border">
             {data.recent_payments.length === 0 ? (
               <div className="py-10 text-center text-sm text-muted-foreground">
@@ -386,9 +398,7 @@ function OverviewPage() {
                       {p.gateway} {p.paid_at ? `· ${new Date(p.paid_at).toLocaleDateString()}` : ""}
                     </div>
                   </div>
-                  <div className="font-medium text-emerald-700 shrink-0">
-                    +{formatBDT(p.amount)}
-                  </div>
+                  <div className="font-medium text-emerald-700 shrink-0">+{bdt(p.amount)}</div>
                 </div>
               ))
             )}
@@ -398,7 +408,7 @@ function OverviewPage() {
 
       {/* Package quick list */}
       <SectionCard
-        title="Recent packages"
+        title={t("overview.recentPackages")}
         action={
           <Link to="/staff/packages" className="text-xs text-gold hover:underline">
             Manage packages →
@@ -422,8 +432,8 @@ function OverviewPage() {
               <div className="flex items-center gap-6 shrink-0 text-right">
                 <PkgStat label="Occupancy" value={`${p.occupancy_pct}%`} />
                 <PkgStat label="Bookings" value={String(p.bookings_count)} />
-                <PkgStat label="Collected" value={formatBDT(p.paid_total)} />
-                <PkgStat label="Due" value={formatBDT(p.due_total)} tone="gold" />
+                <PkgStat label={t("label.collected")} value={bdt(p.paid_total)} />
+                <PkgStat label={t("label.due")} value={bdt(p.due_total)} tone="gold" />
               </div>
             </div>
           ))}

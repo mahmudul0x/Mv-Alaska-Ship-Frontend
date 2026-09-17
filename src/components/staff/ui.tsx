@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import { X } from "lucide-react";
 
 import type { ApiError, BookingStatus } from "@/lib/api/types";
+import { useT } from "@/lib/i18n";
 
 /** Field names whose automatic label would be wrong or unhelpful. Everything
  *  else is derived, so a new field gets a decent label without being listed. */
@@ -167,13 +168,19 @@ export const staffInputClass =
 
 /* ── Shared status styling (single source of truth) ───────────────────────── */
 
-export const STATUS_LABEL: Record<BookingStatus, string> = {
-  pending: "Pending",
-  partially_paid: "Partially paid",
-  fully_paid: "Fully paid",
-  cancelled: "Cancelled",
-  completed: "Completed",
-};
+/** A hook, not a constant: these are read by people, and the dashboard is
+ *  bilingual. Kept as one lookup so a status cannot be worded two ways on two
+ *  pages. */
+export function useStatusLabel(): Record<BookingStatus, string> {
+  const t = useT();
+  return {
+    pending: t("status.pending"),
+    partially_paid: t("status.partially_paid"),
+    fully_paid: t("status.fully_paid"),
+    cancelled: t("status.cancelled"),
+    completed: t("status.completed"),
+  };
+}
 
 /** Pill classes per booking status — muted amber / emerald / red on tinted bg. */
 export const STATUS_STYLE: Record<BookingStatus, string> = {
@@ -223,11 +230,12 @@ export function PackageStatusBadge({ status }: { status: string }) {
 }
 
 export function StatusBadge({ status }: { status: BookingStatus }) {
+  const labels = useStatusLabel();
   return (
     <span
       className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold whitespace-nowrap ${STATUS_STYLE[status]}`}
     >
-      {STATUS_LABEL[status]}
+      {labels[status]}
     </span>
   );
 }

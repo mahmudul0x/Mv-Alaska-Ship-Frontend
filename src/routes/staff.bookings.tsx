@@ -24,7 +24,7 @@ import {
   StaffField,
   StatCard,
   StatusBadge,
-  STATUS_LABEL,
+  useStatusLabel,
   errorText,
   staffInputClass,
 } from "@/components/staff/ui";
@@ -135,7 +135,14 @@ function PaymentProgress({ paid, total }: { paid: string; total: string }) {
   );
 }
 
-function toCsv(rows: StaffBooking[]): string {
+function toCsv(
+  rows: StaffBooking[],
+  // Passed in rather than read from a hook: this is a plain function, and
+  // the export is a file rather than a screen. Only the values follow the
+  // dashboard's language; the header row stays English so the CSV opens the
+  // same way in every spreadsheet it is mailed to.
+  statusLabel: Record<StaffBooking["status"], string>,
+): string {
   const header = [
     "Code",
     "Customer",
@@ -168,7 +175,7 @@ function toCsv(rows: StaffBooking[]): string {
       b.total_amount,
       b.paid_amount,
       b.due_amount,
-      STATUS_LABEL[b.status],
+      statusLabel[b.status],
       new Date(b.created_at).toLocaleString(),
     ]
       .map(escape)
@@ -178,6 +185,7 @@ function toCsv(rows: StaffBooking[]): string {
 }
 
 function BookingsPage() {
+  const statusLabel = useStatusLabel();
   const [page, setPage] = useState(1);
   const [packageFilter, setPackageFilter] = useState<number | undefined>();
   const [statusFilter, setStatusFilter] = useState<string>("");
@@ -254,7 +262,7 @@ function BookingsPage() {
       toast.error("Nothing to export.");
       return;
     }
-    const blob = new Blob([toCsv(rows)], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([toCsv(rows, statusLabel)], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -340,7 +348,7 @@ function BookingsPage() {
                 : "border-border text-muted-foreground hover:border-gold/50"
             }`}
           >
-            {STATUS_LABEL[s]}
+            {statusLabel[s]}
             <span className="ml-1.5 text-[10px] opacity-70">{summary?.by_status[s] ?? 0}</span>
           </button>
         ))}
