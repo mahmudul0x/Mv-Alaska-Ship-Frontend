@@ -40,18 +40,18 @@ export const Route = createFileRoute("/staff")({
   head: () => ({ meta: [{ title: "Staff Dashboard — MV Alaska" }] }),
 });
 
-const NAV = [
-  { to: "/staff", label: "Overview", icon: LayoutDashboard, exact: true },
-  { to: "/staff/bookings", label: "Bookings", icon: ClipboardList, exact: false },
-  { to: "/staff/messages", label: "Messages", icon: MessageSquare, exact: false },
-  { to: "/staff/refunds", label: "Refunds", icon: Wallet, exact: false },
-  { to: "/staff/packages", label: "Packages", icon: CalendarRange, exact: false },
-  { to: "/staff/rooms", label: "Rooms", icon: BedDouble, exact: false },
-  { to: "/staff/cabins", label: "Cabins", icon: DoorOpen, exact: false },
-  { to: "/staff/gallery", label: "Gallery", icon: Images, exact: false },
-  { to: "/staff/room-settings", label: "Room settings", icon: SlidersHorizontal, exact: false },
-  { to: "/staff/food-menu", label: "Food Menu", icon: ChefHat, exact: false },
-  { to: "/staff/settings", label: "Settings", icon: Settings, exact: false },
+const NAV: { to: string; label: StringKey; icon: LucideIcon; exact: boolean }[] = [
+  { to: "/staff", label: "nav.overview", icon: LayoutDashboard, exact: true },
+  { to: "/staff/bookings", label: "nav.bookings", icon: ClipboardList, exact: false },
+  { to: "/staff/messages", label: "nav.messages", icon: MessageSquare, exact: false },
+  { to: "/staff/refunds", label: "nav.refunds", icon: Wallet, exact: false },
+  { to: "/staff/packages", label: "nav.packages", icon: CalendarRange, exact: false },
+  { to: "/staff/rooms", label: "nav.rooms", icon: BedDouble, exact: false },
+  { to: "/staff/cabins", label: "nav.cabins", icon: DoorOpen, exact: false },
+  { to: "/staff/gallery", label: "nav.gallery", icon: Images, exact: false },
+  { to: "/staff/room-settings", label: "nav.roomSettings", icon: SlidersHorizontal, exact: false },
+  { to: "/staff/food-menu", label: "nav.foodMenu", icon: ChefHat, exact: false },
+  { to: "/staff/settings", label: "nav.settings", icon: Settings, exact: false },
 ] as const;
 
 const COLLAPSE_KEY = "staff.sidebar.collapsed";
@@ -59,6 +59,7 @@ const COLLAPSE_KEY = "staff.sidebar.collapsed";
 function StaffLayout() {
   const navigate = useNavigate();
   const user = getStaffUser();
+  const { t, lang, setLang } = useLanguage();
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSE_KEY) === "1");
 
   function toggle() {
@@ -96,7 +97,7 @@ function StaffLayout() {
           {!collapsed && (
             <div className="min-w-0">
               <div className="font-display text-lg leading-none truncate">MV Alaska</div>
-              <div className="eyebrow text-gold-soft text-[8px] mt-0.5">Staff Dashboard</div>
+              <div className="eyebrow text-gold-soft text-[8px] mt-0.5">{t("shell.dashboard")}</div>
             </div>
           )}
         </div>
@@ -107,32 +108,59 @@ function StaffLayout() {
               key={to}
               to={to}
               activeOptions={{ exact }}
-              title={collapsed ? label : undefined}
+              title={collapsed ? t(label) : undefined}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-background/70 hover:text-background hover:bg-white/5 transition-colors [&.active]:bg-gold/15 [&.active]:text-gold-soft ${
                 collapsed ? "justify-center" : ""
               }`}
             >
               <Icon className="size-4.5 shrink-0" />
-              {!collapsed && <span className="truncate">{label}</span>}
+              {!collapsed && <span className="truncate">{t(label)}</span>}
             </Link>
           ))}
         </nav>
 
-        <div className="p-2 lg:p-3 border-t border-white/10 shrink-0">
+        <div className="p-2 lg:p-3 border-t border-white/10 shrink-0 space-y-1">
+          {/* Two fixed options rather than a dropdown: with exactly two
+              languages, a select costs a click just to discover what is in it.
+              Stacks when the rail is collapsed, where there is no room to sit
+              side by side. */}
+          <div
+            role="group"
+            aria-label={t("shell.language")}
+            className={`flex gap-1 ${collapsed ? "flex-col" : ""}`}
+          >
+            {(["en", "bn"] as const).map((code) => (
+              <button
+                key={code}
+                onClick={() => setLang(code)}
+                aria-pressed={lang === code}
+                title={code === "bn" ? "বাংলা" : "English"}
+                className={`flex-1 rounded-lg py-1.5 text-[11px] font-semibold transition-colors ${
+                  lang === code
+                    ? "bg-gold/20 text-gold-soft"
+                    : "text-background/50 hover:text-background hover:bg-white/5"
+                }`}
+              >
+                {code === "bn" ? "বাং" : "EN"}
+              </button>
+            ))}
+          </div>
+
           {!collapsed && (
             <div className="px-3 pb-2 text-xs text-background/50 truncate">
-              Signed in as <span className="text-background/80">{user?.username ?? "staff"}</span>
+              {t("shell.signedInAs")}{" "}
+              <span className="text-background/80">{user?.username ?? "staff"}</span>
             </div>
           )}
           <button
             onClick={handleLogout}
-            title={collapsed ? "Log out" : undefined}
+            title={collapsed ? t("shell.logout") : undefined}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-background/70 hover:text-destructive hover:bg-white/5 transition-colors ${
               collapsed ? "justify-center" : ""
             }`}
           >
             <LogOut className="size-4.5 shrink-0" />
-            {!collapsed && <span>Log out</span>}
+            {!collapsed && <span>{t("shell.logout")}</span>}
           </button>
         </div>
 
