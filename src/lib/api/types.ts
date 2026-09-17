@@ -35,6 +35,22 @@ export interface Package {
    *  picker will actually let someone select. */
   cabins_free: number;
   cabins_total: number;
+  /** The offer this sailing is currently being sold at, or null. The server
+   *  decides whether one is "running" (an ended window or a zero amount is
+   *  not), so the cards and the booking page cannot disagree about it. The
+   *  real money always comes from the quote — this is the headline. */
+  offer: PackageOffer | null;
+}
+
+export type OfferType = "percent" | "fixed";
+
+export interface PackageOffer {
+  /** e.g. "Eid Offer". May be empty — an unnamed offer is still an offer. */
+  label: string;
+  type: OfferType;
+  /** Percent off, or taka off per cabin. */
+  value: Money;
+  ends_at: string | null;
 }
 
 export type KidChargeType = "free" | "fixed" | "full_adult";
@@ -218,6 +234,13 @@ export interface RoomPriceBreakdown {
   foreigner_adult_surcharge: Money;
   foreigner_kid_surcharge: Money;
   foreigner_subtotal: Money;
+  /** What the cabin costs before the sailing's offer, and what the offer takes
+   *  off it. `discount` is "0.00" on a cabin sold at full price, and on every
+   *  booking priced before offers existed. `total` is already net of it —
+   *  never subtract it again. */
+  subtotal: Money;
+  offer_label: string;
+  discount: Money;
   total: Money;
   room_number?: string;
 }

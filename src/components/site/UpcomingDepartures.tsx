@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowUpRight, BedDouble, CalendarDays, Clock, MapPin } from "lucide-react";
 
 import { SectionHeader } from "./SectionHeader";
+import { OfferBadge } from "./OfferBadge";
 import { usePackages } from "@/hooks/queries/usePackages";
 import { parseLocalDate } from "@/lib/dates";
 import { formatBDT } from "@/lib/money";
@@ -84,6 +85,9 @@ function DepartureCard({ pkg, index }: { pkg: Package; index: number }) {
           <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
           Booking open
         </span>
+        {/* Bottom-left, clear of the "Booking open" pill top-right: the two are
+            different kinds of news and must not collide on a narrow card. */}
+        {pkg.offer && <OfferBadge offer={pkg.offer} className="absolute bottom-3 left-3" />}
       </div>
 
       <div className="flex flex-1 flex-col p-6">

@@ -1,5 +1,6 @@
 import { ArrowRight, CalendarDays, Check, Clock, MapPin, Moon } from "lucide-react";
 
+import { OfferBadge } from "@/components/site/OfferBadge";
 import { usePackages } from "@/hooks/queries/usePackages";
 import { parseLocalDate } from "@/lib/dates";
 import { formatBDT } from "@/lib/money";
@@ -128,6 +129,8 @@ export function PackagePicker({ selectedPackageId, onSelectPackage }: Props) {
                     </span>
                   )}
                 </div>
+
+                {pkg.offer && <OfferBadge offer={pkg.offer} className="absolute bottom-3 left-3" />}
 
                 {/* Selected check */}
                 {selected && (

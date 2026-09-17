@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Clock, MapPin, Check, ArrowUpRight, DoorOpen, Loader2 } from "lucide-react";
 import { PageHero } from "@/components/site/PageHero";
 import { SectionHeader } from "@/components/site/SectionHeader";
+import { OfferBadge } from "@/components/site/OfferBadge";
 import { CTA } from "@/components/site/CTA";
 import { ItineraryMap, type Stop } from "@/components/site/ItineraryMap";
 import { usePackages } from "@/hooks/queries/usePackages";
@@ -483,8 +484,11 @@ function PackagesPage() {
                     loading="lazy"
                     className="image-zoom absolute inset-0 h-full w-full object-cover"
                   />
-                  <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full glass-dark text-gold eyebrow text-[10px]">
-                    {tpl.tag}
+                  <div className="absolute top-4 left-4 flex flex-col items-start gap-2">
+                    <div className="px-3 py-1.5 rounded-full glass-dark text-gold eyebrow text-[10px]">
+                      {tpl.tag}
+                    </div>
+                    {pkg.offer && <OfferBadge offer={pkg.offer} />}
                   </div>
                   <div className="absolute bottom-4 left-4 eyebrow text-background/80 text-[10px]">
                     Voyage 0{i + 1}

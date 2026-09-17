@@ -27,6 +27,7 @@ import {
   Phone,
   Plus,
   Shield,
+  Tag,
   Ticket,
   Users,
   Wallet,
@@ -1324,6 +1325,25 @@ function GuestsCards({
  *  rate — so every existing booking's summary is unchanged. Counts and rates
  *  both come from the server's breakdown, so the "2 × ৳3,000" label always
  *  matches the amount beside it. */
+/** The sailing's offer, as a reduction of the lines above it.
+ *
+ *  Negative on purpose: a discount shown as a positive figure is a column that
+ *  does not add up, and the customer is left working out whether the total
+ *  already includes it. The label comes from the server alongside the amount,
+ *  so a booking priced under an offer that has since ended still names it. */
+function DiscountLine({ room }: { room: import("@/lib/api/types").RoomPriceBreakdown }) {
+  if (!Number(room.discount)) return null;
+  return (
+    <div className="flex justify-between text-emerald-700">
+      <span className="flex items-center gap-1.5">
+        <Tag className="size-3 shrink-0" />
+        {room.offer_label || "Offer"}
+      </span>
+      <span className="font-medium">− {formatBDT(room.discount)}</span>
+    </div>
+  );
+}
+
 function ForeignSurchargeLines({ room }: { room: import("@/lib/api/types").RoomPriceBreakdown }) {
   const lines: { label: string; amount: string }[] = [];
   if (room.foreign_adult_count > 0 && Number(room.foreigner_adult_surcharge) > 0) {
@@ -1659,6 +1679,7 @@ function StepPayment({
                         </div>
                       ))}
                       <ForeignSurchargeLines room={room} />
+                      <DiscountLine room={room} />
                     </div>
                   ))}
                   <div className="pt-2.5 mt-1 border-t border-dashed border-border flex justify-between items-baseline">
@@ -2334,6 +2355,7 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
                       </div>
                     ))}
                     <ForeignSurchargeLines room={room} />
+                    <DiscountLine room={room} />
                   </div>
                 ))}
               <div className="pt-3 mt-1 border-t border-border flex justify-between items-baseline">

@@ -4,6 +4,7 @@ import type {
   KidChargeType,
   KidDetail,
   Money,
+  OfferType,
   PaymentType,
 } from "./types";
 
@@ -65,6 +66,10 @@ export interface StaffPackage {
   marketing_description: string;
   hero_image: string | null;
   highlights: string[];
+  offer_label: string;
+  discount_type: OfferType | "none";
+  discount_value: Money;
+  offer_ends_at: string | null;
   bookings_count: number | null;
   paid_total: Money | null;
   due_total: Money | null;
@@ -83,6 +88,10 @@ export interface StaffPackageWrite {
   marketing_title?: string;
   marketing_description?: string;
   highlights?: string[];
+  offer_label?: string;
+  discount_type?: OfferType | "none";
+  discount_value?: string;
+  offer_ends_at?: string | null;
 }
 
 export interface StaffPayment {

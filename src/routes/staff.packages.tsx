@@ -560,6 +560,10 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
     marketing_title: pkg?.marketing_title ?? "",
     marketing_description: pkg?.marketing_description ?? "",
     highlights: pkg?.highlights ?? [],
+    offer_label: pkg?.offer_label ?? "",
+    discount_type: pkg?.discount_type ?? "none",
+    discount_value: pkg?.discount_value ?? "0.00",
+    offer_ends_at: pkg?.offer_ends_at ?? null,
   });
 
   const set = (patch: Partial<StaffPackageWrite>) => setForm((f) => ({ ...f, ...patch }));
@@ -700,6 +704,74 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
             placeholder={"Mangrove safari\nSunset dinner"}
             className={`${staffInputClass} resize-none`}
           />
+        </StaffField>
+
+        {/* The offer. Setting the type to anything but "No offer" is what
+            turns it on; the amount alone does nothing, and the server refuses
+            an amount left behind with no type so a dormant discount cannot
+            reappear later as one nobody chose. */}
+        <StaffField label="Offer">
+          <div className="space-y-2.5">
+            <div className="grid grid-cols-2 gap-3">
+              <select
+                value={form.discount_type ?? "none"}
+                onChange={(e) => {
+                  const next = e.target.value as StaffPackageWrite["discount_type"];
+                  // Clearing the type clears the amount with it, because the
+                  // server rejects the pair otherwise — better to keep the form
+                  // valid than to explain the error afterwards.
+                  set(
+                    next === "none"
+                      ? { discount_type: next, discount_value: "0.00" }
+                      : { discount_type: next },
+                  );
+                }}
+                className={staffInputClass}
+              >
+                <option value="none">No offer</option>
+                <option value="percent">Percentage off</option>
+                <option value="fixed">Taka off, per cabin</option>
+              </select>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                disabled={(form.discount_type ?? "none") === "none"}
+                value={form.discount_value ?? ""}
+                onChange={(e) => set({ discount_value: e.target.value })}
+                placeholder={form.discount_type === "percent" ? "e.g. 20" : "e.g. 1500"}
+                className={`${staffInputClass} disabled:opacity-40`}
+              />
+            </div>
+            {(form.discount_type ?? "none") !== "none" && (
+              <>
+                <input
+                  value={form.offer_label ?? ""}
+                  onChange={(e) => set({ offer_label: e.target.value })}
+                  placeholder="Offer name, e.g. Eid Offer"
+                  className={staffInputClass}
+                />
+                <label className="block">
+                  <span className="text-[10px] text-muted-foreground">
+                    Ends at (optional — leave blank to run until you remove it)
+                  </span>
+                  <input
+                    type="datetime-local"
+                    value={form.offer_ends_at ? form.offer_ends_at.slice(0, 16) : ""}
+                    onChange={(e) => set({ offer_ends_at: e.target.value ? e.target.value : null })}
+                    className={`${staffInputClass} mt-1`}
+                  />
+                </label>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                  {form.discount_type === "percent"
+                    ? "Comes off the whole cabin — base price, adult fares and kid fares together."
+                    : "Comes off each cabin, so a 3-cabin booking gets it three times."}{" "}
+                  Bookings already paid for keep the price they were given; ending an offer never
+                  re-prices anyone.
+                </p>
+              </>
+            )}
+          </div>
         </StaffField>
 
         {/* The picture the public package card shows. Sits with the marketing
