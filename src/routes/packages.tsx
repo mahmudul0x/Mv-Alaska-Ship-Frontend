@@ -5,6 +5,7 @@ import { PageHero } from "@/components/site/PageHero";
 import { SectionHeader } from "@/components/site/SectionHeader";
 import { OfferBadge } from "@/components/site/OfferBadge";
 import { PackagePrice } from "@/components/site/PackagePrice";
+import { PastVoyages } from "@/components/site/PastVoyages";
 import { CTA } from "@/components/site/CTA";
 import { ItineraryMap, type Stop } from "@/components/site/ItineraryMap";
 import { usePackages } from "@/hooks/queries/usePackages";
@@ -462,7 +463,8 @@ function PackagesPage() {
         )}
         {packages && packages.length === 0 && (
           <div className="container-luxe text-center py-20 text-muted-foreground">
-            No voyages are currently open for booking. Please check back soon.
+            No voyages are currently open for booking. Please check back soon — or look through our
+            past voyages below.
           </div>
         )}
         {packages?.map((pkg, i) => {
@@ -578,6 +580,11 @@ function PackagesPage() {
           );
         })}
       </section>
+
+      {/* Below the live voyages, folded away. Someone arriving here is choosing
+          a sailing to book; what has already been and gone is context they can
+          ask for, not something to scroll past first. */}
+      <PastVoyages />
 
       <CTA />
     </>
