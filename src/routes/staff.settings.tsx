@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
   FileText,
+  Languages,
   Loader2,
   Mail,
   Phone,
@@ -16,6 +17,9 @@ import {
 
 import { PageHeader, errorText, staffInputClass } from "@/components/staff/ui";
 import { getStaffShips, updateStaffShip } from "@/lib/api/staff";
+import { useLanguage, useT } from "@/lib/i18n";
+import type { Lang } from "@/lib/i18n";
+import type { StringKey } from "@/lib/i18n/strings";
 import { getStaffUser } from "@/lib/staffAuth";
 import type { GuideReportDensity, StaffShip } from "@/lib/api/staffTypes";
 
@@ -26,30 +30,29 @@ export const Route = createFileRoute("/staff/settings")({
 /** The page's own contents, in the order they appear, so the side rail and the
  *  body cannot drift apart. Fare policy is deliberately NOT here — it lives on
  *  Room Settings, where staff go to change what things cost. */
-const SECTIONS = [
-  { id: "account", label: "Account", icon: UserRound },
-  { id: "inbox", label: "Contact inbox", icon: Mail },
-  { id: "helpline", label: "Helpline numbers", icon: Phone },
-  { id: "report", label: "Guide report", icon: FileText },
-] as const;
+const SECTIONS: { id: string; label: StringKey; icon: LucideIcon }[] = [
+  { id: "account", label: "st.account", icon: UserRound },
+  { id: "language", label: "st.language", icon: Languages },
+  { id: "inbox", label: "st.contactInbox", icon: Mail },
+  { id: "helpline", label: "st.helpline", icon: Phone },
+  { id: "report", label: "st.guideReport", icon: FileText },
+];
 
 function SettingsPage() {
+  const t = useT();
   const user = getStaffUser();
   const initial = (user?.first_name || user?.username || "S").charAt(0).toUpperCase();
 
   return (
     <div className="p-6 lg:p-8">
-      <PageHeader
-        title="Settings"
-        subtitle="Your account, and the details printed on documents customers receive."
-      />
+      <PageHeader title={t("st.title")} subtitle={t("st.subtitle")} />
 
-      {/* A row, not a left rail: these are four short groups, and a horizontal
+      {/* A row, not a left rail: these are five short groups, and a horizontal
           index reads the same way as the tabs on Room Settings — one dashboard,
           one idea of what a section switcher looks like. It scrolls sideways on
           a phone rather than wrapping into a block of its own. */}
       <nav
-        aria-label="Settings sections"
+        aria-label={t("st.sections")}
         className="mt-6 flex items-center gap-1 overflow-x-auto border-b border-border pb-px"
       >
         {SECTIONS.map(({ id, label, icon: Icon }) => (
@@ -59,18 +62,14 @@ function SettingsPage() {
             className="flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-sm whitespace-nowrap text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             <Icon className="size-4 shrink-0 text-gold" />
-            {label}
+            {t(label)}
           </a>
         ))}
       </nav>
 
       <div className="mt-8 max-w-2xl space-y-10">
         <section id="account" className="scroll-mt-8 space-y-4">
-          <SectionHeading
-            icon={UserRound}
-            title="Account"
-            hint="Who you are signed in as. Changing it is an administrator job."
-          />
+          <SectionHeading icon={UserRound} title={t("st.account")} hint={t("st.accountHint")} />
 
           <div className="rounded-2xl border border-border bg-card overflow-hidden">
             <div className="px-6 py-5 border-b border-border flex items-center gap-4">
@@ -79,7 +78,7 @@ function SettingsPage() {
               </div>
               <div className="min-w-0">
                 <div className="font-display text-xl leading-tight truncate">
-                  {user?.first_name || user?.username || "Staff"}
+                  {user?.first_name || user?.username || t("st.staff")}
                 </div>
                 <div className="text-xs text-muted-foreground truncate">
                   @{user?.username ?? "—"}
@@ -88,21 +87,23 @@ function SettingsPage() {
             </div>
 
             <div className="divide-y divide-border">
-              <ProfileRow icon={UserRound} label="Username" value={user?.username ?? "—"} />
+              <ProfileRow icon={UserRound} label={t("st.username")} value={user?.username ?? "—"} />
               <ProfileRow
                 icon={ShieldCheck}
-                label="Role"
-                value={user?.is_staff ? "Staff (dashboard access)" : "—"}
+                label={t("st.role")}
+                value={user?.is_staff ? t("st.roleStaff") : "—"}
               />
             </div>
 
             <div className="px-6 py-3 bg-muted/40 border-t border-border text-[11px] text-muted-foreground">
-              To change your name, username or password, ask an administrator to do it in the Django
-              admin panel.
+              {t("st.accountNote")}
             </div>
           </div>
         </section>
 
+        <section id="language" className="scroll-mt-8">
+          <LanguageSection />
+        </section>
         <section id="inbox" className="scroll-mt-8">
           <NotificationInboxSection />
         </section>
@@ -117,7 +118,7 @@ function SettingsPage() {
   );
 }
 
-/** One heading style for every group on the page, so four unrelated settings
+/** One heading style for every group on the page, so five unrelated settings
  *  do not each announce themselves differently. */
 function SectionHeading({
   icon: Icon,
@@ -138,9 +139,87 @@ function SectionHeading({
   );
 }
 
+/* ── Dashboard language ───────────────────────────────────────────────────── */
+
+const LANG_OPTIONS: { value: Lang; label: StringKey; hint: StringKey }[] = [
+  { value: "en", label: "st.langEnglish", hint: "st.langEnglishHint" },
+  { value: "bn", label: "st.langBangla", hint: "st.langBanglaHint" },
+];
+
+/** The toast has to speak the language just chosen, not the one being left —
+ *  t() still holds the old language while this click is being handled. */
+const LANG_CHANGED: Record<Lang, string> = {
+  en: "Language changed — it stays this way on this computer.",
+  bn: "ভাষা বদলানো হয়েছে — এই কম্পিউটারে এভাবেই থাকবে।",
+};
+
+/** No Save button, unlike the ship settings below it: this is a browser
+ *  preference, not a record on the server, and the whole dashboard redraws in
+ *  the chosen language the moment it is picked — which is the confirmation. */
+function LanguageSection() {
+  const { t, lang, setLang } = useLanguage();
+
+  function choose(next: Lang) {
+    if (next === lang) return;
+    setLang(next);
+    toast.success(LANG_CHANGED[next]);
+  }
+
+  return (
+    <section className="space-y-4">
+      <SectionHeading icon={Languages} title={t("st.language")} hint={t("st.languageHint")} />
+
+      <div className="rounded-2xl border border-border bg-card overflow-hidden">
+        <div className="px-5 py-4 border-b border-border flex items-center gap-3">
+          <div className="size-9 rounded-xl bg-ocean/8 grid place-items-center shrink-0">
+            <Languages className="size-4.5 text-ocean" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-display text-base leading-tight truncate">
+              {t("st.languageDashboard")}
+            </div>
+            <div className="text-[10px] text-muted-foreground">{t("shell.dashboard")}</div>
+          </div>
+        </div>
+
+        <div className="p-5">
+          <div role="group" aria-label={t("st.language")} className="grid grid-cols-2 gap-2">
+            {LANG_OPTIONS.map((opt) => {
+              const active = lang === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => choose(opt.value)}
+                  aria-pressed={active}
+                  className={`rounded-xl border px-4 py-3 text-left transition-all ${
+                    active
+                      ? "border-gold bg-ocean/4 shadow-[0_0_0_1px_var(--gold)]"
+                      : "border-border hover:border-gold/50"
+                  }`}
+                >
+                  <span className="block text-sm font-semibold">{t(opt.label)}</span>
+                  <span className="block text-[10px] text-muted-foreground leading-snug mt-0.5">
+                    {t(opt.hint)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="px-5 py-3 bg-muted/40 border-t border-border text-[11px] text-muted-foreground">
+          {t("st.languageNote")}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ── Contact-form notification inbox ──────────────────────────────────────── */
 
 function NotificationInboxSection() {
+  const t = useT();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["staff", "ships"],
@@ -154,7 +233,7 @@ function NotificationInboxSection() {
       return updateStaffShip(id, { contact_notify_email });
     },
     onSuccess: () => {
-      toast.success("Notification inbox updated — new website messages go here.");
+      toast.success(t("st.inboxSaved"));
       queryClient.invalidateQueries({ queryKey: ["staff", "ships"] });
     },
     onError: (err) => toast.error(errorText(err)),
@@ -163,19 +242,11 @@ function NotificationInboxSection() {
 
   return (
     <section className="space-y-4">
-      <div>
-        <h2 className="font-display text-xl flex items-center gap-2">
-          <Mail className="size-5 text-gold" /> Message notifications
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Where inquiries from the website contact form are emailed. Leave blank to use the system
-          default. Every message also appears in <span className="font-medium">Messages</span>.
-        </p>
-      </div>
+      <SectionHeading icon={Mail} title={t("st.messageNotifications")} hint={t("st.inboxHint")} />
 
       {isLoading ? (
         <div className="p-12 flex items-center justify-center gap-3 text-muted-foreground">
-          <Loader2 className="size-5 animate-spin text-gold" /> Loading…
+          <Loader2 className="size-5 animate-spin text-gold" /> {t("common.loading")}
         </div>
       ) : (
         <div className="space-y-4">
@@ -204,6 +275,7 @@ function ShipNotifyCard({
   onSave: (email: string) => void;
   saving: boolean;
 }) {
+  const t = useT();
   const [value, setValue] = useState(ship.contact_notify_email);
   const dirty = value.trim() !== ship.contact_notify_email.trim();
 
@@ -219,11 +291,11 @@ function ShipNotifyCard({
         </div>
         <div className="min-w-0 flex-1">
           <div className="font-display text-base leading-tight truncate">{ship.name}</div>
-          <div className="text-[10px] text-muted-foreground">Contact-form notifications</div>
+          <div className="text-[10px] text-muted-foreground">{t("st.contactNotifications")}</div>
         </div>
         {dirty && (
           <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-gold/15 text-gold shrink-0">
-            Unsaved
+            {t("common.unsaved")}
           </span>
         )}
       </div>
@@ -231,12 +303,12 @@ function ShipNotifyCard({
       <div className="p-5 space-y-4">
         <label className="block">
           <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
-            Notification email
+            {t("st.notificationEmail")}
           </span>
           <input
             type="email"
             value={value}
-            placeholder="reservations@mvalaska.com (blank = system default)"
+            placeholder="reservations@mvalaska.com"
             onChange={(e) => setValue(e.target.value)}
             className={staffInputClass}
           />
@@ -248,7 +320,7 @@ function ShipNotifyCard({
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
         >
           {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-          {dirty ? "Save changes" : "Saved"}
+          {dirty ? t("common.save") : t("common.saved")}
         </button>
       </div>
     </div>
@@ -258,6 +330,7 @@ function ShipNotifyCard({
 /* ── Helpline numbers ─────────────────────────────────────────────────────── */
 
 function HelplineSection() {
+  const t = useT();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["staff", "ships"],
@@ -271,7 +344,7 @@ function HelplineSection() {
       return updateStaffShip(id, { authority_phones });
     },
     onSuccess: () => {
-      toast.success("Helpline numbers updated — they'll appear on new reports & invoices.");
+      toast.success(t("st.helplineSaved"));
       queryClient.invalidateQueries({ queryKey: ["staff", "ships"] });
     },
     onError: (err) => toast.error(errorText(err)),
@@ -280,19 +353,11 @@ function HelplineSection() {
 
   return (
     <section className="space-y-4">
-      <div>
-        <h2 className="font-display text-xl flex items-center gap-2">
-          <Phone className="size-5 text-gold" /> Helpline numbers
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Printed in the top corner of every guide report and customer invoice. Separate multiple
-          numbers with commas.
-        </p>
-      </div>
+      <SectionHeading icon={Phone} title={t("st.helpline")} hint={t("st.helplineHint")} />
 
       {isLoading ? (
         <div className="p-12 flex items-center justify-center gap-3 text-muted-foreground">
-          <Loader2 className="size-5 animate-spin text-gold" /> Loading…
+          <Loader2 className="size-5 animate-spin text-gold" /> {t("common.loading")}
         </div>
       ) : (
         <div className="space-y-4">
@@ -319,6 +384,7 @@ function ShipHelplineCard({
   onSave: (authority_phones: string) => void;
   saving: boolean;
 }) {
+  const t = useT();
   const [value, setValue] = useState(ship.authority_phones);
   const dirty = value.trim() !== ship.authority_phones.trim();
 
@@ -343,11 +409,11 @@ function ShipHelplineCard({
         </div>
         <div className="min-w-0 flex-1">
           <div className="font-display text-base leading-tight truncate">{ship.name}</div>
-          <div className="text-[10px] text-muted-foreground">Document helpline numbers</div>
+          <div className="text-[10px] text-muted-foreground">{t("st.helplineDoc")}</div>
         </div>
         {dirty && (
           <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-gold/15 text-gold shrink-0">
-            Unsaved
+            {t("common.unsaved")}
           </span>
         )}
       </div>
@@ -355,7 +421,7 @@ function ShipHelplineCard({
       <div className="p-5 space-y-4">
         <label className="block">
           <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
-            Phone numbers (comma-separated)
+            {t("st.phoneNumbers")}
           </span>
           <input
             type="text"
@@ -368,11 +434,13 @@ function ShipHelplineCard({
 
         {/* Live preview of the printed line */}
         <div className="rounded-xl bg-muted/40 px-4 py-2.5 text-xs">
-          <span className="text-muted-foreground">On the PDF: </span>
+          <span className="text-muted-foreground">{t("st.onThePdf")} </span>
           {preview.length > 0 ? (
-            <span className="font-medium">Helpline: {preview.join("  ·  ")}</span>
+            <span className="font-medium">
+              {t("st.helplineLabel")} {preview.join("  ·  ")}
+            </span>
           ) : (
-            <span className="italic text-muted-foreground">no helpline line shown</span>
+            <span className="italic text-muted-foreground">{t("st.noHelplineLine")}</span>
           )}
         </div>
 
@@ -382,7 +450,7 @@ function ShipHelplineCard({
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
         >
           {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-          {dirty ? "Save changes" : "Saved"}
+          {dirty ? t("common.save") : t("common.saved")}
         </button>
       </div>
     </div>
@@ -393,15 +461,16 @@ function ShipHelplineCard({
 
 const DENSITY_OPTIONS: {
   value: GuideReportDensity;
-  label: string;
-  hint: string;
+  label: StringKey;
+  hint: StringKey;
 }[] = [
-  { value: "compact", label: "Compact", hint: "Smaller text — more rooms per page" },
-  { value: "normal", label: "Normal", hint: "Balanced (default)" },
-  { value: "large", label: "Large", hint: "Bigger text — easier to read, may add pages" },
+  { value: "compact", label: "st.densityCompact", hint: "st.densityCompactHint" },
+  { value: "normal", label: "st.densityNormal", hint: "st.densityNormalHint" },
+  { value: "large", label: "st.densityLarge", hint: "st.densityLargeHint" },
 ];
 
 function GuideReportSection() {
+  const t = useT();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["staff", "ships"],
@@ -421,7 +490,7 @@ function GuideReportSection() {
       return updateStaffShip(id, { guide_report_density });
     },
     onSuccess: () => {
-      toast.success("Guide report size updated — applies to new report downloads.");
+      toast.success(t("st.guideReportSaved"));
       queryClient.invalidateQueries({ queryKey: ["staff", "ships"] });
     },
     onError: (err) => toast.error(errorText(err)),
@@ -430,19 +499,15 @@ function GuideReportSection() {
 
   return (
     <section className="space-y-4">
-      <div>
-        <h2 className="font-display text-xl flex items-center gap-2">
-          <FileText className="size-5 text-gold" /> Guide report size
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Controls the text size and rows-per-page of the guide collection report PDF. Compact fits
-          more rooms on a page; Large prints bigger, easier-to-read type.
-        </p>
-      </div>
+      <SectionHeading
+        icon={FileText}
+        title={t("st.guideReportSize")}
+        hint={t("st.guideReportHint")}
+      />
 
       {isLoading ? (
         <div className="p-12 flex items-center justify-center gap-3 text-muted-foreground">
-          <Loader2 className="size-5 animate-spin text-gold" /> Loading…
+          <Loader2 className="size-5 animate-spin text-gold" /> {t("common.loading")}
         </div>
       ) : (
         <div className="space-y-4">
@@ -471,6 +536,7 @@ function ShipDensityCard({
   onSave: (density: GuideReportDensity) => void;
   saving: boolean;
 }) {
+  const t = useT();
   const [value, setValue] = useState<GuideReportDensity>(ship.guide_report_density);
   const dirty = value !== ship.guide_report_density;
 
@@ -486,11 +552,11 @@ function ShipDensityCard({
         </div>
         <div className="min-w-0 flex-1">
           <div className="font-display text-base leading-tight truncate">{ship.name}</div>
-          <div className="text-[10px] text-muted-foreground">Guide report PDF density</div>
+          <div className="text-[10px] text-muted-foreground">{t("st.guideReportDensity")}</div>
         </div>
         {dirty && (
           <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-gold/15 text-gold shrink-0">
-            Unsaved
+            {t("common.unsaved")}
           </span>
         )}
       </div>
@@ -511,9 +577,9 @@ function ShipDensityCard({
                     : "border-border hover:border-gold/50"
                 }`}
               >
-                <span className="block text-sm font-semibold">{opt.label}</span>
+                <span className="block text-sm font-semibold">{t(opt.label)}</span>
                 <span className="block text-[10px] text-muted-foreground leading-snug mt-0.5">
-                  {opt.hint}
+                  {t(opt.hint)}
                 </span>
               </button>
             );
@@ -526,7 +592,7 @@ function ShipDensityCard({
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
         >
           {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-          {dirty ? "Save changes" : "Saved"}
+          {dirty ? t("common.save") : t("common.saved")}
         </button>
       </div>
     </div>

@@ -22,7 +22,8 @@ import {
   updateStaffContactMessage,
 } from "@/lib/api/staff";
 import type { ContactMessageStatus, StaffContactMessage } from "@/lib/api/staffTypes";
-import { useT } from "@/lib/i18n";
+import { useLanguage, useT } from "@/lib/i18n";
+import { dateTime } from "@/lib/i18n/format";
 import type { StringKey } from "@/lib/i18n/strings";
 
 export const Route = createFileRoute("/staff/messages")({
@@ -120,7 +121,7 @@ function MessagesPage() {
               msg={msg}
               onStatus={(status) => statusMutation.mutate({ id: msg.id, status })}
               onDelete={() => {
-                if (confirm(`Delete the message from ${msg.name}?`)) {
+                if (confirm(t("msg.confirmDelete", { name: msg.name }))) {
                   deleteMutation.mutate(msg.id);
                 }
               }}
@@ -147,11 +148,8 @@ function MessageCard({
   onDelete: () => void;
   busy: boolean;
 }) {
-  const t = useT();
-  const created = new Date(msg.created_at).toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  const { t, lang } = useLanguage();
+  const created = dateTime(msg.created_at, lang);
 
   return (
     <div

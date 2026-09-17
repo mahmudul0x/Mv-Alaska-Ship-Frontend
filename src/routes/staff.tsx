@@ -21,7 +21,7 @@ import {
 import { staffLogout } from "@/lib/api/staff";
 import { LanguageProvider, useLanguage } from "@/lib/i18n";
 import type { StringKey } from "@/lib/i18n/strings";
-import { clearStaffSession, getRefreshToken, getStaffUser, isStaffLoggedIn } from "@/lib/staffAuth";
+import { clearStaffSession, getRefreshToken, isStaffLoggedIn } from "@/lib/staffAuth";
 
 export const Route = createFileRoute("/staff")({
   // The provider wraps the layout rather than sitting inside it, so the layout
@@ -58,8 +58,7 @@ const COLLAPSE_KEY = "staff.sidebar.collapsed";
 
 function StaffLayout() {
   const navigate = useNavigate();
-  const user = getStaffUser();
-  const { t, lang, setLang } = useLanguage();
+  const { t } = useLanguage();
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSE_KEY) === "1");
 
   function toggle() {
@@ -119,39 +118,10 @@ function StaffLayout() {
           ))}
         </nav>
 
-        <div className="p-2 lg:p-3 border-t border-white/10 shrink-0 space-y-1">
-          {/* Two fixed options rather than a dropdown: with exactly two
-              languages, a select costs a click just to discover what is in it.
-              Stacks when the rail is collapsed, where there is no room to sit
-              side by side. */}
-          <div
-            role="group"
-            aria-label={t("shell.language")}
-            className={`flex gap-1 ${collapsed ? "flex-col" : ""}`}
-          >
-            {(["en", "bn"] as const).map((code) => (
-              <button
-                key={code}
-                onClick={() => setLang(code)}
-                aria-pressed={lang === code}
-                title={code === "bn" ? "বাংলা" : "English"}
-                className={`flex-1 rounded-lg py-1.5 text-[11px] font-semibold transition-colors ${
-                  lang === code
-                    ? "bg-gold/20 text-gold-soft"
-                    : "text-background/50 hover:text-background hover:bg-white/5"
-                }`}
-              >
-                {code === "bn" ? "বাং" : "EN"}
-              </button>
-            ))}
-          </div>
-
-          {!collapsed && (
-            <div className="px-3 pb-2 text-xs text-background/50 truncate">
-              {t("shell.signedInAs")}{" "}
-              <span className="text-background/80">{user?.username ?? "staff"}</span>
-            </div>
-          )}
+        {/* Log out only. The language switch lives on Settings — a preference
+            set once belongs with the other settings, not in the rail beside a
+            button staff press every day. */}
+        <div className="p-2 lg:p-3 border-t border-white/10 shrink-0">
           <button
             onClick={handleLogout}
             title={collapsed ? t("shell.logout") : undefined}
@@ -167,7 +137,7 @@ function StaffLayout() {
         {/* Collapse / expand toggle — sits on the sidebar's edge */}
         <button
           onClick={toggle}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? t("shell.expand") : t("shell.collapse")}
           className="absolute top-13 -right-3 z-50 size-6 rounded-full bg-card border border-border text-ocean grid place-items-center shadow-md hover:text-gold hover:border-gold transition-colors"
         >
           <ChevronLeft

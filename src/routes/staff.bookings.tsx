@@ -29,8 +29,8 @@ import {
   staffInputClass,
 } from "@/components/staff/ui";
 import { getStaffCancelQuote, staffCancelBooking } from "@/lib/api/staffRefunds";
-import { useLanguage, useT } from "@/lib/i18n";
-import { money } from "@/lib/i18n/format";
+import { currentLang, tr, useLanguage, useT } from "@/lib/i18n";
+import { date, dateTime, money, num, percent } from "@/lib/i18n/format";
 
 import {
   createStaffBooking,
@@ -47,7 +47,7 @@ import {
 import { getPackageRooms } from "@/lib/api/packages";
 import { copyToClipboard } from "@/lib/clipboard";
 import { countryName } from "@/lib/countries";
-import { formatBDT, parseMoney } from "@/lib/money";
+import { parseMoney } from "@/lib/money";
 import type { BookingStatus } from "@/lib/api/types";
 import type { StaffBooking } from "@/lib/api/staffTypes";
 
@@ -78,13 +78,14 @@ function timeAgo(iso: string): string {
   const then = new Date(iso).getTime();
   const diff = Date.now() - then;
   const mins = Math.round(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
+  const lang = currentLang();
+  if (mins < 1) return tr("time.justNow");
+  if (mins < 60) return tr("time.minsAgo", { n: num(mins, lang) });
   const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24) return tr("time.hoursAgo", { n: num(hrs, lang) });
   const days = Math.round(hrs / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
+  if (days < 7) return tr("time.daysAgo", { n: num(days, lang) });
+  return date(iso, lang);
 }
 
 function CopyButton({ value, label }: { value: string; label: string }) {
@@ -117,6 +118,7 @@ function Avatar({ name }: { name: string }) {
 }
 
 function PaymentProgress({ paid, total }: { paid: string; total: string }) {
+  const { lang } = useLanguage();
   const t = parseMoney(total);
   const p = parseMoney(paid);
   const pct = t > 0 ? Math.min(100, Math.round((p / t) * 100)) : 0;
@@ -124,8 +126,8 @@ function PaymentProgress({ paid, total }: { paid: string; total: string }) {
   return (
     <div className="w-28">
       <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
-        <span>{formatBDT(paid)}</span>
-        <span>{pct}%</span>
+        <span>{money(paid, lang)}</span>
+        <span>{percent(pct, lang)}</span>
       </div>
       <div className="h-1.5 rounded-full bg-muted overflow-hidden">
         <div
@@ -187,7 +189,8 @@ function toCsv(
 }
 
 function BookingsPage() {
-  const t = useT();
+  const { t, lang } = useLanguage();
+  const bdt = (amount: string) => money(amount, lang);
   const statusLabel = useStatusLabel();
   const [page, setPage] = useState(1);
   const [packageFilter, setPackageFilter] = useState<number | undefined>();
@@ -299,27 +302,27 @@ function BookingsPage() {
           label={t("bk.totalBookings")}
           value={summary ? String(summary.count) : "—"}
           icon={ClipboardList}
-          hint={filtersActive ? "Matching current filters" : "All bookings"}
+          hint={filtersActive ? t("bk.matchingFilters") : t("bk.allBookings")}
         />
         <StatCard
           label={t("bk.collected")}
-          value={summary ? formatBDT(summary.paid_amount) : "—"}
+          value={summary ? bdt(summary.paid_amount) : "—"}
           icon={Banknote}
           tone="emerald"
-          hint={summary ? `of ${formatBDT(summary.total_amount)} booked` : undefined}
+          hint={summary ? t("bk.ofBooked", { amount: bdt(summary.total_amount) }) : undefined}
         />
         <StatCard
           label={t("bk.outstandingDue")}
-          value={summary ? formatBDT(summary.due_amount) : "—"}
+          value={summary ? bdt(summary.due_amount) : "—"}
           icon={Wallet}
           highlight
-          hint="To collect"
+          hint={t("bk.toCollect")}
         />
         <StatCard
           label={t("bk.fullyPaidRate")}
-          value={summary ? `${summary.fully_paid_rate}%` : "—"}
+          value={summary ? percent(summary.fully_paid_rate, lang) : "—"}
           icon={Percent}
-          hint="Of active bookings"
+          hint={t("bk.ofActive")}
         />
       </div>
 
@@ -369,7 +372,7 @@ function BookingsPage() {
                 : "border-border text-muted-foreground hover:border-gold/50"
           }`}
         >
-          Refunds owed
+          {t("bk.refundsOwed")}
           <span className="ml-1.5 text-[10px] opacity-80">{summary?.refunds_owed_count ?? 0}</span>
         </button>
       </div>
@@ -418,7 +421,7 @@ function BookingsPage() {
           <option value="">{t("bk.allStatuses")}</option>
           {STATUSES.map((s) => (
             <option key={s} value={s}>
-              {s.replace("_", " ")}
+              {statusLabel[s]}
             </option>
           ))}
         </select>
@@ -429,7 +432,7 @@ function BookingsPage() {
             onChange={(e) => setDueOnly(e.target.checked)}
             className="accent-gold size-4"
           />
-          Due only
+          {t("bk.dueOnly")}
         </label>
         {filtersActive && (
           <button
@@ -448,19 +451,19 @@ function BookingsPage() {
             <tr className="border-b border-border bg-muted/40 text-left">
               <Th>{t("bk.code")}</Th>
               <Th>{t("bk.customer")}</Th>
-              <Th>Package</Th>
+              <Th>{t("bk.package")}</Th>
               <Th>{t("bk.room")}</Th>
               <Th>{t("bk.pax")}</Th>
               <Th sortKey="total" active={sortKey} dir={sortDir} onSort={toggleSort}>
-                Total
+                {t("bk.total")}
               </Th>
               <Th>{t("bk.paidProgress")}</Th>
               <Th sortKey="due" active={sortKey} dir={sortDir} onSort={toggleSort}>
-                Due
+                {t("bk.due")}
               </Th>
               <Th>{t("bk.statusCol")}</Th>
               <Th sortKey="created" active={sortKey} dir={sortDir} onSort={toggleSort}>
-                Created
+                {t("bk.created")}
               </Th>
             </tr>
           </thead>
@@ -512,7 +515,7 @@ function BookingsPage() {
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap">{formatBDT(b.total_amount)}</td>
+                <td className="px-4 py-3 whitespace-nowrap">{bdt(b.total_amount)}</td>
                 <td className="px-4 py-3">
                   <PaymentProgress paid={b.paid_amount} total={b.total_amount} />
                 </td>
@@ -521,17 +524,17 @@ function BookingsPage() {
                     Number(b.due_amount) > 0 ? "text-gold" : ""
                   }`}
                 >
-                  {formatBDT(b.due_amount)}
+                  {bdt(b.due_amount)}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <StatusBadge status={b.status} />
                     {b.refund_required && (
                       <span
-                        title={b.refund_note || "Refund owed — call the customer"}
+                        title={b.refund_note || t("bk.refundOwedCall")}
                         className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-[10px] font-semibold uppercase tracking-wide"
                       >
-                        Refund owed
+                        {t("bk.refundOwed")}
                       </span>
                     )}
                   </div>
@@ -615,6 +618,7 @@ function Th({
 function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClose: () => void }) {
   const { t, lang } = useLanguage();
   const bdt = (amount: string) => money(amount, lang);
+  const statusLabel = useStatusLabel();
   const queryClient = useQueryClient();
   const { data: booking } = useQuery({
     queryKey: ["staff", "booking", bookingId],
@@ -800,7 +804,7 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
           {booking.refund_required && (
             <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 space-y-3">
               <div className="eyebrow text-destructive text-[10px]">
-                Refund owed — {formatBDT(booking.paid_amount)} paid on this booking
+                {t("bk.refundOwedPaid", { amount: money(booking.paid_amount, lang) })}
               </div>
               {booking.refund_note && (
                 <p className="text-xs text-muted-foreground whitespace-pre-line">
@@ -818,14 +822,14 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
                     'How was the refund settled? (e.g. "Refunded 5000 BDT via bKash, 11 Jul")',
                   );
                   if (note === null) return;
-                  const stamp = `Resolved: ${note || "refunded"}`;
+                  const stamp = tr("bk.resolvedStamp", { note: note || tr("bk.refundedWord") });
                   markRefundedMutation.mutate(
                     booking.refund_note ? `${booking.refund_note}\n${stamp}` : stamp,
                   );
                 }}
                 className="px-4 py-2 rounded-full border border-destructive/50 text-destructive text-xs font-semibold hover:bg-destructive/10 transition-colors disabled:opacity-40"
               >
-                {markRefundedMutation.isPending ? "Saving…" : "Mark refunded"}
+                {markRefundedMutation.isPending ? t("common.saving") : t("bk.markRefunded")}
               </button>
             </div>
           )}
@@ -858,7 +862,7 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
                       : "border-border hover:border-gold/50"
                   }`}
                 >
-                  {s.replace("_", " ")}
+                  {statusLabel[s]}
                 </button>
               ))}
             </div>
@@ -868,7 +872,7 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
           {booking.status !== "cancelled" && Number(booking.due_amount) > 0 && (
             <div className="rounded-xl border border-gold/40 bg-gold/5 p-4">
               <div className="eyebrow text-gold text-[10px] mb-3">
-                Record cash payment (due {formatBDT(booking.due_amount)})
+                {t("bk.recordCash", { amount: money(booking.due_amount, lang) })}
               </div>
               <div className="flex gap-2">
                 <input
@@ -900,13 +904,13 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
                 {booking.payments.map((p) => (
                   <div key={p.id} className="px-4 py-2.5 flex items-center justify-between">
                     <div>
-                      <span className="font-medium">{formatBDT(p.amount)}</span>
+                      <span className="font-medium">{money(p.amount, lang)}</span>
                       <span className="text-xs text-muted-foreground ml-2">
                         {p.gateway} · {p.status}
                       </span>
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {p.paid_at ? new Date(p.paid_at).toLocaleString() : "—"}
+                      {p.paid_at ? dateTime(p.paid_at, lang) : "—"}
                     </span>
                   </div>
                 ))}
@@ -926,9 +930,11 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
                     <div className="text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">{inv.number}</span>
                       {" · "}
-                      {inv.sent_at ? `Sent ${new Date(inv.sent_at).toLocaleString()}` : "Not sent"}
+                      {inv.sent_at
+                        ? t("common.sentAt", { when: dateTime(inv.sent_at, lang) })
+                        : t("common.notSent")}
                       {" · "}
-                      Due {inv.due_amount} BDT
+                      {t("bk.invoiceDue", { amount: money(inv.due_amount, lang) })}
                     </div>
                     <div className="flex items-center gap-3">
                       {inv.pdf_url && (
@@ -945,7 +951,7 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
                         onClick={() => resendMutation.mutate(inv.id)}
                         className="text-xs text-ocean hover:underline flex items-center gap-1"
                       >
-                        <RefreshCcw className="size-3" /> Resend
+                        <RefreshCcw className="size-3" /> {t("bk.resend")}
                       </button>
                     </div>
                   </div>
@@ -962,9 +968,17 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
             <div className="space-y-1.5 text-xs text-muted-foreground">
               {booking.status_logs.map((log, i) => (
                 <div key={i}>
-                  {new Date(log.created_at).toLocaleString()} — {log.old_status || "created"} →{" "}
-                  <span className="font-medium text-foreground">{log.new_status}</span>
-                  {log.changed_by_username ? ` by ${log.changed_by_username}` : ""}
+                  {dateTime(log.created_at, lang)} —{" "}
+                  {log.old_status
+                    ? statusLabel[log.old_status as BookingStatus]
+                    : t("common.createdWord")}{" "}
+                  →{" "}
+                  <span className="font-medium text-foreground">
+                    {statusLabel[log.new_status as BookingStatus]}
+                  </span>
+                  {log.changed_by_username
+                    ? ` ${t("bk.byUser", { user: log.changed_by_username })}`
+                    : ""}
                 </div>
               ))}
             </div>
@@ -1130,7 +1144,7 @@ function CreateBookingDialog({ onClose }: { onClose: () => void }) {
           className="w-full flex items-center justify-center gap-2 py-3 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.15em] font-semibold shadow-luxe disabled:opacity-40"
         >
           {createMutation.isPending && <Loader2 className="size-4 animate-spin" />}
-          Create booking
+          {t("bk.createBooking")}
         </button>
       </div>
     </DialogShell>
@@ -1145,7 +1159,7 @@ function CreateBookingDialog({ onClose }: { onClose: () => void }) {
  *  that has to be justified in writing.
  */
 function StaffCancelPanel({ booking, onDone }: { booking: { id: number }; onDone: () => void }) {
-  const t = useT();
+  const { t, lang } = useLanguage();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [reasonCode, setReasonCode] = useState("plans_changed");
@@ -1205,7 +1219,7 @@ function StaffCancelPanel({ booking, onDone }: { booking: { id: number }; onDone
 
       {q && !q.allowed && (
         <p className="text-sm text-muted-foreground">
-          This booking cannot be cancelled ({q.block_reason}).
+          {t("bk.cannotCancel", { reason: q.block_reason ?? "" })}
         </p>
       )}
 
@@ -1214,28 +1228,22 @@ function StaffCancelPanel({ booking, onDone }: { booking: { id: number }; onDone
           <div className="text-xs space-y-1">
             <div className="text-muted-foreground">{q.tier_label}</div>
             <div>
-              Paid {formatBDT(q.paid_amount)} · charge{" "}
-              {waive ? formatBDT("0.00") : formatBDT(q.cancellation_charge)} ·{" "}
-              <strong>refund {formatBDT(refund ?? "0.00")}</strong>
+              {t("bk.paidCharge", {
+                paid: money(q.paid_amount, lang),
+                charge: money(waive ? "0.00" : q.cancellation_charge, lang),
+              })}{" "}
+              · <strong>{t("bk.refundLine", { amount: money(refund ?? "0.00", lang) })}</strong>
             </div>
             {q.shortfall_amount !== "0.00" && !waive && (
               <div className="text-muted-foreground">
-                {formatBDT(q.shortfall_amount)} of the charge is not covered by the deposit —
-                recorded only, never billed.
+                {t("bk.shortfallNote", { amount: money(q.shortfall_amount, lang) })}
               </div>
             )}
             {q.payment_in_progress && (
-              <div className="text-destructive">
-                ⚠ A payment is still open at the gateway. It can settle after you cancel — that
-                money would then need refunding too. Ask the customer to close the payment page, or
-                check back in a few minutes.
-              </div>
+              <div className="text-destructive">{t("bk.paymentInProgress")}</div>
             )}
             {q.suggests_group && q.booking_type === "individual" && (
-              <div className="text-muted-foreground">
-                This party is large enough to be a group booking — if it is one, change its type
-                first: the group column charges differently.
-              </div>
+              <div className="text-muted-foreground">{t("bk.suggestsGroup")}</div>
             )}
           </div>
 
@@ -1299,10 +1307,7 @@ function StaffCancelPanel({ booking, onDone }: { booking: { id: number }; onDone
             />
             <span>
               {t("bk.waiveCharge")}
-              <span className="text-muted-foreground">
-                {" "}
-                Money given away, so the note becomes mandatory and is recorded against your name.
-              </span>
+              <span className="text-muted-foreground"> {t("bk.waiveNote")}</span>
             </span>
           </label>
 
@@ -1311,7 +1316,7 @@ function StaffCancelPanel({ booking, onDone }: { booking: { id: number }; onDone
               onClick={() => setOpen(false)}
               className="flex-1 min-h-11 rounded-full border border-border text-sm"
             >
-              Back
+              {t("common.back")}
             </button>
             <button
               onClick={() => mutation.mutate()}

@@ -2,62 +2,66 @@ import type { LucideIcon } from "lucide-react";
 import { X } from "lucide-react";
 
 import type { ApiError, BookingStatus } from "@/lib/api/types";
-import { useT } from "@/lib/i18n";
+import { tr, useT } from "@/lib/i18n";
+import type { StringKey } from "@/lib/i18n/strings";
 
 /** Field names whose automatic label would be wrong or unhelpful. Everything
  *  else is derived, so a new field gets a decent label without being listed. */
-const FIELD_LABELS: Record<string, string> = {
-  ship: "Ship",
-  booking_cutoff_datetime: "Booking cutoff",
-  min_deposit_percent: "Minimum deposit",
-  balance_due_days_before_start: "Balance due deadline",
-  duration_days: "Duration in days",
-  duration_nights: "Duration in nights",
-  marketing_title: "Title",
-  marketing_description: "Description",
-  hero_image: "Cover photo",
-  discount_type: "Offer type",
-  discount_value: "Offer amount",
-  offer_label: "Offer name",
-  offer_ends_at: "Offer end date",
-  is_booking_open: "Booking open",
+const FIELD_LABELS: Record<string, StringKey | ""> = {
+  ship: "common.ship",
+  booking_cutoff_datetime: "err.fieldCutoff",
+  min_deposit_percent: "err.fieldMinDeposit",
+  balance_due_days_before_start: "err.fieldBalanceDue",
+  duration_days: "err.fieldDurationDays",
+  duration_nights: "err.fieldDurationNights",
+  marketing_title: "err.fieldTitle",
+  marketing_description: "err.fieldDescription",
+  hero_image: "pk.coverPhoto",
+  discount_type: "err.fieldOfferType",
+  discount_value: "err.fieldOfferAmount",
+  offer_label: "err.fieldOfferName",
+  offer_ends_at: "err.fieldOfferEnds",
+  is_booking_open: "err.fieldBookingOpen",
   non_field_errors: "",
   detail: "",
 };
 
 function labelFor(field: string): string {
   const mapped = FIELD_LABELS[field];
-  if (mapped !== undefined) return mapped;
+  if (mapped !== undefined) return mapped === "" ? "" : tr(mapped);
   const spaced = field.replace(/_/g, " ");
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
 /** DRF's stock validation sentences, which name no field and read like a
  *  library talking to a programmer. The server's OWN messages are already
- *  written for a person and are left alone. */
+ *  written for a person and are left alone.
+ *
+ *  Only the stock sentences are translated: they are a fixed, known list. A
+ *  message our own validation wrote comes back in English from the server, and
+ *  guessing at it here would be worse than passing it through. */
 function humanise(label: string, message: string): string {
-  const named = label ? `${label}` : "This";
-  if (message === "This field is required.") return `${named} is required.`;
-  if (message === "This field may not be null.") return `${named} is required.`;
-  if (message === "This field may not be blank.") return `${named} cannot be left empty.`;
-  if (message.startsWith("Date has wrong format")) {
-    return `${named} must be a real date, written as YYYY-MM-DD.`;
-  }
-  if (message.startsWith("Datetime has wrong format")) {
-    return `${named} must be a real date and time.`;
-  }
-  if (message === "A valid number is required.") return `${named} must be a number.`;
-  if (message === "A valid integer is required.") return `${named} must be a whole number.`;
+  const named = label || tr("err.thisField");
+  const say = (key: StringKey, vars?: Record<string, string | number>) =>
+    tr(key, { field: named, ...vars });
+
+  if (message === "This field is required.") return say("err.required");
+  if (message === "This field may not be null.") return say("err.required");
+  if (message === "This field may not be blank.") return say("err.blank");
+  if (message.startsWith("Date has wrong format")) return say("err.badDate");
+  if (message.startsWith("Datetime has wrong format")) return say("err.badDateTime");
+  if (message === "A valid number is required.") return say("err.notNumber");
+  if (message === "A valid integer is required.") return say("err.notWhole");
   // Captured rather than sliced at a character count: counting the prefix by
   // hand is off by one the first time anyone reads it back.
   const atLeast = /^Ensure this value is greater than or equal to (.+?)\.?$/.exec(message);
-  if (atLeast) return `${named} cannot be below ${atLeast[1]}.`;
+  if (atLeast) return say("err.tooLow", { min: atLeast[1] });
   const atMost = /^Ensure this value is less than or equal to (.+?)\.?$/.exec(message);
-  if (atMost) return `${named} cannot be above ${atMost[1]}.`;
+  if (atMost) return say("err.tooHigh", { max: atMost[1] });
   if (message.startsWith('"') && message.includes("is not a valid choice")) {
-    return `${named} is not one of the allowed options.`;
+    return say("err.badChoice");
   }
-  if (message === "Not a valid string.") return `${named} is not valid.`;
+  if (message === "Not a valid string.") return say("err.notValid");
   // A real sentence from our own validation. Only name the field when the
   // sentence does not already — "End date must be after start date" gains
   // nothing from being introduced as "End date: End date must be…".
@@ -67,18 +71,18 @@ function humanise(label: string, message: string): string {
 
 /** Nothing came back from the server, or nothing worth repeating. Status codes
  *  are not something staff should have to look up. */
-const BY_STATUS: Record<number, string> = {
-  0: "Couldn't reach the server. Check your internet connection and try again.",
-  401: "Your session has expired — please sign in again.",
-  403: "You don't have permission to do that.",
-  404: "That item no longer exists. It may have been deleted by someone else.",
-  405: "That action isn't allowed here.",
-  413: "That file is too large. Try a smaller one.",
-  429: "Too many attempts in a row. Wait a minute, then try again.",
-  500: "Something broke on the server. Try once more — if it keeps happening, report it.",
-  502: "The server is restarting. Give it a moment and try again.",
-  503: "The server is restarting. Give it a moment and try again.",
-  504: "The server took too long to answer. Try again.",
+const BY_STATUS: Record<number, StringKey> = {
+  0: "err.offline",
+  401: "err.expired",
+  403: "err.forbidden",
+  404: "err.gone",
+  405: "err.notAllowed",
+  413: "err.tooLarge",
+  429: "err.tooMany",
+  500: "err.serverBroke",
+  502: "err.restarting",
+  503: "err.restarting",
+  504: "err.timeout",
 };
 
 /**
@@ -90,7 +94,7 @@ const BY_STATUS: Record<number, string> = {
  */
 export function errorText(err: unknown): string {
   const apiError = err as ApiError | undefined;
-  if (!apiError) return "Something went wrong. Please try again.";
+  if (!apiError) return tr("common.somethingWrong");
 
   if (apiError.fieldErrors) {
     const parts = Object.entries(apiError.fieldErrors).flatMap(([field, messages]) =>
@@ -99,15 +103,15 @@ export function errorText(err: unknown): string {
     // Toasts are read at a glance. Beyond three problems, the count is more
     // use than the list — the form shows them all anyway.
     if (parts.length > 3) {
-      return `${parts.slice(0, 3).join(" ")} (+${parts.length - 3} more problem${
-        parts.length - 3 === 1 ? "" : "s"
-      })`;
+      return `${parts.slice(0, 3).join(" ")} ${tr("err.andMore", {
+        n: parts.length - 3,
+      })}`;
     }
     if (parts.length) return parts.join(" ");
   }
 
   if (apiError.detail) return apiError.detail;
-  return BY_STATUS[apiError.status] ?? "Something went wrong. Please try again.";
+  return tr(BY_STATUS[apiError.status] ?? "common.somethingWrong");
 }
 
 export function DialogShell({

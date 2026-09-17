@@ -402,7 +402,7 @@ function DishChip({
       {/* Hover controls */}
       <span className="flex items-center gap-0.5 opacity-0 group-hover/chip:opacity-100 focus-within:opacity-100 transition-opacity">
         <button
-          title={active ? "Hide from menu" : "Show on menu"}
+          title={active ? t("fm.hideFromMenu") : t("fm.showOnMenu")}
           onClick={onToggle}
           className="size-5 rounded-full grid place-items-center text-muted-foreground hover:text-ocean hover:bg-ocean/10"
         >
@@ -559,7 +559,7 @@ function AddItemDialog({
           ) : (
             <Plus className="size-3.5" />
           )}
-          Add item
+          {t("common.add2")}
         </button>
       </div>
     </DialogShell>
@@ -606,7 +606,7 @@ function EditItemDialog({
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
         >
           {mutation.isPending ? <Loader2 className="size-3.5 animate-spin" /> : null}
-          Save changes
+          {t("common.save")}
         </button>
       </div>
     </DialogShell>

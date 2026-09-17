@@ -40,8 +40,8 @@ import {
   voidRefund,
 } from "@/lib/api/staffRefunds";
 import type { StaffCancellationRequest, StaffRefund } from "@/lib/api/staffRefundTypes";
-import { useT } from "@/lib/i18n";
-import { formatBDT } from "@/lib/money";
+import { currentLang, useLanguage, useT } from "@/lib/i18n";
+import { dateTime, money, num } from "@/lib/i18n/format";
 
 export const Route = createFileRoute("/staff/refunds")({
   component: RefundsPage,
@@ -64,13 +64,13 @@ const REFUND_FILTERS = [
 const PAYOUT_METHODS = [
   { value: "bkash", label: "bKash" },
   { value: "nagad", label: "Nagad" },
-  { value: "bank_transfer", label: "Bank transfer" },
+  { value: "bank_transfer", label: "rf.bankTransfer" },
   { value: "cash", label: "Cash" },
-  { value: "gateway", label: "Payment gateway" },
+  { value: "gateway", label: "rf.paymentGateway" },
 ];
 
 function RefundsPage() {
-  const t = useT();
+  const { t, lang } = useLanguage();
   const [tab, setTab] = useState<"queue" | "register">("queue");
 
   const requestSummary = useQuery({
@@ -94,7 +94,9 @@ function RefundsPage() {
           highlight={(requestSummary.data?.pending_count ?? 0) > 0}
           hint={
             requestSummary.data
-              ? `${formatBDT(requestSummary.data.pending_refund_total)} would be refunded`
+              ? t("rf.wouldBeRefunded", {
+                  amount: money(requestSummary.data.pending_refund_total, lang),
+                })
               : undefined
           }
         />
@@ -103,10 +105,10 @@ function RefundsPage() {
             invisible anywhere else in the system. */}
         <StatCard
           label={t("rf.liability")}
-          value={formatBDT(refundSummary.data?.liability_total ?? "0.00")}
+          value={money(refundSummary.data?.liability_total ?? "0.00", lang)}
           icon={Wallet}
           tone="destructive"
-          hint={`${refundSummary.data?.liability_count ?? 0} payout(s) owed`}
+          hint={t("rf.payoutsOwed", { n: num(refundSummary.data?.liability_count ?? 0, lang) })}
         />
         <StatCard
           label={t("rf.overduePayouts")}
@@ -117,7 +119,7 @@ function RefundsPage() {
         />
         <StatCard
           label={t("rf.paidOut")}
-          value={formatBDT(refundSummary.data?.paid_total ?? "0.00")}
+          value={money(refundSummary.data?.paid_total ?? "0.00", lang)}
           icon={Banknote}
           tone="emerald"
           hint={`${refundSummary.data?.paid_count ?? 0} settled`}
@@ -129,13 +131,11 @@ function RefundsPage() {
           <Ship className="size-4 text-destructive shrink-0 mt-0.5" />
           <div className="text-sm">
             <strong>
-              {requestSummary.data?.departed_undecided_count} request(s) are still undecided after
-              their departure.
+              {t("rf.undecidedCount", {
+                n: num(requestSummary.data?.departed_undecided_count ?? 0, lang),
+              })}
             </strong>{" "}
-            <span className="text-muted-foreground">
-              The customer filed in time, so the charge they were quoted still stands — this backlog
-              is ours, not theirs.
-            </span>
+            <span className="text-muted-foreground">{t("rf.undecidedNote")}</span>
           </div>
         </div>
       )}
@@ -151,7 +151,7 @@ function RefundsPage() {
                 : "border border-border text-muted-foreground hover:border-gold hover:text-gold"
             }`}
           >
-            {value === "queue" ? "Cancellation queue" : "Refund register"}
+            {value === "queue" ? t("rf.queueTab") : t("rf.registerTab")}
           </button>
         ))}
       </div>
@@ -244,7 +244,7 @@ function CancellationQueue() {
 }
 
 function QueueRow({ row, onOpen }: { row: StaffCancellationRequest; onOpen: () => void }) {
-  const t = useT();
+  const { t, lang } = useLanguage();
   return (
     <button
       onClick={onOpen}
@@ -263,11 +263,14 @@ function QueueRow({ row, onOpen }: { row: StaffCancellationRequest; onOpen: () =
       <div className="text-xs min-w-[170px]">
         <div className="text-muted-foreground">{row.tier_label}</div>
         <div>
-          Paid {formatBDT(row.paid_amount)} · charge {formatBDT(row.cancellation_charge)}
+          {t("bk.paidCharge", {
+            paid: money(row.paid_amount, lang),
+            charge: money(row.cancellation_charge, lang),
+          })}
         </div>
       </div>
       <div className="ml-auto text-right">
-        <div className="font-display text-lg text-gold">{formatBDT(row.refund_amount)}</div>
+        <div className="font-display text-lg text-gold">{money(row.refund_amount, lang)}</div>
         <div className="flex items-center gap-1.5 justify-end mt-0.5">
           {row.departure_passed && row.status === "pending" && (
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-semibold">
@@ -292,7 +295,7 @@ function RequestDialog({
   onClose: () => void;
   onDecided: () => void;
 }) {
-  const t = useT();
+  const { t, lang } = useLanguage();
   const [note, setNote] = useState("");
   const { data, isLoading } = useQuery({
     queryKey: ["staff", "cancellation-request", id],
@@ -332,7 +335,7 @@ function RequestDialog({
             <Info label={t("rf.booking")} value={data.booking_code} />
             <Info label={t("rf.customer")} value={`${data.customer_name} · ${data.phone}`} />
             <Info label={t("rf.departure")} value={data.package_start_date} />
-            <Info label={t("rf.requested")} value={new Date(data.requested_at).toLocaleString()} />
+            <Info label={t("rf.requested")} value={dateTime(data.requested_at, lang)} />
             <Info label={t("bk.reason")} value={data.reason_label} />
             <Info label={t("rf.source")} value={data.source === "staff" ? "Staff" : "Website"} />
           </div>
@@ -353,7 +356,7 @@ function RequestDialog({
               <MoneyRow label={t("rf.refundDue")} value={data.refund_amount} strong />
               {data.shortfall_amount !== "0.00" && (
                 <div className="px-4 py-2.5 text-xs text-muted-foreground">
-                  Charge not covered by the deposit: {formatBDT(data.shortfall_amount)} — recorded
+                  {t("rf.shortfallNote", { amount: money(data.shortfall_amount, lang) })}
                   only, never billed.
                 </div>
               )}
@@ -395,13 +398,10 @@ function RequestDialog({
                   className="flex-1 min-h-11 flex items-center justify-center gap-2 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.14em] font-semibold disabled:opacity-40"
                 >
                   {busy && <Loader2 className="size-4 animate-spin" />}
-                  Approve & refund {formatBDT(data.refund_amount)}
+                  {t("rf.approveRefund", { amount: money(data.refund_amount, lang) })}
                 </button>
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                Approving cancels the booking, releases the cabin and raises the payout. The
-                customer is emailed automatically.
-              </p>
+              <p className="text-[11px] text-muted-foreground">{t("rf.approveNote")}</p>
             </>
           ) : (
             <div className="rounded-xl bg-muted/50 p-4 text-sm space-y-1">
@@ -423,7 +423,7 @@ function RequestDialog({
 /* ── Refund register ─────────────────────────────────────────────────────── */
 
 function RefundRegister() {
-  const t = useT();
+  const { t, lang } = useLanguage();
   const queryClient = useQueryClient();
   const [status, setStatus] = useState("pending");
   const [search, setSearch] = useState("");
@@ -533,13 +533,13 @@ function RefundRegister() {
                 <div>
                   {refund.account_number
                     ? `${refund.method_label} ${refund.account_number}`
-                    : "No payout destination recorded"}
+                    : t("rf.noDestination")}
                 </div>
               )}
             </div>
             <div className="ml-auto flex items-center gap-3">
               <div className="text-right">
-                <div className="font-display text-lg">{formatBDT(refund.amount)}</div>
+                <div className="font-display text-lg">{money(refund.amount, lang)}</div>
                 <div className="flex gap-1.5 justify-end">
                   {refund.overdue && (
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-semibold">
@@ -612,9 +612,7 @@ function VoidButton({ refund, onDone }: { refund: StaffRefund; onDone: () => voi
   return (
     <button
       onClick={() => {
-        const note = window.prompt(
-          "Why is this refund being voided? (raised in error, duplicate row, wrong booking)",
-        );
+        const note = window.prompt(t("rf.voidPrompt"));
         if (note?.trim()) mutation.mutate(note.trim());
       }}
       disabled={mutation.isPending}
@@ -634,7 +632,7 @@ function MarkPaidDialog({
   onClose: () => void;
   onDone: () => void;
 }) {
-  const t = useT();
+  const { t, lang } = useLanguage();
   const [method, setMethod] = useState(refund.method || "bkash");
   const [reference, setReference] = useState("");
   const [note, setNote] = useState("");
@@ -654,7 +652,10 @@ function MarkPaidDialog({
   });
 
   return (
-    <DialogShell title={`Record payout — ${formatBDT(refund.amount)}`} onClose={onClose}>
+    <DialogShell
+      title={t("rf.recordPayout", { amount: money(refund.amount, lang) })}
+      onClose={onClose}
+    >
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <Info label={t("rf.booking")} value={refund.booking_code} />
@@ -688,14 +689,11 @@ function MarkPaidDialog({
           <input
             value={reference}
             onChange={(e) => setReference(e.target.value)}
-            placeholder="e.g. 9F7K2LM1QX"
+            placeholder="9F7K2LM1QX"
             className={staffInputClass}
           />
         </StaffField>
-        <p className="text-[11px] text-muted-foreground -mt-2">
-          Required: without a reference this payout cannot be reconciled against the bKash or bank
-          statement, and the register stops being an accounting document.
-        </p>
+        <p className="text-[11px] text-muted-foreground -mt-2">{t("rf.referenceRequired")}</p>
 
         <StaffField label={t("rf.noteOptional")}>
           <input
@@ -715,7 +713,7 @@ function MarkPaidDialog({
           ) : (
             <CheckCircle2 className="size-4" />
           )}
-          Mark as paid
+          {t("rf.markPaid")}
         </button>
       </div>
     </DialogShell>
@@ -751,11 +749,7 @@ function RaiseRefundDialog({ onClose, onDone }: { onClose: () => void; onDone: (
   return (
     <DialogShell title={t("rf.raise")} onClose={onClose}>
       <div className="space-y-4">
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          For money that was never ours (overpayment, a duplicate settlement) or a decision someone
-          made (goodwill). Customer cancellations are not raised here — approving the request
-          creates those, so the charge schedule cannot be bypassed.
-        </p>
+        <p className="text-xs text-muted-foreground leading-relaxed">{t("rf.raiseNote")}</p>
 
         <StaffField label={t("bk.bookingCode")}>
           <input
@@ -787,10 +781,7 @@ function RaiseRefundDialog({ onClose, onDone }: { onClose: () => void; onDone: (
             className={staffInputClass}
           />
         </StaffField>
-        <p className="text-[11px] text-muted-foreground -mt-2">
-          Checked server-side against what the booking actually received — a refund can never exceed
-          the money that came in.
-        </p>
+        <p className="text-[11px] text-muted-foreground -mt-2">{t("rf.amountNote")}</p>
 
         <StaffField label={t("common.notes")}>
           <textarea
@@ -810,10 +801,7 @@ function RaiseRefundDialog({ onClose, onDone }: { onClose: () => void; onDone: (
           />
           <span>
             {t("rf.overrideWindow")}
-            <span className="text-muted-foreground">
-              {" "}
-              Reopens a closed accounting period, so the note is mandatory.
-            </span>
+            <span className="text-muted-foreground"> {t("rf.overrideNote")}</span>
           </span>
         </label>
 
@@ -834,7 +822,7 @@ function MoneyRow({ label, value, strong }: { label: string; value: string; stro
     <div className="flex items-center justify-between px-4 py-2.5">
       <span className="text-muted-foreground">{label}</span>
       <span className={strong ? "font-display text-lg text-gold" : "font-semibold"}>
-        {formatBDT(value)}
+        {money(value, currentLang())}
       </span>
     </div>
   );

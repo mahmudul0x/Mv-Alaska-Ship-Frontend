@@ -19,11 +19,43 @@ function storedLang(): Lang {
   }
 }
 
+type Vars = Record<string, string | number>;
+
 type Ctx = {
   lang: Lang;
   setLang: (lang: Lang) => void;
-  t: (key: StringKey, vars?: Record<string, string | number>) => string;
+  t: (key: StringKey, vars?: Vars) => string;
 };
+
+/** The lookup itself, with no React in it.
+ *
+ *  Falls back to English, then to the key. A missing translation should leave
+ *  a readable dashboard, never an empty button — and the key showing through
+ *  is how an untranslated string gets noticed. */
+export function translate(key: StringKey, lang: Lang, vars?: Vars): string {
+  const entry = STRINGS[key];
+  // Annotated: STRINGS is `as const`, so without this the inferred type is
+  // the one literal that happened to be read first.
+  let text: string = entry ? (entry[lang] ?? entry.en) : key;
+  if (vars) {
+    for (const [name, value] of Object.entries(vars)) {
+      text = text.replaceAll(`{${name}}`, String(value));
+    }
+  }
+  return text;
+}
+
+/** The chosen language outside React, for plain functions that are called
+ *  from event handlers rather than rendered — errorText() above all. Reading
+ *  storage each time is what keeps it correct after the language is changed. */
+export function currentLang(): Lang {
+  return storedLang();
+}
+
+/** translate() for those same plain functions. */
+export function tr(key: StringKey, vars?: Vars): string {
+  return translate(key, storedLang(), vars);
+}
 
 const LanguageContext = createContext<Ctx | null>(null);
 
@@ -40,24 +72,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const t = useCallback<Ctx["t"]>(
-    (key, vars) => {
-      const entry = STRINGS[key];
-      // Falls back to English, then to the key itself. A missing translation
-      // should leave a readable dashboard, never an empty button — and the key
-      // showing through is how an untranslated string gets noticed.
-      // Annotated: STRINGS is `as const`, so without this the inferred type is
-      // the one literal that happened to be read first.
-      let text: string = entry ? (entry[lang] ?? entry.en) : key;
-      if (vars) {
-        for (const [name, value] of Object.entries(vars)) {
-          text = text.replaceAll(`{${name}}`, String(value));
-        }
-      }
-      return text;
-    },
-    [lang],
-  );
+  const t = useCallback<Ctx["t"]>((key, vars) => translate(key, lang, vars), [lang]);
 
   const value = useMemo(() => ({ lang, setLang, t }), [lang, setLang, t]);
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

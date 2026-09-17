@@ -148,7 +148,7 @@ function StaffGallery() {
             ) : (
               <ImagePlus className="size-3.5" />
             )}
-            Add photos
+            {t("rs.addPhotos")}
           </button>
         </div>
       </PageHeader>
@@ -162,9 +162,7 @@ function StaffGallery() {
       {!imagesQuery.isLoading && images.length === 0 && (
         <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">
           <Images className="size-8 mx-auto mb-3 opacity-40" />
-          <div className="text-sm">
-            No gallery photos yet — add the first ones and they appear on the website instantly.
-          </div>
+          <div className="text-sm">{t("gallery.empty")}</div>
         </div>
       )}
 
@@ -185,7 +183,7 @@ function StaffGallery() {
               />
               {!img.is_active && (
                 <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-semibold bg-amber-100/95 text-amber-700">
-                  Hidden
+                  {t("common.hidden")}
                 </span>
               )}
               <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -224,7 +222,7 @@ function StaffGallery() {
               />
               <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
                 <label className="flex items-center gap-1.5">
-                  Order
+                  {t("common.order")}
                   <input
                     type="number"
                     min={0}

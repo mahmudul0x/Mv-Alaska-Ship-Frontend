@@ -107,9 +107,7 @@ function StaffCabins() {
   const toggleMutation = useMutation({
     mutationFn: (cabin: StaffCabin) => updateStaffCabin(cabin.id, { is_active: !cabin.is_active }),
     onSuccess: (cabin) => {
-      toast.success(
-        cabin.is_active ? "Cabin is now visible on the website." : "Cabin hidden from the website.",
-      );
+      toast.success(cabin.is_active ? t("cb.nowVisible") : t("cb.nowHidden"));
       invalidate();
     },
     onError: (err) => toast.error(errorText(err)),
@@ -170,7 +168,7 @@ function StaffCabins() {
                 <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-semibold bg-black/55 text-white">
                   {cabin.images.length
                     ? `${cabin.images.length} photo${cabin.images.length > 1 ? "s" : ""}`
-                    : "No photos"}
+                    : t("rs.noPhotosBadge")}
                 </span>
                 {!cabin.is_active && (
                   <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] font-semibold bg-amber-100/95 text-amber-700">
@@ -204,7 +202,7 @@ function StaffCabins() {
                   </button>
                   <button
                     onClick={() => toggleMutation.mutate(cabin)}
-                    title={cabin.is_active ? "Hide from website" : "Show on website"}
+                    title={cabin.is_active ? t("cb.hideFromSite") : t("cb.showOnSite")}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-[10px] font-semibold uppercase tracking-[0.1em] hover:border-gold hover:text-gold-text transition-colors"
                   >
                     {cabin.is_active ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
@@ -212,11 +210,7 @@ function StaffCabins() {
                   </button>
                   <button
                     onClick={() => {
-                      if (
-                        window.confirm(
-                          `Delete "${cabin.name}" and all its photos? This cannot be undone.`,
-                        )
-                      ) {
+                      if (window.confirm(t("cb.confirmDelete", { name: cabin.name }))) {
                         deleteMutation.mutate(cabin.id);
                       }
                     }}
@@ -307,7 +301,7 @@ function CabinFormDialog({
       return cabin ? updateStaffCabin(cabin.id, payload) : createStaffCabin(payload);
     },
     onSuccess: () => {
-      toast.success(cabin ? "Cabin updated." : "Cabin created — now add photos.");
+      toast.success(cabin ? t("cb.updated") : t("cb.createdAddPhotos"));
       invalidate();
       onClose();
     },
@@ -337,7 +331,7 @@ function CabinFormDialog({
               className={staffInputClass}
               value={form.name}
               onChange={(e) => set("name", e.target.value)}
-              placeholder="Premier Balcony Suite"
+              placeholder={t("cb.namePlaceholder")}
             />
           </StaffField>
           <StaffField label={t("cb.sizeBadge")}>
@@ -382,7 +376,7 @@ function CabinFormDialog({
             className={staffInputClass}
             value={form.tagline}
             onChange={(e) => set("tagline", e.target.value)}
-            placeholder="Floor-to-ceiling glass, private deck, river at your doorstep."
+            placeholder={t("cb.taglinePlaceholder")}
           />
         </StaffField>
 
@@ -399,7 +393,7 @@ function CabinFormDialog({
             className={`${staffInputClass} min-h-28 font-mono text-xs`}
             value={form.features}
             onChange={(e) => set("features", e.target.value)}
-            placeholder={"Private river-facing balcony\nKing-size bed with Egyptian cotton"}
+            placeholder={t("cb.featuresPlaceholder")}
           />
         </StaffField>
 
@@ -441,7 +435,7 @@ function CabinFormDialog({
             onClick={onClose}
             className="px-5 py-2.5 rounded-full border border-border text-xs uppercase tracking-[0.15em] font-semibold"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             type="submit"
@@ -449,7 +443,7 @@ function CabinFormDialog({
             className="flex items-center gap-2 px-5 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-40"
           >
             {saveMutation.isPending && <Loader2 className="size-3.5 animate-spin" />}
-            {cabin ? "Save changes" : "Create cabin"}
+            {cabin ? t("common.save") : t("cb.createCabin")}
           </button>
         </div>
       </form>
@@ -557,7 +551,7 @@ function CabinPhotosDialog({
             ) : (
               <ImagePlus className="size-3.5" />
             )}
-            Add photos
+            {t("rs.addPhotos")}
           </button>
         </div>
 
@@ -618,7 +612,7 @@ function CabinPhotosDialog({
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-            No photos yet. The first photo you add becomes the card image automatically.
+            {t("cb.noPhotosCard")}
           </div>
         )}
       </div>

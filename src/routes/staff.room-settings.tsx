@@ -42,7 +42,9 @@ import {
   updateStaffShip,
   uploadStaffRoomImage,
 } from "@/lib/api/staff";
-import { formatBDT } from "@/lib/money";
+import { useLanguage, useT } from "@/lib/i18n";
+import { money, num } from "@/lib/i18n/format";
+import type { StringKey } from "@/lib/i18n/strings";
 import type { StaffKidRule, StaffRoom, StaffRoomImage, StaffShip } from "@/lib/api/staffTypes";
 import type { KidChargeType, RoomType } from "@/lib/api/types";
 
@@ -51,25 +53,23 @@ export const Route = createFileRoute("/staff/room-settings")({
 });
 
 const TABS = [
-  { key: "room-types", label: "Room Types", hint: "Prices & pax limits", icon: BedDouble },
-  { key: "kid-pricing", label: "Kid Pricing", hint: "Age-based fares", icon: Baby },
+  { key: "room-types", label: "rs.tabRoomTypes", hint: "rs.tabRoomTypesHint", icon: BedDouble },
+  { key: "kid-pricing", label: "rs.tabKid", hint: "rs.tabKidHint", icon: Baby },
   // Sits beside kid pricing because it is the same kind of thing: a global
   // fare policy, not a per-sailing price.
-  { key: "foreigner", label: "Foreigner Surcharge", hint: "Extra per foreign guest", icon: Globe },
-  { key: "room-photos", label: "Room Photos", hint: "Per-room gallery", icon: Images },
-] as const;
+  { key: "foreigner", label: "rs.tabForeigner", hint: "rs.tabForeignerHint", icon: Globe },
+  { key: "room-photos", label: "rs.tabPhotos", hint: "rs.tabPhotosHint", icon: Images },
+] as const satisfies readonly { key: string; label: StringKey; hint: StringKey; icon: unknown }[];
 
 type TabKey = (typeof TABS)[number]["key"];
 
 function RoomSettingsPage() {
+  const t = useT();
   const [activeTab, setActiveTab] = useState<TabKey>("room-types");
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      <PageHeader
-        title="Room Settings"
-        subtitle="Prices & pax limits — changes take effect immediately on every new booking."
-      />
+      <PageHeader title={t("rs.title")} subtitle={t("rs.subtitle")} />
 
       {/* Tab bar */}
       <div className="flex gap-2 border-b border-border">
@@ -87,8 +87,8 @@ function RoomSettingsPage() {
             >
               <Icon className={`size-4 ${active ? "text-gold" : "text-muted-foreground"}`} />
               <span>
-                <span className="font-medium block leading-none">{label}</span>
-                <span className="text-[10px] text-muted-foreground block mt-1">{hint}</span>
+                <span className="font-medium block leading-none">{t(label)}</span>
+                <span className="text-[10px] text-muted-foreground block mt-1">{t(hint)}</span>
               </span>
             </button>
           );
@@ -130,26 +130,28 @@ function useEditLock(reset?: () => void) {
 
 /** The "Edit" affordance in a locked card's header. */
 function EditButton({ onClick }: { onClick: () => void }) {
+  const t = useT();
   return (
     <button
       type="button"
       onClick={onClick}
       className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-[10px] uppercase tracking-[0.12em] font-semibold text-muted-foreground hover:border-gold hover:text-gold-text transition-colors"
     >
-      <Pencil className="size-3" /> Edit
+      <Pencil className="size-3" /> {t("common.edit")}
     </button>
   );
 }
 
 /** Cancel beside Save, so backing out is as easy as committing. */
 function CancelButton({ onClick }: { onClick: () => void }) {
+  const t = useT();
   return (
     <button
       type="button"
       onClick={onClick}
       className="px-4 py-2.5 rounded-full border border-border text-xs uppercase tracking-[0.15em] font-semibold text-muted-foreground hover:border-foreground hover:text-foreground transition-colors"
     >
-      Cancel
+      {t("common.cancel")}
     </button>
   );
 }
@@ -157,6 +159,7 @@ function CancelButton({ onClick }: { onClick: () => void }) {
 /* ── Room types ───────────────────────────────────────────────────────────── */
 
 function RoomTypesSection() {
+  const t = useT();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["staff", "room-types"],
@@ -170,7 +173,7 @@ function RoomTypesSection() {
       return updateStaffRoomType(id, payload);
     },
     onSuccess: () => {
-      toast.success("Room type updated.");
+      toast.success(t("rs.roomTypeUpdated"));
       queryClient.invalidateQueries({ queryKey: ["staff", "room-types"] });
     },
     onError: (err) => toast.error(errorText(err)),
@@ -186,14 +189,11 @@ function RoomTypesSection() {
     <section className="space-y-4 pt-6">
       {ship && <FareBasisCard ship={ship} />}
 
-      <p className="text-xs text-muted-foreground">
-        A cabin&rsquo;s fare comes from the berths it has and the adult fare above. Pax limits are
-        enforced by the booking API — the frontend cannot bypass them.
-      </p>
+      <p className="text-xs text-muted-foreground">{t("rs.cabinFareNote")}</p>
 
       {isLoading ? (
         <div className="p-16 flex items-center justify-center gap-3 text-muted-foreground">
-          <Loader2 className="size-5 animate-spin text-gold" /> Loading room types…
+          <Loader2 className="size-5 animate-spin text-gold" /> {t("rs.loadingRoomTypes")}
         </div>
       ) : (
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -230,6 +230,7 @@ function RoomTypeCard({
   onSave: (payload: Partial<RoomType>) => void;
   saving: boolean;
 }) {
+  const { t, lang } = useLanguage();
   const [basePrice, setBasePrice] = useState(roomType.base_price);
   // Shown only when it is doing something. A per-cabin surcharge is the rare
   // case, but one silently adding money to every booking is worse than clutter.
@@ -260,13 +261,13 @@ function RoomTypeCard({
         <div className="min-w-0 flex-1">
           <div className="font-display text-base leading-tight truncate">{roomType.name}</div>
           <div className="text-[10px] text-muted-foreground">
-            Sleeps up to {maxAdults} adult(s) + {maxKids} kid(s)
+            {t("rs.sleepsUpTo", { adults: num(maxAdults, lang), kids: num(maxKids, lang) })}
           </div>
         </div>
         {lock.editing ? (
           dirty && (
             <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-gold/15 text-gold shrink-0">
-              Unsaved
+              {t("common.unsaved")}
             </span>
           )
         ) : (
@@ -278,7 +279,7 @@ function RoomTypeCard({
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
             <span className="eyebrow text-muted-foreground text-[10px] mb-1.5 flex items-center gap-1">
-              <Users className="size-3" /> Max adults
+              <Users className="size-3" /> {t("rs.maxAdults")}
             </span>
             <input
               type="number"
@@ -294,13 +295,13 @@ function RoomTypeCard({
             {berthAllowance !== null && (
               <span className="mt-1.5 flex items-start gap-1 text-[10px] text-gold-text leading-snug">
                 <AlertTriangle className="size-3 shrink-0 mt-px" />
-                Also how many berths are charged — changing it changes this cabin&rsquo;s fare.
+                {t("rs.berthWarning")}
               </span>
             )}
           </label>
           <label className="block">
             <span className="eyebrow text-muted-foreground text-[10px] mb-1.5 flex items-center gap-1">
-              <Baby className="size-3" /> Max kids
+              <Baby className="size-3" /> {t("rs.maxKids")}
             </span>
             <input
               type="number"
@@ -324,14 +325,14 @@ function RoomTypeCard({
         {showBase ? (
           <label className="block">
             <span className="eyebrow text-muted-foreground text-[10px] mb-1.5 flex items-center justify-between gap-2">
-              <span>Base price per room</span>
+              <span>{t("rs.basePrice")}</span>
               <button
                 type="button"
                 onClick={() => setShowBase(false)}
                 disabled={Number(basePrice || 0) !== 0}
                 className="normal-case tracking-normal text-[10px] text-muted-foreground hover:text-foreground disabled:opacity-0"
               >
-                hide
+                {t("rs.hide")}
               </button>
             </span>
             <div className="relative">
@@ -349,8 +350,7 @@ function RoomTypeCard({
               />
             </div>
             <span className="mt-1.5 block text-[10px] text-muted-foreground leading-snug">
-              Added once per cabin, on top of the berth fare. Leave at 0 unless this cabin costs
-              more for a reason other than its size.
+              {t("rs.basePriceHint")}
             </span>
           </label>
         ) : (
@@ -360,7 +360,7 @@ function RoomTypeCard({
               onClick={() => setShowBase(true)}
               className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2"
             >
-              Add a per-cabin base price
+              {t("rs.addBasePrice")}
             </button>
           )
         )}
@@ -389,7 +389,7 @@ function RoomTypeCard({
               ) : (
                 <Save className="size-3.5" />
               )}
-              Save changes
+              {t("common.save")}
             </button>
           </div>
         )}
@@ -402,23 +402,23 @@ function RoomTypeCard({
 
 const CHARGE_META: Record<
   KidChargeType,
-  { label: string; hint: string; icon: typeof Gift; badge: string }
+  { label: StringKey; hint: StringKey; icon: typeof Gift; badge: string }
 > = {
   free: {
-    label: "Free",
-    hint: "No charge for this age range",
+    label: "rs.chargeFree",
+    hint: "rs.chargeFreeHint",
     icon: Gift,
     badge: "bg-emerald-500/10 text-emerald-700",
   },
   fixed: {
-    label: "Fixed charge",
-    hint: "Flat amount per kid in this age range",
+    label: "rs.chargeFixed",
+    hint: "rs.chargeFixedHint",
     icon: Ticket,
     badge: "bg-gold/15 text-gold",
   },
   full_adult: {
-    label: "Full adult fare",
-    hint: "Charged the package's adult price",
+    label: "rs.fullAdultFare",
+    hint: "rs.chargeFullHint",
     icon: UserRound,
     badge: "bg-ocean/10 text-ocean",
   },
@@ -435,6 +435,7 @@ const CHARGE_META: Record<
  *  customers were quoted.
  */
 function ForeignerSurchargeSection() {
+  const { t, lang } = useLanguage();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["staff", "foreigner-surcharge"],
@@ -454,7 +455,7 @@ function ForeignerSurchargeSection() {
   const mutation = useMutation({
     mutationFn: () => updateStaffForeignerSurcharge({ adult_amount: adult, kid_amount: kid }),
     onSuccess: (saved) => {
-      toast.success("Foreigner surcharge updated.");
+      toast.success(t("rs.foreignerUpdated"));
       setDraft(null);
       lock.done();
       queryClient.setQueryData(["staff", "foreigner-surcharge"], saved);
@@ -466,7 +467,7 @@ function ForeignerSurchargeSection() {
     return (
       <section className="pt-6">
         <div className="p-16 flex items-center justify-center gap-3 text-muted-foreground">
-          <Loader2 className="size-5 animate-spin text-gold" /> Loading surcharge…
+          <Loader2 className="size-5 animate-spin text-gold" /> {t("rs.loadingSurcharge")}
         </div>
       </section>
     );
@@ -486,15 +487,15 @@ function ForeignerSurchargeSection() {
             <Globe className="size-4.5 text-gold-text" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="font-display text-base leading-tight truncate">Foreigner surcharge</div>
-            <div className="text-[10px] text-muted-foreground">
-              One rate for every sailing, charged once per foreign guest
+            <div className="font-display text-base leading-tight truncate">
+              {t("rs.foreignerTitle")}
             </div>
+            <div className="text-[10px] text-muted-foreground">{t("rs.foreignerHint")}</div>
           </div>
           {lock.editing ? (
             dirty && (
               <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-gold/15 text-gold shrink-0">
-                Unsaved
+                {t("common.unsaved")}
               </span>
             )
           ) : (
@@ -505,20 +506,20 @@ function ForeignerSurchargeSection() {
         <div className="p-5 space-y-4">
           <div className="grid sm:grid-cols-2 gap-5 items-start">
             <MoneyField
-              label="Per foreign adult (BDT)"
+              label={t("rs.perForeignAdult")}
               value={adult}
               onChange={(value) => setDraft({ adult: value, kid })}
               disabled={!lock.editing}
               placeholder="0.00"
-              hint="Added once, on top of the adult fare they already pay."
+              hint={t("rs.foreignAdultHint")}
             />
             <MoneyField
-              label="Per foreign child (BDT)"
+              label={t("rs.perForeignChild")}
               value={kid}
               onChange={(value) => setDraft({ adult, kid: value })}
               disabled={!lock.editing}
               placeholder="0.00"
-              hint="Charged even when the child's age tier is free."
+              hint={t("rs.foreignChildHint")}
             />
           </div>
 
@@ -528,18 +529,14 @@ function ForeignerSurchargeSection() {
           <div className="rounded-xl bg-muted/40 px-4 py-3 text-xs text-muted-foreground leading-relaxed">
             {bothZero ? (
               <>
-                <strong className="text-foreground">No surcharge right now.</strong> Foreign guests
-                pay exactly what everyone else pays — their passport is still collected for the
-                boarding manifest.
+                <strong className="text-foreground">{t("rs.noSurchargeNow")}</strong>{" "}
+                {t("rs.noSurchargeBody")}
               </>
             ) : (
-              <>
-                A foreign adult pays{" "}
-                <strong className="text-foreground">{formatBDT(adult || "0")}</strong> more than a
-                local guest, and a foreign child{" "}
-                <strong className="text-foreground">{formatBDT(kid || "0")}</strong> more — once
-                each, whatever cabin they take.
-              </>
+              t("rs.surchargeBody", {
+                adult: money(adult || "0", lang),
+                kid: money(kid || "0", lang),
+              })
             )}
           </div>
         </div>
@@ -547,9 +544,7 @@ function ForeignerSurchargeSection() {
         <div className="px-5 pb-5 flex items-center justify-between gap-4 flex-wrap">
           {/* The reassurance that makes a global rate safe to touch: staff need
               to know an edit cannot reach money already collected. */}
-          <span className="text-[10px] text-muted-foreground">
-            Applies to new bookings only — bookings already made keep the rate they were charged.
-          </span>
+          <span className="text-[10px] text-muted-foreground">{t("rs.newBookingsOnly")}</span>
           {lock.editing && (
             <div className="flex items-center gap-2 shrink-0">
               <CancelButton onClick={lock.cancel} />
@@ -563,7 +558,7 @@ function ForeignerSurchargeSection() {
                 ) : (
                   <Save className="size-3.5" />
                 )}
-                Save changes
+                {t("common.save")}
               </button>
             </div>
           )}
@@ -574,6 +569,7 @@ function ForeignerSurchargeSection() {
 }
 
 function KidPricingSection() {
+  const { t, lang } = useLanguage();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["staff", "kid-rules"],
@@ -590,7 +586,7 @@ function KidPricingSection() {
       return updateStaffKidRule(id, payload);
     },
     onSuccess: () => {
-      toast.success("Kid pricing rule updated.");
+      toast.success(t("rs.ruleUpdated"));
       invalidate();
     },
     onError: (err) => toast.error(errorText(err)),
@@ -600,7 +596,7 @@ function KidPricingSection() {
   const createMutation = useMutation({
     mutationFn: createStaffKidRule,
     onSuccess: () => {
-      toast.success("Kid pricing rule added.");
+      toast.success(t("rs.ruleAdded"));
       setShowAdd(false);
       invalidate();
     },
@@ -610,7 +606,7 @@ function KidPricingSection() {
   const deleteMutation = useMutation({
     mutationFn: deleteStaffKidRule,
     onSuccess: () => {
-      toast.success("Kid pricing rule deleted.");
+      toast.success(t("rs.ruleDeleted"));
       invalidate();
     },
     onError: (err) => toast.error(errorText(err)),
@@ -620,18 +616,16 @@ function KidPricingSection() {
     <section className="space-y-4 pt-6">
       {isLoading ? (
         <div className="p-16 flex items-center justify-center gap-3 text-muted-foreground">
-          <Loader2 className="size-5 animate-spin text-gold" /> Loading kid pricing rules…
+          <Loader2 className="size-5 animate-spin text-gold" /> {t("rs.loadingKidRules")}
         </div>
       ) : (
         <div className="space-y-4">
           <div className="flex items-start gap-2.5 rounded-xl border border-gold/30 bg-gold/5 px-4 py-3 text-xs text-muted-foreground">
             <Info className="size-4 text-gold shrink-0 mt-0.5" />
             <p>
-              Age ranges are{" "}
-              <strong className="text-foreground">min-inclusive, max-exclusive</strong>: a rule 3 →
-              8 covers kids aged 3, 4, … 7. To move the full-fare boundary from 8 to 9, set the
-              fixed rule to 3 → 9 and the adult rule to 9 → 99 — no code change needed. Ranges must
-              not overlap.
+              {t("rs.ageRuleNote1")}{" "}
+              <strong className="text-foreground">{t("rs.ageRuleNoteBold")}</strong>
+              {t("rs.ageRuleNote2")}
             </p>
           </div>
 
@@ -639,14 +633,14 @@ function KidPricingSection() {
 
           <div className="flex items-center justify-between">
             <span className="eyebrow text-muted-foreground text-[10px]">
-              {data?.length ?? 0} rule(s)
+              {t("rs.ruleCount", { n: num(data?.length ?? 0, lang) })}
             </span>
             <button
               onClick={() => setShowAdd((v) => !v)}
               className="flex items-center gap-2 px-4 py-2 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe"
             >
               <Plus className="size-3.5" />
-              Add rule
+              {t("rs.addRule")}
             </button>
           </div>
 
@@ -660,8 +654,7 @@ function KidPricingSection() {
 
           {(!data || data.length === 0) && !showAdd && (
             <div className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-              No kid pricing rules yet. Bookings with children will fail until you add rules
-              covering their ages. Click <strong>Add rule</strong> to start.
+              {t("rs.noKidRules1")} <strong>{t("rs.addRule")}</strong> {t("rs.noKidRules2")}
             </div>
           )}
 
@@ -674,7 +667,7 @@ function KidPricingSection() {
                 deleting={deleteMutation.isPending && deleteMutation.variables === rule.id}
                 onSave={(payload) => mutation.mutate({ id: rule.id, payload })}
                 onDelete={() => {
-                  if (confirm("Delete this kid pricing rule?")) deleteMutation.mutate(rule.id);
+                  if (confirm(t("rs.confirmDeleteRule"))) deleteMutation.mutate(rule.id);
                 }}
               />
             ))}
@@ -696,6 +689,7 @@ function AddKidRuleForm({
   onCancel: () => void;
   saving: boolean;
 }) {
+  const t = useT();
   const [minAge, setMinAge] = useState(0);
   const [maxAge, setMaxAge] = useState(3);
   const [chargeType, setChargeType] = useState<KidChargeType>("free");
@@ -705,12 +699,12 @@ function AddKidRuleForm({
 
   return (
     <div className="rounded-2xl border border-gold/50 bg-card shadow-luxe p-5 space-y-4">
-      <div className="font-display text-base">New kid pricing rule</div>
+      <div className="font-display text-base">{t("rs.newKidRule")}</div>
 
       <div className="grid sm:grid-cols-2 gap-3">
         <label className="block">
           <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
-            Age from (incl.)
+            {t("rs.ageFrom")}
           </span>
           <input
             type="number"
@@ -722,7 +716,7 @@ function AddKidRuleForm({
         </label>
         <label className="block">
           <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
-            Age to (excl.)
+            {t("rs.ageTo")}
           </span>
           <input
             type="number"
@@ -735,22 +729,24 @@ function AddKidRuleForm({
       </div>
 
       <label className="block">
-        <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">Charge type</span>
+        <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
+          {t("rs.chargeType")}
+        </span>
         <select
           value={chargeType}
           onChange={(e) => setChargeType(e.target.value as KidChargeType)}
           className={staffInputClass}
         >
-          <option value="free">Free — no charge</option>
-          <option value="fixed">Fixed charge — flat amount per kid</option>
-          <option value="full_adult">Full adult fare</option>
+          <option value="free">{t("rs.freeNoCharge")}</option>
+          <option value="fixed">{t("rs.fixedCharge")}</option>
+          <option value="full_adult">{t("rs.fullAdultFare")}</option>
         </select>
       </label>
 
       {isFixed && (
         <label className="block">
           <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
-            Charge per kid
+            {t("rs.chargePerKid")}
           </span>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
@@ -772,7 +768,7 @@ function AddKidRuleForm({
           onClick={onCancel}
           className="flex-1 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold border border-border text-muted-foreground"
         >
-          Cancel
+          {t("common.cancel")}
         </button>
         <button
           disabled={!valid || saving}
@@ -787,7 +783,7 @@ function AddKidRuleForm({
           className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
         >
           {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
-          Add rule
+          {t("rs.addRule")}
         </button>
       </div>
     </div>
@@ -797,6 +793,7 @@ function AddKidRuleForm({
 /* ── Room photos ──────────────────────────────────────────────────────────── */
 
 function RoomPhotosSection() {
+  const { t, lang } = useLanguage();
   const queryClient = useQueryClient();
   const { data: roomsData, isLoading: roomsLoading } = useQuery({
     queryKey: ["staff", "rooms"],
@@ -839,7 +836,7 @@ function RoomPhotosSection() {
   if (roomsLoading || imagesLoading) {
     return (
       <div className="p-16 flex items-center justify-center gap-3 text-muted-foreground">
-        <Loader2 className="size-5 animate-spin text-gold" /> Loading room photos…
+        <Loader2 className="size-5 animate-spin text-gold" /> {t("rs.loadingPhotos")}
       </div>
     );
   }
@@ -850,15 +847,12 @@ function RoomPhotosSection() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Find room number…"
+          placeholder={t("rs.findRoom")}
           className={`${staffInputClass} max-w-xs`}
         />
         <div className="flex items-start gap-2 text-[11px] text-muted-foreground max-w-md">
           <Info className="size-3.5 text-gold shrink-0 mt-0.5" />
-          <p>
-            Photos show on the customer room picker. Keep files under ~1 MB (hard limit 10 MB).
-            Click a room to manage its gallery.
-          </p>
+          <p>{t("rs.photosNote")}</p>
         </div>
       </div>
 
@@ -868,10 +862,13 @@ function RoomPhotosSection() {
           <div key={floor ?? "none"} className="space-y-3">
             <div className="flex items-baseline justify-between border-b border-border pb-2">
               <span className="eyebrow text-muted-foreground text-[10px]">
-                {floor === null ? "Unassigned floor" : `Floor ${floor}`}
+                {floor === null ? t("rs.unassignedFloor") : t("rs.floorN", { n: num(floor, lang) })}
               </span>
               <span className="text-[10px] text-muted-foreground">
-                {floorRooms.length} room(s) · {photoCount} photo(s)
+                {t("rs.roomPhotoCount", {
+                  rooms: num(floorRooms.length, lang),
+                  photos: num(photoCount, lang),
+                })}
               </span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
@@ -890,7 +887,7 @@ function RoomPhotosSection() {
 
       {floors.length === 0 && (
         <div className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-          No rooms match "{search}".
+          {t("rs.noRoomsMatch", { q: search })}
         </div>
       )}
 
@@ -917,6 +914,7 @@ function RoomPhotoTile({
   images: StaffRoomImage[];
   onOpen: () => void;
 }) {
+  const { t, lang } = useLanguage();
   const cover = images[0];
   return (
     <button
@@ -941,16 +939,20 @@ function RoomPhotoTile({
             images.length ? "bg-black/55 text-white" : "bg-amber-100/95 text-amber-700"
           }`}
         >
-          {images.length ? `${images.length} photo${images.length > 1 ? "s" : ""}` : "No photos"}
+          {images.length
+            ? t("rs.photoCount", { n: num(images.length, lang) })
+            : t("rs.noPhotosBadge")}
         </span>
         <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity grid place-items-center">
           <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 text-ocean text-[10px] font-semibold uppercase tracking-[0.12em]">
-            <ImagePlus className="size-3" /> Manage
+            <ImagePlus className="size-3" /> {t("common.manage")}
           </span>
         </div>
       </div>
       <div className="px-3.5 py-2.5">
-        <div className="font-display text-base leading-none">Room {room.room_number}</div>
+        <div className="font-display text-base leading-none">
+          {t("rs.roomN", { n: room.room_number })}
+        </div>
         <div className="text-[10px] text-muted-foreground mt-1 truncate">{room.room_type_name}</div>
       </div>
     </button>
@@ -969,6 +971,7 @@ function RoomGalleryDialog({
   onClose: () => void;
   invalidate: () => void;
 }) {
+  const { t, lang } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -984,7 +987,7 @@ function RoomGalleryDialog({
       return files.length;
     },
     onSuccess: (count) => {
-      toast.success(`${count} photo(s) added to room ${room.room_number}.`);
+      toast.success(t("rs.photosAdded", { count: num(count, lang), room: room.room_number }));
       invalidate();
     },
     onError: (err) => {
@@ -997,7 +1000,7 @@ function RoomGalleryDialog({
   const deleteMutation = useMutation({
     mutationFn: deleteStaffRoomImage,
     onSuccess: () => {
-      toast.success("Photo deleted.");
+      toast.success(t("rs.photoDeleted"));
       invalidate();
     },
     onError: (err) => toast.error(errorText(err)),
@@ -1030,13 +1033,14 @@ function RoomGalleryDialog({
   });
 
   return (
-    <DialogShell wide title={`Room ${room.room_number} — Photos`} onClose={onClose}>
+    <DialogShell wide title={t("rs.roomPhotosTitle", { n: room.room_number })} onClose={onClose}>
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div className="text-xs text-muted-foreground">
             {room.room_type_name}
-            {room.floor_number ? ` · Floor ${room.floor_number}` : ""} · {images.length} photo(s) —
-            lower order shows first on the customer site.
+            {room.floor_number
+              ? ` · ${t("rs.floorN", { n: num(room.floor_number, lang) })}`
+              : ""} · {t("rs.galleryNote", { photos: num(images.length, lang) })}
           </div>
           <input
             ref={fileInputRef}
@@ -1060,7 +1064,7 @@ function RoomGalleryDialog({
             ) : (
               <ImagePlus className="size-3.5" />
             )}
-            Add photos
+            {t("rs.addPhotos")}
           </button>
         </div>
 
@@ -1071,16 +1075,16 @@ function RoomGalleryDialog({
                 <div className="relative group rounded-xl overflow-hidden border border-border">
                   <img
                     src={img.image_url}
-                    alt={img.caption || `Room ${room.room_number} photo`}
+                    alt={img.caption || t("rs.roomN", { n: room.room_number })}
                     className="h-32 w-full object-cover"
                     loading="lazy"
                   />
                   <span className="absolute top-1.5 left-1.5 size-5 grid place-items-center rounded-full bg-black/55 text-white text-[9px] font-semibold">
-                    {index + 1}
+                    {num(index + 1, lang)}
                   </span>
                   <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
                     <button
-                      title="Show earlier"
+                      title={t("rs.showEarlier")}
                       disabled={index === 0 || moveMutation.isPending}
                       onClick={() => moveMutation.mutate({ index, dir: -1 })}
                       className="size-7 grid place-items-center rounded-lg bg-white/90 text-ocean disabled:opacity-40"
@@ -1088,7 +1092,7 @@ function RoomGalleryDialog({
                       <ChevronLeft className="size-4" />
                     </button>
                     <button
-                      title="Show later"
+                      title={t("rs.showLater")}
                       disabled={index === images.length - 1 || moveMutation.isPending}
                       onClick={() => moveMutation.mutate({ index, dir: 1 })}
                       className="size-7 grid place-items-center rounded-lg bg-white/90 text-ocean disabled:opacity-40"
@@ -1096,10 +1100,10 @@ function RoomGalleryDialog({
                       <ChevronRight className="size-4" />
                     </button>
                     <button
-                      title="Delete photo"
+                      title={t("rs.deletePhoto")}
                       disabled={deleteMutation.isPending}
                       onClick={() => {
-                        if (confirm("Delete this photo?")) deleteMutation.mutate(img.id);
+                        if (confirm(t("rs.confirmDeletePhoto"))) deleteMutation.mutate(img.id);
                       }}
                       className="size-7 grid place-items-center rounded-lg bg-white/90 text-destructive disabled:opacity-40"
                     >
@@ -1121,10 +1125,8 @@ function RoomGalleryDialog({
             className="w-full rounded-2xl border-2 border-dashed border-border hover:border-gold/50 transition-colors p-10 text-center text-sm text-muted-foreground"
           >
             <Images className="size-8 mx-auto mb-2 text-ocean/25" />
-            No photos yet — customers see this room without a gallery.
-            <span className="block mt-1 text-xs text-gold font-medium">
-              Click to upload the first photo
-            </span>
+            {t("rs.noPhotos")}
+            <span className="block mt-1 text-xs text-gold font-medium">{t("rs.uploadFirst")}</span>
           </button>
         )}
       </div>
@@ -1134,6 +1136,7 @@ function RoomGalleryDialog({
 
 /** Uncontrolled-ish caption field: saves on blur/Enter only when changed. */
 function CaptionInput({ initial, onSave }: { initial: string; onSave: (caption: string) => void }) {
+  const t = useT();
   const [value, setValue] = useState(initial);
   const commit = () => {
     if (value.trim() !== initial) onSave(value.trim());
@@ -1144,7 +1147,7 @@ function CaptionInput({ initial, onSave }: { initial: string; onSave: (caption: 
       onChange={(e) => setValue(e.target.value)}
       onBlur={commit}
       onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-      placeholder="Caption (optional)"
+      placeholder={t("rs.captionOptional")}
       className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-[11px] focus:outline-none focus:border-gold"
     />
   );
@@ -1160,6 +1163,7 @@ const CHARGE_BAR: Record<KidChargeType, string> = {
 /** Visual timeline of how the kid-pricing rules tile across ages 0→AXIS_MAX.
  * Surfaces gaps and overlaps that are hard to see as three number pairs. */
 function AgeTimeline({ rules }: { rules: StaffKidRule[] }) {
+  const { t, lang } = useLanguage();
   const AXIS_MAX = 18;
   const ordered = useMemo(() => [...rules].sort((a, b) => a.min_age - b.min_age), [rules]);
 
@@ -1179,14 +1183,14 @@ function AgeTimeline({ rules }: { rules: StaffKidRule[] }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
       <div className="flex items-center justify-between mb-3">
-        <span className="eyebrow text-muted-foreground text-[10px]">Age coverage</span>
+        <span className="eyebrow text-muted-foreground text-[10px]">{t("rs.ageCoverage")}</span>
         {gaps.length > 0 ? (
           <span className="text-[10px] font-semibold text-destructive">
-            {gaps.length} gap(s) — some ages have no rule
+            {t("rs.gapsFound", { n: num(gaps.length, lang) })}
           </span>
         ) : (
           <span className="text-[10px] font-medium text-emerald-600">
-            Fully covered 0–{AXIS_MAX}
+            {t("rs.fullyCovered", { max: num(AXIS_MAX, lang) })}
           </span>
         )}
       </div>
@@ -1198,7 +1202,7 @@ function AgeTimeline({ rules }: { rules: StaffKidRule[] }) {
             key={`gap-${i}`}
             className="absolute inset-y-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_5px,var(--color-destructive)_5px,var(--color-destructive)_6px)] opacity-30"
             style={{ left: pct(g.from), width: pct(g.to - g.from) }}
-            title={`No rule for ages ${g.from}–${g.to}`}
+            title={t("rs.noRuleForAges", { from: num(g.from, lang), to: num(g.to, lang) })}
           />
         ))}
         {ordered.map((r) => {
@@ -1209,9 +1213,9 @@ function AgeTimeline({ rules }: { rules: StaffKidRule[] }) {
               key={r.id}
               className={`absolute inset-y-1 rounded-md ${CHARGE_BAR[r.charge_type]} grid place-items-center text-[9px] font-semibold text-white/95 overflow-hidden`}
               style={{ left, width }}
-              title={`${CHARGE_META[r.charge_type].label}: ${r.min_age}–${r.max_age}`}
+              title={`${t(CHARGE_META[r.charge_type].label)}: ${r.min_age}–${r.max_age}`}
             >
-              {r.min_age}–{r.max_age}
+              {num(r.min_age, lang)}–{num(r.max_age, lang)}
             </div>
           );
         })}
@@ -1219,13 +1223,13 @@ function AgeTimeline({ rules }: { rules: StaffKidRule[] }) {
 
       {/* Axis ticks */}
       <div className="relative h-4 mt-1">
-        {[0, 3, 6, 9, 12, 15, 18].map((t) => (
+        {[0, 3, 6, 9, 12, 15, 18].map((tick) => (
           <span
-            key={t}
+            key={tick}
             className="absolute -translate-x-1/2 text-[9px] text-muted-foreground"
-            style={{ left: pct(t) }}
+            style={{ left: pct(tick) }}
           >
-            {t}
+            {num(tick, lang)}
           </span>
         ))}
       </div>
@@ -1235,7 +1239,7 @@ function AgeTimeline({ rules }: { rules: StaffKidRule[] }) {
         {(Object.keys(CHARGE_BAR) as KidChargeType[]).map((k) => (
           <span key={k} className="inline-flex items-center gap-1.5">
             <span className={`size-2.5 rounded-full ${CHARGE_BAR[k]}`} />
-            {CHARGE_META[k].label}
+            {t(CHARGE_META[k].label)}
           </span>
         ))}
       </div>
@@ -1256,6 +1260,7 @@ function KidRuleCard({
   saving: boolean;
   deleting: boolean;
 }) {
+  const { t, lang } = useLanguage();
   const [minAge, setMinAge] = useState(rule.min_age);
   const [maxAge, setMaxAge] = useState(rule.max_age);
   const [amount, setAmount] = useState(rule.amount ?? "");
@@ -1281,17 +1286,17 @@ function KidRuleCard({
           <MetaIcon className="size-4.5 text-ocean" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="font-display text-base leading-tight">{meta.label}</div>
-          <div className="text-[10px] text-muted-foreground">{meta.hint}</div>
+          <div className="font-display text-base leading-tight">{t(meta.label)}</div>
+          <div className="text-[10px] text-muted-foreground">{t(meta.hint)}</div>
         </div>
         <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${meta.badge}`}>
-          {minAge}–{maxAge} yrs
+          {t("rs.yrs", { from: num(minAge, lang), to: num(maxAge, lang) })}
         </span>
         {lock.editing ? (
           <button
             onClick={onDelete}
             disabled={deleting}
-            title="Delete rule"
+            title={t("rs.deleteRule")}
             className="size-7 grid place-items-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-40"
           >
             {deleting ? (
@@ -1309,7 +1314,7 @@ function KidRuleCard({
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
             <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
-              Age from (incl.)
+              {t("rs.ageFrom")}
             </span>
             <input
               type="number"
@@ -1323,7 +1328,7 @@ function KidRuleCard({
           </label>
           <label className="block">
             <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
-              Age to (excl.)
+              {t("rs.ageTo")}
             </span>
             <input
               type="number"
@@ -1340,7 +1345,7 @@ function KidRuleCard({
         {isFixed && (
           <label className="block">
             <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
-              Charge per kid
+              {t("rs.chargePerKid")}
             </span>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
@@ -1379,7 +1384,7 @@ function KidRuleCard({
               ) : (
                 <Save className="size-3.5" />
               )}
-              Save changes
+              {t("common.save")}
             </button>
           </div>
         )}
@@ -1410,12 +1415,14 @@ function CabinFarePreview({
   adultFare: string | null;
   berthAllowance: string | null;
 }) {
-  const pax = `up to ${maxAdults + maxKids} pax`;
+  const { t, lang } = useLanguage();
+  const bdt = (amount: number) => money(String(amount), lang);
+  const pax = t("rs.upToPax", { n: num(maxAdults + maxKids, lang) });
 
   if (!adultFare) {
     return (
       <div className="rounded-xl bg-muted/40 px-4 py-2.5 text-xs text-muted-foreground">
-        Set a default adult fare above to see what this cabin costs · {pax}
+        {t("rs.setFareFirst", { pax })}
       </div>
     );
   }
@@ -1426,10 +1433,12 @@ function CabinFarePreview({
   if (berthAllowance === null) {
     return (
       <div className="rounded-xl bg-muted/40 px-4 py-2.5 text-xs space-y-1">
-        <Row label={`${maxAdults} adults`} value={base + perAdult * maxAdults} strong />
-        <div className="text-[10px] text-muted-foreground">
-          Charged per person, so fewer guests pay less · {pax}
-        </div>
+        <Row
+          label={t("rs.adultsN", { n: num(maxAdults, lang) })}
+          value={bdt(base + perAdult * maxAdults)}
+          strong
+        />
+        <div className="text-[10px] text-muted-foreground">{t("rs.perHeadNote", { pax })}</div>
       </div>
     );
   }
@@ -1439,20 +1448,23 @@ function CabinFarePreview({
 
   return (
     <div className="rounded-xl bg-muted/40 px-4 py-2.5 text-xs space-y-1">
-      <Row label={`Full cabin (${maxAdults} berths)`} value={full} strong />
-      {maxAdults > 1 && <Row label="With one berth empty" value={oneEmpty} />}
+      <Row label={t("rs.fullCabin", { berths: num(maxAdults, lang) })} value={bdt(full)} strong />
+      {maxAdults > 1 && <Row label={t("rs.oneBerthEmpty")} value={bdt(oneEmpty)} />}
       <div className="text-[10px] text-muted-foreground pt-0.5">
-        At the default fare of {formatBDT(adultFare)} per adult · {pax}
+        {t("rs.atDefaultFare", { fare: money(adultFare, lang), pax })}
       </div>
     </div>
   );
 }
 
-function Row({ label, value, strong }: { label: string; value: number; strong?: boolean }) {
+/** The amount arrives already formatted: only the caller knows the reader
+ *  language, and a row that reformatted it would print Bangla digits beside
+ *  English ones. */
+function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-muted-foreground">{label}</span>
-      <span className={strong ? "font-semibold" : "font-medium"}>{formatBDT(String(value))}</span>
+      <span className={strong ? "font-semibold" : "font-medium"}>{value}</span>
     </div>
   );
 }
@@ -1466,6 +1478,7 @@ function Row({ label, value, strong }: { label: string; value: number; strong?: 
  *  basis by halves.
  */
 function FareBasisCard({ ship }: { ship: StaffShip }) {
+  const t = useT();
   const queryClient = useQueryClient();
   const [fare, setFare] = useState(ship.default_adult_price ?? "");
   const [whole, setWhole] = useState(ship.meal_allowance !== null);
@@ -1494,7 +1507,7 @@ function FareBasisCard({ ship }: { ship: StaffShip }) {
         meal_allowance: nextAllowance,
       }),
     onSuccess: () => {
-      toast.success("Fare basis saved — applies to new bookings only.");
+      toast.success(t("rs.fareBasisSaved"));
       lock.done();
       queryClient.invalidateQueries({ queryKey: ["staff", "ships"] });
     },
@@ -1513,16 +1526,14 @@ function FareBasisCard({ ship }: { ship: StaffShip }) {
         </div>
         <div className="min-w-0 flex-1">
           <div className="font-display text-base leading-tight truncate">
-            Fare basis · {ship.name}
+            {t("rs.fareBasis")} · {ship.name}
           </div>
-          <div className="text-[10px] text-muted-foreground">
-            What every cabin below is priced from
-          </div>
+          <div className="text-[10px] text-muted-foreground">{t("rs.fareBasisHint")}</div>
         </div>
         {lock.editing ? (
           dirty && (
             <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-gold/15 text-gold shrink-0">
-              Unsaved
+              {t("common.unsaved")}
             </span>
           )
         ) : (
@@ -1543,9 +1554,9 @@ function FareBasisCard({ ship }: { ship: StaffShip }) {
             className="mt-0.5 size-4 shrink-0 accent-gold disabled:opacity-60"
           />
           <span className="text-sm leading-snug">
-            Sell cabins whole
+            {t("rs.sellWhole")}
             <span className="block text-[10px] text-muted-foreground mt-0.5">
-              A cabin costs its full berth count however many people take it.
+              {t("rs.sellWholeHint")}
             </span>
           </span>
         </label>
@@ -1554,30 +1565,28 @@ function FareBasisCard({ ship }: { ship: StaffShip }) {
             they are — what a berth costs, and what an empty one gives back. */}
         <div className="grid md:grid-cols-2 gap-5 items-start">
           <MoneyField
-            label="Default adult fare (BDT)"
+            label={t("rs.defaultAdultFare")}
             value={fare}
             onChange={setFare}
             disabled={!lock.editing}
-            placeholder="e.g. 20000"
-            hint="Pre-fills a new package. Each sailing can still be priced differently."
+            placeholder="20000"
+            hint={t("rs.defaultAdultFareHint")}
           />
           {whole && (
             <MoneyField
-              label="Allowance per empty berth (BDT)"
+              label={t("rs.allowance")}
               value={allowance}
               onChange={setAllowance}
               disabled={!lock.editing}
-              placeholder="e.g. 5000"
-              hint="The food an absent guest would have eaten over the trip."
+              placeholder="5000"
+              hint={t("rs.allowanceHint")}
             />
           )}
         </div>
       </div>
 
       <div className="px-5 pb-5 flex items-center justify-between gap-4 flex-wrap">
-        <span className="text-[10px] text-muted-foreground">
-          Applies to new bookings only — bookings already made keep the price they were given.
-        </span>
+        <span className="text-[10px] text-muted-foreground">{t("rs.newBookingsOnly")}</span>
         {lock.editing && (
           <div className="flex items-center gap-2">
             <CancelButton onClick={lock.cancel} />
@@ -1591,7 +1600,7 @@ function FareBasisCard({ ship }: { ship: StaffShip }) {
               ) : (
                 <Save className="size-3.5" />
               )}
-              Save fare basis
+              {t("rs.saveFareBasis")}
             </button>
           </div>
         )}

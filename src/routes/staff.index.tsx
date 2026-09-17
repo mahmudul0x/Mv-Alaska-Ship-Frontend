@@ -36,9 +36,9 @@ import {
 } from "@/components/staff/ui";
 import { getStaffOverview } from "@/lib/api/staff";
 import type { BookingStatus } from "@/lib/api/types";
-import { formatBDT, parseMoney } from "@/lib/money";
+import { parseMoney } from "@/lib/money";
 import { useLanguage } from "@/lib/i18n";
-import { money, num, percent } from "@/lib/i18n/format";
+import { date, money, num, percent } from "@/lib/i18n/format";
 
 export const Route = createFileRoute("/staff/")({
   component: OverviewPage,
@@ -236,7 +236,7 @@ function OverviewPage() {
                     }
                   />
                   <Tooltip
-                    formatter={(value: number) => [`৳ ${value.toLocaleString()}`, ""]}
+                    formatter={(value: number) => [money(String(value), lang), ""]}
                     cursor={{ fill: "var(--muted)", opacity: 0.35 }}
                     contentStyle={{
                       borderRadius: 12,
@@ -295,7 +295,7 @@ function OverviewPage() {
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                   <div className="font-display text-3xl leading-none">{totalBookings}</div>
                   <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">
-                    Total
+                    {t("common.total")}
                   </div>
                 </div>
               </div>
@@ -332,7 +332,10 @@ function OverviewPage() {
                 <div className="font-medium text-sm mb-3">{ship.ship_name}</div>
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <ShipStat label="Upcoming" value={String(ship.upcoming_packages)} />
-                  <ShipStat label="Active bookings" value={String(ship.active_bookings)} />
+                  <ShipStat
+                    label={t("overview.activeBookings")}
+                    value={num(ship.active_bookings, lang)}
+                  />
                   <ShipStat label={t("label.collected")} value={bdt(ship.paid_total)} />
                   <ShipStat label={t("label.due")} value={bdt(ship.due_total)} tone="gold" />
                 </div>
@@ -348,7 +351,7 @@ function OverviewPage() {
           title={t("overview.recentBookings")}
           action={
             <Link to="/staff/bookings" className="text-xs text-gold hover:underline">
-              View all →
+              {t("overview.viewAll")}
             </Link>
           }
         >
@@ -384,7 +387,7 @@ function OverviewPage() {
           <div className="divide-y divide-border">
             {data.recent_payments.length === 0 ? (
               <div className="py-10 text-center text-sm text-muted-foreground">
-                No payments yet.
+                {t("overview.noPayments")}
               </div>
             ) : (
               data.recent_payments.map((p) => (
@@ -395,7 +398,7 @@ function OverviewPage() {
                   <div className="min-w-0">
                     <div className="font-medium truncate">{p.booking_code}</div>
                     <div className="text-xs text-muted-foreground capitalize">
-                      {p.gateway} {p.paid_at ? `· ${new Date(p.paid_at).toLocaleDateString()}` : ""}
+                      {p.gateway} {p.paid_at ? `· ${date(p.paid_at, lang)}` : ""}
                     </div>
                   </div>
                   <div className="font-medium text-emerald-700 shrink-0">+{bdt(p.amount)}</div>
@@ -411,7 +414,7 @@ function OverviewPage() {
         title={t("overview.recentPackages")}
         action={
           <Link to="/staff/packages" className="text-xs text-gold hover:underline">
-            Manage packages →
+            {t("overview.managePackages")}
           </Link>
         }
       >
@@ -423,7 +426,7 @@ function OverviewPage() {
                   <div className="font-medium truncate">{p.title}</div>
                   {!p.is_bookable && (
                     <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-muted text-muted-foreground shrink-0">
-                      Not bookable
+                      {t("overview.notBookable")}
                     </span>
                   )}
                 </div>

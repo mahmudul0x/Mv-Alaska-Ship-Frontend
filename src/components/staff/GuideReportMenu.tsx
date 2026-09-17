@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { BedDouble, LayoutList } from "lucide-react";
 
+import { useT } from "@/lib/i18n";
+
 /** Two-option guide-report download menu.
  *
  * Clicking the trigger opens a small popover with "Booked rooms" (the dues
@@ -19,6 +21,7 @@ export function GuideReportMenu({
   /** Which edge the popover aligns to (row actions sit at the right edge). */
   align?: "start" | "end";
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -61,9 +64,11 @@ export function GuideReportMenu({
           >
             <BedDouble className="size-4 text-gold shrink-0 mt-0.5" />
             <span>
-              <span className="block text-sm font-semibold text-foreground">Booked rooms</span>
+              <span className="block text-sm font-semibold text-foreground">
+                {t("gr.bookedRooms")}
+              </span>
               <span className="block text-[11px] text-muted-foreground leading-snug">
-                Only booked cabins — the dues collection sheet.
+                {t("gr.bookedOnly")}
               </span>
             </span>
           </button>
@@ -75,9 +80,11 @@ export function GuideReportMenu({
           >
             <LayoutList className="size-4 text-gold shrink-0 mt-0.5" />
             <span>
-              <span className="block text-sm font-semibold text-foreground">All rooms</span>
+              <span className="block text-sm font-semibold text-foreground">
+                {t("gr.allRooms")}
+              </span>
               <span className="block text-[11px] text-muted-foreground leading-snug">
-                Every cabin — booked first, then the available ones.
+                {t("gr.allCabins")}
               </span>
             </span>
           </button>

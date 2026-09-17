@@ -29,8 +29,9 @@ import {
   getStaffRooms,
   unblockPackageRoom,
 } from "@/lib/api/staff";
-import { useT } from "@/lib/i18n";
-import { formatBDT, parseMoney } from "@/lib/money";
+import { tr, useLanguage, useT } from "@/lib/i18n";
+import { money, num } from "@/lib/i18n/format";
+import { parseMoney } from "@/lib/money";
 import type { StaffPackage, StaffPackageRoom } from "@/lib/api/staffTypes";
 
 export const Route = createFileRoute("/staff/rooms")({
@@ -42,7 +43,7 @@ const INVENTORY = "inventory" as const;
 type RoomFilter = "all" | "available" | "booked" | "blocked" | "due";
 
 function RoomsPage() {
-  const t = useT();
+  const { t, lang } = useLanguage();
   const { data: packagesData, isLoading: packagesLoading } = useQuery({
     queryKey: ["staff", "packages", 1],
     queryFn: () => getStaffPackages(1),
@@ -108,7 +109,7 @@ function Loading({ label }: { label: string }) {
 /* ── Package room map ────────────────────────────────────────────────────── */
 
 function PackageRoomMap({ pkg, packageId }: { pkg: StaffPackage | undefined; packageId: number }) {
-  const t = useT();
+  const { t, lang } = useLanguage();
   const queryClient = useQueryClient();
   const { data: rooms, isLoading } = useQuery({
     queryKey: ["staff", "package-rooms", packageId],
@@ -220,7 +221,11 @@ function PackageRoomMap({ pkg, packageId }: { pkg: StaffPackage | undefined; pac
           label={t("rm.booked")}
           value={String(stats.booked)}
           icon={DoorClosed}
-          hint={stats.dueTotal > 0 ? `${formatBDT(String(stats.dueTotal))} due` : "All dues clear"}
+          hint={
+            stats.dueTotal > 0
+              ? t("rm.dueAmount", { amount: money(String(stats.dueTotal), lang) })
+              : t("rm.duesClear")
+          }
         />
         <StatCard
           label={t("rm.available")}
@@ -275,7 +280,7 @@ function PackageRoomMap({ pkg, packageId }: { pkg: StaffPackage | undefined; pac
               ["available", "Available"],
               ["booked", "Booked"],
               ["blocked", "Blocked"],
-              ["due", "Due only"],
+              ["due", t("bk.dueOnly")],
             ] as [RoomFilter, string][]
           ).map(([key, label]) => (
             <button
@@ -333,7 +338,7 @@ function PackageRoomMap({ pkg, packageId }: { pkg: StaffPackage | undefined; pac
           >
             <div className="px-5 py-3.5 border-b border-border flex items-center justify-between gap-4">
               <div className="font-display text-base shrink-0">
-                {floor === null ? "Unassigned floor" : `Floor ${floor}`}
+                {floor === null ? t("rs.unassignedFloor") : t("rs.floorN", { n: num(floor, lang) })}
               </div>
               <div className="flex items-center gap-3 min-w-0 flex-1 justify-end">
                 <div className="h-1.5 w-28 rounded-full bg-muted overflow-hidden hidden sm:block">
@@ -385,7 +390,7 @@ function blockError(err: unknown): string {
     if (Array.isArray(first) && first.length) return String(first[0]);
     if (typeof first === "string") return first;
   }
-  return "Could not block the room.";
+  return tr("rm.blockFailed");
 }
 
 function groupByFloor(rooms: StaffPackageRoom[]) {
@@ -423,7 +428,7 @@ function RoomCard({
   onManage?: () => void;
   dimmed?: boolean;
 }) {
-  const t = useT();
+  const { t, lang } = useLanguage();
   const booked = room.availability === "booked";
   const blocked = room.availability === "blocked";
   const unavailable = room.availability === "unavailable";
@@ -463,15 +468,16 @@ function RoomCard({
           <div className="text-xs font-medium truncate">{room.booking.customer_name}</div>
           <div className="flex items-center justify-between text-[10px]">
             <span className="inline-flex items-center gap-1 text-muted-foreground">
-              <Users className="size-3" /> {room.booking.total_pax} pax
+              <Users className="size-3" />{" "}
+              {t("rm.paxCount", { n: num(room.booking.total_pax, lang) })}
             </span>
             {due > 0 ? (
               <span className="font-semibold text-destructive">
-                Due {formatBDT(room.booking.due_amount)}
+                {t("rm.dueWith", { amount: money(room.booking.due_amount, lang) })}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-emerald-600 font-medium">
-                <CheckCircle2 className="size-3" /> Paid
+                <CheckCircle2 className="size-3" /> {t("bk.paid")}
               </span>
             )}
           </div>
@@ -556,12 +562,12 @@ function ManageRoomDialog({
             </div>
             {room.block_reason && <p className="text-sm text-foreground">{room.block_reason}</p>}
             <p className="text-[11px] text-muted-foreground">
-              {room.blocked_by_username ? `Held by ${room.blocked_by_username}` : "Held"}
+              {room.blocked_by_username
+                ? t("rm.heldBy", { user: room.blocked_by_username })
+                : t("rm.held")}
               {room.blocked_at ? ` · ${new Date(room.blocked_at).toLocaleString()}` : ""}
             </p>
-            <p className="text-[11px] text-muted-foreground">
-              Releasing puts this room back on sale — customers will be able to book it again.
-            </p>
+            <p className="text-[11px] text-muted-foreground">{t("rm.releaseNote")}</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -590,7 +596,7 @@ function ManageRoomDialog({
             onClick={onClose}
             className="px-4 py-2 rounded-full border border-border text-xs text-muted-foreground hover:border-gold hover:text-gold transition-colors"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           {blocked ? (
             <button
@@ -599,7 +605,7 @@ function ManageRoomDialog({
               className="inline-flex items-center gap-2 px-5 py-2 rounded-full gradient-gold text-ocean text-xs font-semibold disabled:opacity-40"
             >
               <LockOpen className="size-3.5" />
-              {isBusy ? "Releasing…" : "Release room"}
+              {isBusy ? t("rm.releasing") : t("rm.releaseRoom")}
             </button>
           ) : (
             <button
@@ -608,7 +614,7 @@ function ManageRoomDialog({
               className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 disabled:opacity-40"
             >
               <Lock className="size-3.5" />
-              {isBusy ? "Blocking…" : "Block room"}
+              {isBusy ? t("rm.blocking") : t("rm.blockRoom")}
             </button>
           )}
         </div>
@@ -618,7 +624,7 @@ function ManageRoomDialog({
 }
 
 function BookingDialog({ room, onClose }: { room: StaffPackageRoom; onClose: () => void }) {
-  const t = useT();
+  const { t, lang } = useLanguage();
   const booking = room.booking!;
   const kids = booking.kid_details?.length ?? 0;
   const due = parseMoney(booking.due_amount);
@@ -666,11 +672,11 @@ function BookingDialog({ room, onClose }: { room: StaffPackageRoom; onClose: () 
         </div>
 
         <div className="rounded-xl border border-border divide-y divide-border text-sm">
-          <AmountRow label={t("bk.total")} value={formatBDT(booking.total_amount)} />
-          <AmountRow label={t("bk.paid")} value={formatBDT(booking.paid_amount)} />
+          <AmountRow label={t("bk.total")} value={money(booking.total_amount, lang)} />
+          <AmountRow label={t("bk.paid")} value={money(booking.paid_amount, lang)} />
           <AmountRow
             label={t("bk.due")}
-            value={formatBDT(booking.due_amount)}
+            value={money(booking.due_amount, lang)}
             highlight={due > 0}
           />
         </div>
@@ -679,8 +685,8 @@ function BookingDialog({ room, onClose }: { room: StaffPackageRoom; onClose: () 
         {due > 0 && booking.status !== "cancelled" && (
           <div className="rounded-xl border border-gold/40 bg-gold/5 p-4">
             <div className="eyebrow text-gold text-[10px] mb-3 flex items-center gap-1.5">
-              <Wallet className="size-3.5" /> Collect cash payment (due{" "}
-              {formatBDT(booking.due_amount)})
+              <Wallet className="size-3.5" />{" "}
+              {t("rm.collectCash", { amount: money(booking.due_amount, lang) })}
             </div>
             <div className="flex gap-2">
               <input
@@ -696,7 +702,7 @@ function BookingDialog({ room, onClose }: { room: StaffPackageRoom; onClose: () 
                 onClick={() => setPayAmount(booking.due_amount)}
                 className="px-3 rounded-xl border border-border text-xs text-muted-foreground hover:border-gold hover:text-gold transition-colors"
               >
-                Full
+                {t("rm.full")}
               </button>
               <button
                 disabled={!payAmount || payMutation.isPending}
@@ -745,7 +751,7 @@ function AmountRow({
 /* ── Ship inventory (no package context) ─────────────────────────────────── */
 
 function InventoryView() {
-  const t = useT();
+  const { t, lang } = useLanguage();
   const { data, isLoading } = useQuery({
     queryKey: ["staff", "rooms"],
     queryFn: () => getStaffRooms(1),
@@ -775,7 +781,7 @@ function InventoryView() {
           className="rounded-2xl border border-border bg-card overflow-hidden"
         >
           <div className="px-5 py-3.5 border-b border-border font-display text-base">
-            {floor === null ? "Unassigned floor" : `Floor ${floor}`}
+            {floor === null ? t("rs.unassignedFloor") : t("rs.floorN", { n: num(floor, lang) })}
           </div>
           <div className="p-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {items.map((room) => (

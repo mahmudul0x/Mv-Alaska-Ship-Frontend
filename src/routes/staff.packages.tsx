@@ -45,10 +45,11 @@ import {
   updateStaffPackage,
   uploadStaffPackageHero,
 } from "@/lib/api/staff";
-import { useT } from "@/lib/i18n";
+import { currentLang, tr, useLanguage, useT } from "@/lib/i18n";
+import { date as fmtLocaleDate, money, num, percent } from "@/lib/i18n/format";
 import type { StringKey } from "@/lib/i18n/strings";
 import { parseLocalDate } from "@/lib/dates";
-import { formatBDT, parseMoney } from "@/lib/money";
+import { parseMoney } from "@/lib/money";
 import type {
   PackageGroup,
   PackageStatus,
@@ -70,10 +71,10 @@ const ACTIVE_STATUSES: PackageStatus[] = ["draft", "open", "closed"];
 
 /** An empty tab should say which emptiness it is. "No packages yet" under
  *  Cancelled reads as though the whole dashboard is empty. */
-const EMPTY_BY_GROUP: Record<PackageGroup, string> = {
-  active: "No packages yet.",
-  past: "No sailings have finished yet.",
-  cancelled: "Nothing has been cancelled — which is the way it should be.",
+const EMPTY_BY_GROUP: Record<PackageGroup, StringKey> = {
+  active: "pk.emptyActive",
+  past: "pk.emptyPast",
+  cancelled: "pk.emptyCancelled",
 };
 
 const GROUPS: { value: PackageGroup; label: StringKey }[] = [
@@ -88,22 +89,18 @@ function nightsBetween(start: string, end: string): number {
 }
 
 function fmtDate(iso: string): string {
-  return parseLocalDate(iso).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return fmtLocaleDate(iso, currentLang());
 }
 
 /** Why a package isn't accepting new bookings — mirrors the backend's
  * is_bookable() so the "Closed" chip explains itself instead of contradicting
  * the (lifecycle) status badge. */
 function notBookableReason(p: StaffPackage): string {
-  if (p.status !== "open") return "Not open";
-  if (!p.is_booking_open) return "Manually closed";
-  if (!p.booking_cutoff_datetime) return "No cutoff set";
-  if (new Date(p.booking_cutoff_datetime) <= new Date()) return "Cutoff passed";
-  return "Closed";
+  if (p.status !== "open") return tr("pk.notOpen");
+  if (!p.is_booking_open) return tr("pk.manuallyClosed");
+  if (!p.booking_cutoff_datetime) return tr("pk.noCutoffSet");
+  if (new Date(p.booking_cutoff_datetime) <= new Date()) return tr("pk.cutoffPassed");
+  return tr("pk.closed");
 }
 
 /** True while the ship is out: departed, not yet returned.
@@ -119,7 +116,7 @@ function isSailingNow(p: StaffPackage): boolean {
 }
 
 function PackagesPage() {
-  const t = useT();
+  const { t, lang } = useLanguage();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   // Active by default: a sailing that has been and gone, or was called off, is
@@ -153,7 +150,7 @@ function PackagesPage() {
   const toggleMutation = useMutation({
     mutationFn: ({ id, open }: { id: number; open: boolean }) => togglePackageBooking(id, open),
     onSuccess: (_d, v) => {
-      toast.success(v.open ? "Booking reopened." : "Booking closed.");
+      toast.success(v.open ? t("pk.bookingReopened") : t("pk.bookingClosed"));
       invalidate();
     },
     onError: (err) => toast.error(errorText(err)),
@@ -235,13 +232,13 @@ function PackagesPage() {
         />
         <StatCard
           label={t("label.collected")}
-          value={formatBDT(String(summary.collected))}
+          value={money(String(summary.collected), lang)}
           icon={Wallet}
           tone="emerald"
         />
         <StatCard
           label={t("bk.outstandingDue")}
-          value={formatBDT(String(summary.due))}
+          value={money(String(summary.due), lang)}
           icon={Wallet}
           highlight
           hint={t("pk.acrossShown")}
@@ -285,7 +282,7 @@ function PackagesPage() {
         {group === "active" && (
           <div className="flex items-center gap-2 flex-wrap">
             <FilterChip active={statusFilter === ""} onClick={() => setStatusFilter("")}>
-              All
+              {t("common.all")}
             </FilterChip>
             {ACTIVE_STATUSES.map((s) => (
               <FilterChip
@@ -309,7 +306,7 @@ function PackagesPage() {
         <div className="rounded-2xl border border-dashed border-border bg-card py-16 text-center">
           <PackageIcon className="size-8 text-muted-foreground/40 mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">
-            {filtersActive ? "No packages match these filters." : EMPTY_BY_GROUP[group]}
+            {filtersActive ? t("pk.noMatch") : t(EMPTY_BY_GROUP[group])}
           </p>
           {/* Only Active offers the create shortcut: "create your first
               package" under the Cancelled tab would be nonsense. */}
@@ -370,13 +367,15 @@ function PackagesPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right text-emerald-600 whitespace-nowrap">
-                    {formatBDT(
+                    {money(
                       String(filtered.reduce((s, p) => s + parseMoney(p.paid_total ?? "0"), 0)),
+                      lang,
                     )}
                   </td>
                   <td className="px-4 py-3 text-right text-gold whitespace-nowrap">
-                    {formatBDT(
+                    {money(
                       String(filtered.reduce((s, p) => s + parseMoney(p.due_total ?? "0"), 0)),
+                      lang,
                     )}
                   </td>
                   <td className="px-4 py-3" />
@@ -482,7 +481,7 @@ function PackageRow({
   onCancelDeparture: () => void;
   onDelete: () => void;
 }) {
-  const t = useT();
+  const { t, lang } = useLanguage();
   const rooms = p.rooms_total ?? 0;
   const bookings = p.bookings_count ?? 0;
   const occupancy = rooms > 0 ? Math.min(100, Math.round((bookings / rooms) * 100)) : 0;
@@ -492,9 +491,11 @@ function PackageRow({
     <tr className="hover:bg-ocean/3 transition-colors align-middle">
       {/* Package */}
       <td className="px-4 py-3">
-        <div className="font-medium">{p.marketing_title || `${p.ship_name} sailing`}</div>
+        <div className="font-medium">
+          {p.marketing_title || t("pk.shipSailing", { ship: p.ship_name })}
+        </div>
         <div className="text-xs text-muted-foreground">
-          {p.ship_name} · {formatBDT(p.adult_price)} / adult
+          {p.ship_name} · {t("pk.perAdult", { amount: money(p.adult_price, lang) })}
         </div>
       </td>
 
@@ -506,7 +507,7 @@ function PackageRow({
         </div>
         <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-2">
           <span className="inline-flex items-center gap-1">
-            <Moon className="size-3" /> {nights}N
+            <Moon className="size-3" /> {t("pk.nights", { n: num(nights, lang) })}
           </span>
           {p.is_bookable ? (
             <span className="inline-flex items-center gap-1 text-emerald-600">
@@ -534,9 +535,9 @@ function PackageRow({
       <td className="px-4 py-3">
         <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1">
           <span className="inline-flex items-center gap-1">
-            <Users className="size-3" /> {bookings}/{rooms}
+            <Users className="size-3" /> {num(bookings, lang)}/{num(rooms, lang)}
           </span>
-          <span>{occupancy}%</span>
+          <span>{percent(occupancy, lang)}</span>
         </div>
         <div className="h-1.5 rounded-full bg-muted overflow-hidden">
           <div className="h-full rounded-full bg-ocean" style={{ width: `${occupancy}%` }} />
@@ -545,12 +546,12 @@ function PackageRow({
 
       {/* Collected */}
       <td className="px-4 py-3 text-right whitespace-nowrap text-emerald-600 font-medium">
-        {formatBDT(p.paid_total ?? "0")}
+        {money(p.paid_total ?? "0", lang)}
       </td>
 
       {/* Due */}
       <td className="px-4 py-3 text-right whitespace-nowrap font-medium text-gold">
-        {formatBDT(p.due_total ?? "0")}
+        {money(p.due_total ?? "0", lang)}
       </td>
 
       {/* Actions */}
@@ -558,7 +559,7 @@ function PackageRow({
         <div className="flex items-center gap-1 justify-end">
           <RowAction title={t("pk.edit")} onClick={onEdit} icon={Pencil} />
           <RowAction
-            title={p.is_booking_open ? "Close booking" : "Reopen booking"}
+            title={p.is_booking_open ? t("pk.closeBooking") : t("pk.reopenBooking")}
             onClick={onToggle}
             icon={p.is_booking_open ? Ban : CheckCircle2}
           />
@@ -644,7 +645,7 @@ function fromDhakaInput(value: string): string {
 }
 
 function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose: () => void }) {
-  const t = useT();
+  const { t, lang } = useLanguage();
   const queryClient = useQueryClient();
   // The ship's starting fare, for a NEW package only. Editing an existing one
   // must never show a figure other than what it is actually priced at.
@@ -710,7 +711,7 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
       return saved;
     },
     onSuccess: () => {
-      toast.success(pkg ? "Package updated." : "Package created.");
+      toast.success(pkg ? t("pk.updated") : t("pk.created"));
       queryClient.invalidateQueries({ queryKey: ["staff"] });
       onClose();
     },
@@ -721,7 +722,11 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
 
   return (
     <DialogShell
-      title={pkg ? `Edit — ${pkg.marketing_title || pkg.start_date}` : "New package"}
+      title={
+        pkg
+          ? t("pk.editTitle", { name: pkg.marketing_title || pkg.start_date })
+          : t("pk.newPackage")
+      }
       onClose={onClose}
     >
       <div className="space-y-4">
@@ -790,10 +795,7 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
             }
             className={staffInputClass}
           />
-          <span className="text-[10px] text-muted-foreground mt-1 block">
-            Bookings close at this time (Bangladesh clock, wherever you are). Leave blank to
-            auto-set to noon the day before departure.
-          </span>
+          <span className="text-[10px] text-muted-foreground mt-1 block">{t("pk.cutoffHint")}</span>
         </StaffField>
 
         <StaffField label={t("pk.marketingTitle")}>
@@ -817,7 +819,7 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
             rows={3}
             value={(form.highlights ?? []).join("\n")}
             onChange={(e) => set({ highlights: e.target.value.split("\n").filter(Boolean) })}
-            placeholder={"Mangrove safari\nSunset dinner"}
+            placeholder={t("pk.highlightsPlaceholder")}
             className={`${staffInputClass} resize-none`}
           />
         </StaffField>
@@ -878,10 +880,9 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
                 </label>
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
                   {form.discount_type === "percent"
-                    ? "Comes off the whole cabin — base price, adult fares and kid fares together."
-                    : "Comes off each cabin, so a 3-cabin booking gets it three times."}{" "}
-                  Bookings already paid for keep the price they were given; ending an offer never
-                  re-prices anyone.
+                    ? t("pk.offerPercentNote")
+                    : t("pk.offerFlatNote")}{" "}
+                  {t("pk.offerTailNote")}
                 </p>
               </>
             )}
@@ -903,7 +904,7 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
             <div className="min-w-0 space-y-2">
               <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-xs cursor-pointer hover:border-gold transition-colors">
                 <Upload className="size-3.5 shrink-0" />
-                {heroPreview ? "Choose a different photo" : "Choose a photo"}
+                {heroPreview ? t("pk.chooseAnother") : t("pk.choosePhoto")}
                 <input
                   type="file"
                   accept="image/*"
@@ -934,8 +935,7 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
                 </button>
               )}
               <p className="text-[10px] text-muted-foreground leading-relaxed">
-                Shown on the package card, the booking page and the home page. Landscape works best.
-                Without one the card falls back to a stock photograph.
+                {t("pk.coverHint")}
               </p>
             </div>
           </div>
@@ -947,13 +947,9 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
           className="w-full flex items-center justify-center gap-2 py-3 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.15em] font-semibold shadow-luxe disabled:opacity-40"
         >
           {saveMutation.isPending && <Loader2 className="size-4 animate-spin" />}
-          {pkg ? "Save changes" : "Create package"}
+          {pkg ? t("common.save") : t("pk.createPackage")}
         </button>
-        {!pkg && (
-          <p className="text-xs text-muted-foreground text-center">
-            Cutoff auto-sets to noon the day before departure. Use “Generate rooms” after creating.
-          </p>
-        )}
+        {!pkg && <p className="text-xs text-muted-foreground text-center">{t("pk.createHint")}</p>}
       </div>
     </DialogShell>
   );
