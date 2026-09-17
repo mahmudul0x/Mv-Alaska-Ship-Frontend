@@ -118,13 +118,9 @@ export function PackagePicker({ selectedPackageId, onSelectPackage }: Props) {
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-ocean/90 via-ocean/25 to-transparent" />
 
-                {/* Status pill, and the offer under it.
-                    The offer badge used to sit at bottom-3 left-3 — the same
-                    corner as the title block below, which is absolutely
-                    positioned there too. On any package with an offer the two
-                    printed on top of each other. Stacked at the top-left
-                    instead, which is also how the packages list page does it. */}
-                <div className="absolute top-3 left-3 right-12 flex flex-col items-start gap-1.5">
+                {/* Status, top-left. Whether you can book this is a state,
+                    and it stays where the eye lands first. */}
+                <div className="absolute top-3 left-3">
                   {pkg.is_bookable ? (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 backdrop-blur-md px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-emerald-200 ring-1 ring-emerald-400/40">
                       <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" /> Open
@@ -134,15 +130,21 @@ export function PackagePicker({ selectedPackageId, onSelectPackage }: Props) {
                       <Clock className="size-2.5" /> Closed
                     </span>
                   )}
-                  {pkg.offer && <OfferBadge offer={pkg.offer} />}
                 </div>
 
-                {/* Selected check */}
-                {selected && (
-                  <div className="absolute top-3 right-3 size-7 rounded-full gradient-gold grid place-items-center shadow-luxe">
-                    <Check className="size-4 text-ocean" strokeWidth={3} />
-                  </div>
-                )}
+                {/* The offer and the tick share the right-hand column, aligned
+                    to the edge. An offer is a different kind of news from a
+                    status — stacking both down the left crowded one corner and
+                    left the other empty. Capped at 70% so a long offer name
+                    cannot reach across and collide with the status pill. */}
+                <div className="absolute top-3 right-3 flex max-w-[70%] flex-col items-end gap-1.5">
+                  {selected && (
+                    <div className="size-7 shrink-0 rounded-full gradient-gold grid place-items-center shadow-luxe">
+                      <Check className="size-4 text-ocean" strokeWidth={3} />
+                    </div>
+                  )}
+                  {pkg.offer && <OfferBadge offer={pkg.offer} />}
+                </div>
 
                 {/* Title over image */}
                 <div className="absolute bottom-3 left-4 right-4">

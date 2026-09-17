@@ -33,7 +33,7 @@ export function OfferBadge({ offer, className = "" }: { offer: PackageOffer; cla
       // Dark glass, not the pale gold chip this started as. Every card that
       // shows this puts it ON THE PHOTO, and bg-gold/15 is a tint meant for a
       // white card — over a bright picture it washed out until the text was
-      // unreadable. Ocean at 85% with a blur gives the light gold something to
+      // unreadable. Ocean at 90% with a blur gives the light gold something to
       // sit on whatever the photograph behind it happens to be.
       //
       // Measured rather than eyeballed. Old chip on a mid-tone photograph:
@@ -43,9 +43,20 @@ export function OfferBadge({ offer, className = "" }: { offer: PackageOffer; cla
       className={`inline-flex max-w-full items-center gap-1.5 rounded-full bg-ocean/90 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-gold-soft shadow-sm ring-1 ring-gold/45 backdrop-blur-md ${className}`}
     >
       <Tag aria-hidden="true" className="size-3 shrink-0 text-gold" />
-      <span className="truncate">
-        {offer.label ? `${offer.label} — ${offerSummary(offer)}` : offerSummary(offer)}
-      </span>
+      {/* The campaign name and the saving are not equally important. Run
+          together in one weight — "EID OFFER — 19.97% OFF" — the pill reads as
+          one long shout and the number, which is the part anyone actually
+          wants, gets no emphasis at all. The name steps back; the figure is
+          the thing. */}
+      {offer.label && (
+        <>
+          <span className="truncate font-medium text-gold-soft/75">{offer.label}</span>
+          <span aria-hidden="true" className="text-gold/50">
+            ·
+          </span>
+        </>
+      )}
+      <span className="shrink-0 font-bold text-gold-soft">{offerSummary(offer)}</span>
     </span>
   );
 }
