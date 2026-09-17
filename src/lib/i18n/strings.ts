@@ -402,6 +402,127 @@ export const STRINGS = {
   "pk.coverPhoto": { en: "Cover photo", bn: "কভার ছবি" },
   "pk.removePhoto": { en: "Remove photo", bn: "ছবি সরান" },
   "common.saving": { en: "Saving…", bn: "সংরক্ষণ হচ্ছে…" },
+  "common.photos": { en: "Photos", bn: "ছবি" },
+  "common.hidden": { en: "Hidden", bn: "লুকানো" },
+  "common.active": { en: "Active", bn: "চালু" },
+  "common.add": { en: "Add", bn: "যোগ করুন" },
+  "common.ship": { en: "Ship", bn: "জাহাজ" },
+  "common.floor": { en: "Floor", bn: "তলা" },
+  "common.reasonOptional": { en: "Reason (optional)", bn: "কারণ (ঐচ্ছিক)" },
+
+  // ── Rooms ───────────────────────────────────────────────────────────────
+  "rm.title": { en: "Rooms", bn: "রুম" },
+  "rm.subtitle": {
+    en: "Live room map — see which rooms are booked or free per package.",
+    bn: "রুমের জীবন্ত মানচিত্র — কোন প্যাকেজে কোন রুম বুক আর কোনটা খালি।",
+  },
+  "rm.search": { en: "Find room / guest…", bn: "রুম / অতিথি খুঁজুন…" },
+  "rm.loadingPackages": { en: "Loading packages…", bn: "প্যাকেজ আসছে…" },
+  "rm.loadingMap": { en: "Loading room map…", bn: "রুমের মানচিত্র আসছে…" },
+  "rm.loadingRooms": { en: "Loading rooms…", bn: "রুম আসছে…" },
+  "rm.totalRooms": { en: "Total rooms", bn: "মোট রুম" },
+  "rm.booked": { en: "Booked", bn: "বুক হয়েছে" },
+  "rm.available": { en: "Available", bn: "খালি" },
+  "rm.blockedByAdmin": { en: "Blocked by admin", bn: "অ্যাডমিন আটকে রেখেছে" },
+  "rm.unavailable": { en: "Unavailable", bn: "অনুপলব্ধ" },
+  "rm.roomType": { en: "Room type", bn: "রুমের ধরন" },
+  "rm.guestsInRoom": { en: "Guests in this room", bn: "এই রুমের অতিথিরা" },
+  "rm.viewing": { en: "Viewing", bn: "দেখছেন" },
+  "rm.shipInventory": { en: "Ship inventory — all rooms", bn: "জাহাজের সব রুম" },
+  "rm.noRoomsAttached": {
+    en: "No rooms are attached to this package yet.",
+    bn: "এই প্যাকেজে এখনো কোনো রুম যুক্ত করা হয়নি।",
+  },
+  "rm.goGenerate": {
+    en: "Go to Packages and use “Generate rooms” →",
+    bn: "প্যাকেজ পেজে গিয়ে “রুম তৈরি করুন” চাপুন →",
+  },
+  "rm.currentlyBlocked": { en: "Currently blocked by admin", bn: "এখন অ্যাডমিন আটকে রেখেছে" },
+  "rm.blockPlaceholder": {
+    en: "e.g. crew cabin, maintenance, VIP hold",
+    bn: "যেমন ক্রু কেবিন, মেরামত, ভিআইপি সংরক্ষিত",
+  },
+  "rm.blocked": { en: "Room blocked — hidden from customers.", bn: "রুম আটকানো হলো — গ্রাহক আর দেখবে না।" },
+  "rm.released": { en: "Room released — back on sale.", bn: "রুম ছেড়ে দেওয়া হলো — আবার বিক্রির জন্য খোলা।" },
+  "rm.releaseFailed": { en: "Could not release the room.", bn: "রুমটি ছাড়া গেল না।" },
+  "rm.manifestFailed": {
+    en: "Could not generate the room manifest.",
+    bn: "রুমের তালিকা তৈরি করা গেল না।",
+  },
+  "rm.paymentFailed": { en: "Could not record the payment.", bn: "পেমেন্টটি লেখা গেল না।" },
+  "rm.full": { en: "Full", bn: "পূর্ণ" },
+  "rm.manageInBookings": { en: "Manage in Bookings →", bn: "বুকিং পেজে সামলান →" },
+
+  // ── Cabins ──────────────────────────────────────────────────────────────
+  "cb.title": { en: "Cabins", bn: "কেবিন" },
+  "cb.subtitle": {
+    en: "The cabin cards & detail pages shown on the public website — content, photos and the card's main image.",
+    bn: "পাবলিক ওয়েবসাইটে যে কেবিন কার্ড ও বিস্তারিত পেজ দেখায় — লেখা, ছবি আর কার্ডের মূল ছবি।",
+  },
+  "cb.newCabin": { en: "New cabin", bn: "নতুন কেবিন" },
+  "cb.noneYet": {
+    en: "No cabins yet — create the first one.",
+    bn: "এখনো কোনো কেবিন নেই — প্রথমটি তৈরি করুন।",
+  },
+  "cb.name": { en: "Cabin name *", bn: "কেবিনের নাম *" },
+  "cb.nameRequired": { en: "Cabin name is required.", bn: "কেবিনের নাম দিতে হবে।" },
+  "cb.sizeBadge": { en: "Size badge (optional)", bn: "আয়তনের ব্যাজ (ঐচ্ছিক)" },
+  "cb.roomTypeHint": {
+    en: "Room type (shows occupancy on the card)",
+    bn: "রুমের ধরন (কার্ডে কতজন ধরে তা দেখায়)",
+  },
+  "cb.tagline": {
+    en: "Tagline (one line, under the name on the detail page)",
+    bn: "এক লাইনের পরিচিতি (বিস্তারিত পেজে নামের নিচে)",
+  },
+  "cb.description": {
+    en: "Description (detail page 'About this cabin')",
+    bn: "বর্ণনা (বিস্তারিত পেজের ‘এই কেবিন সম্পর্কে’)",
+  },
+  "cb.features": {
+    en: "Features — one per line (first 4 show on the card)",
+    bn: "সুবিধা — প্রতি লাইনে একটি (প্রথম ৪টি কার্ডে দেখায়)",
+  },
+  "cb.specs": {
+    en: "Cabin specs — one per line as Label: Value (detail page table)",
+    bn: "কেবিনের বিবরণ — প্রতি লাইনে শিরোনাম: মান (বিস্তারিত পেজের ছক)",
+  },
+  "cb.highlights": {
+    en: "Highlights — one per line as Title | description (detail page blocks)",
+    bn: "আকর্ষণ — প্রতি লাইনে শিরোনাম | বর্ণনা (বিস্তারিত পেজের অংশ)",
+  },
+  "cb.sortOrder": { en: "Display order (lower shows first)", bn: "দেখানোর ক্রম (ছোট সংখ্যা আগে)" },
+  "cb.deleted": { en: "Cabin deleted.", bn: "কেবিন মুছে ফেলা হয়েছে।" },
+  "cb.makeMain": { en: "Make this the card's main image", bn: "এটিকে কার্ডের মূল ছবি করুন" },
+  "cb.mainUpdated": {
+    en: "Main photo updated — this now shows on the cabin card.",
+    bn: "মূল ছবি বদলানো হয়েছে — এটিই এখন কেবিন কার্ডে দেখাবে।",
+  },
+  "cb.main": { en: "Main", bn: "মূল" },
+  "cb.captionOptional": { en: "Caption (optional)", bn: "ক্যাপশন (ঐচ্ছিক)" },
+  "cb.confirmDeletePhoto": { en: "Delete this photo?", bn: "এই ছবিটি মুছে ফেলবেন?" },
+
+  // ── Food menu ───────────────────────────────────────────────────────────
+  "fm.title": { en: "Food Menu", bn: "খাবারের তালিকা" },
+  "fm.subtitle": {
+    en: "Day-by-day dish pool the chef selects from — add, edit, or hide items per meal.",
+    bn: "দিনভিত্তিক খাবারের তালিকা, যেখান থেকে শেফ বেছে নেন — প্রতি বেলার খাবার যোগ, সম্পাদনা বা লুকানো যায়।",
+  },
+  "fm.loading": { en: "Loading food menu…", bn: "খাবারের তালিকা আসছে…" },
+  "fm.search": { en: "Search dishes…", bn: "খাবার খুঁজুন…" },
+  "fm.totalDishes": { en: "Total dishes", bn: "মোট পদ" },
+  "fm.perDay": { en: "Per day (avg)", bn: "দিনে গড়ে" },
+  "fm.itemName": { en: "Item name", bn: "খাবারের নাম" },
+  "fm.itemPlaceholder": { en: "e.g. Mixed Vegetables", bn: "যেমন মিক্সড ভেজিটেবল" },
+  "fm.editDish": { en: "Edit dish", bn: "খাবার সম্পাদনা" },
+  "fm.editItem": { en: "Edit item", bn: "পদ সম্পাদনা" },
+  "fm.copyInto": { en: "Copy into", bn: "কোথায় কপি হবে" },
+  "fm.copyDay": { en: "Copy this day →", bn: "এই দিনটি কপি করুন →" },
+  "fm.duplicateAll": { en: "Duplicate all", bn: "সব কপি করুন" },
+  "fm.noItems": { en: "No food menu items yet.", bn: "এখনো কোনো খাবার যোগ করা হয়নি।" },
+  "fm.added": { en: "Item added.", bn: "যোগ করা হয়েছে।" },
+  "fm.updated": { en: "Item updated.", bn: "বদলানো হয়েছে।" },
+  "fm.removed": { en: "Item removed.", bn: "সরিয়ে ফেলা হয়েছে।" },
 } as const;
 
 export type StringKey = keyof typeof STRINGS;

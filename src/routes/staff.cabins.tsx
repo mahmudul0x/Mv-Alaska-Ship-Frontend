@@ -26,6 +26,7 @@ import {
   updateStaffCabinImage,
   uploadStaffCabinImage,
 } from "@/lib/api/staff";
+import { useT } from "@/lib/i18n";
 import type { StaffCabin, StaffCabinWrite } from "@/lib/api/staffTypes";
 import {
   DialogShell,
@@ -48,7 +49,10 @@ export const Route = createFileRoute("/staff/cabins")({
  *   highlights → "Title | description" per line
  */
 const linesToFeatures = (text: string) =>
-  text.split("\n").map((line) => line.trim()).filter(Boolean);
+  text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
 
 const linesToAmenities = (text: string) =>
   text
@@ -81,10 +85,14 @@ const highlightsToLines = (highlights: { title: string; desc: string }[]) =>
   highlights.map((h) => `${h.title} | ${h.desc}`).join("\n");
 
 function StaffCabins() {
+  const t = useT();
   const queryClient = useQueryClient();
   const cabinsQuery = useQuery({ queryKey: ["staff", "cabins"], queryFn: getStaffCabins });
   const shipsQuery = useQuery({ queryKey: ["staff", "ships"], queryFn: getStaffShips });
-  const roomTypesQuery = useQuery({ queryKey: ["staff", "room-types"], queryFn: getStaffRoomTypes });
+  const roomTypesQuery = useQuery({
+    queryKey: ["staff", "room-types"],
+    queryFn: getStaffRoomTypes,
+  });
 
   const [editing, setEditing] = useState<StaffCabin | "new" | null>(null);
   const [photosFor, setPhotosFor] = useState<number | null>(null);
@@ -97,10 +105,11 @@ function StaffCabins() {
   };
 
   const toggleMutation = useMutation({
-    mutationFn: (cabin: StaffCabin) =>
-      updateStaffCabin(cabin.id, { is_active: !cabin.is_active }),
+    mutationFn: (cabin: StaffCabin) => updateStaffCabin(cabin.id, { is_active: !cabin.is_active }),
     onSuccess: (cabin) => {
-      toast.success(cabin.is_active ? "Cabin is now visible on the website." : "Cabin hidden from the website.");
+      toast.success(
+        cabin.is_active ? "Cabin is now visible on the website." : "Cabin hidden from the website.",
+      );
       invalidate();
     },
     onError: (err) => toast.error(errorText(err)),
@@ -109,7 +118,7 @@ function StaffCabins() {
   const deleteMutation = useMutation({
     mutationFn: deleteStaffCabin,
     onSuccess: () => {
-      toast.success("Cabin deleted.");
+      toast.success(t("cb.deleted"));
       invalidate();
     },
     onError: (err) => toast.error(errorText(err)),
@@ -120,15 +129,12 @@ function StaffCabins() {
 
   return (
     <section className="p-6 lg:p-8 space-y-6">
-      <PageHeader
-        title="Cabins"
-        subtitle="The cabin cards & detail pages shown on the public website — content, photos and the card's main image."
-      >
+      <PageHeader title={t("cb.title")} subtitle={t("cb.subtitle")}>
         <button
           onClick={() => setEditing("new")}
           className="flex items-center gap-2 px-4 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe"
         >
-          <Plus className="size-3.5" /> New cabin
+          <Plus className="size-3.5" /> {t("cb.newCabin")}
         </button>
       </PageHeader>
 
@@ -162,11 +168,13 @@ function StaffCabins() {
                   </div>
                 )}
                 <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-semibold bg-black/55 text-white">
-                  {cabin.images.length ? `${cabin.images.length} photo${cabin.images.length > 1 ? "s" : ""}` : "No photos"}
+                  {cabin.images.length
+                    ? `${cabin.images.length} photo${cabin.images.length > 1 ? "s" : ""}`
+                    : "No photos"}
                 </span>
                 {!cabin.is_active && (
                   <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] font-semibold bg-amber-100/95 text-amber-700">
-                    Hidden
+                    {t("common.hidden")}
                   </span>
                 )}
               </div>
@@ -186,13 +194,13 @@ function StaffCabins() {
                     onClick={() => setPhotosFor(cabin.id)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-[10px] font-semibold uppercase tracking-[0.1em] hover:border-gold hover:text-gold-text transition-colors"
                   >
-                    <Images className="size-3" /> Photos
+                    <Images className="size-3" /> {t("common.photos")}
                   </button>
                   <button
                     onClick={() => setEditing(cabin)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-[10px] font-semibold uppercase tracking-[0.1em] hover:border-gold hover:text-gold-text transition-colors"
                   >
-                    <Pencil className="size-3" /> Edit
+                    <Pencil className="size-3" /> {t("common.edit")}
                   </button>
                   <button
                     onClick={() => toggleMutation.mutate(cabin)}
@@ -204,7 +212,11 @@ function StaffCabins() {
                   </button>
                   <button
                     onClick={() => {
-                      if (window.confirm(`Delete "${cabin.name}" and all its photos? This cannot be undone.`)) {
+                      if (
+                        window.confirm(
+                          `Delete "${cabin.name}" and all its photos? This cannot be undone.`,
+                        )
+                      ) {
                         deleteMutation.mutate(cabin.id);
                       }
                     }}
@@ -221,7 +233,7 @@ function StaffCabins() {
 
       {!cabinsQuery.isLoading && cabins.length === 0 && (
         <div className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-          No cabins yet — create the first one.
+          {t("cb.noneYet")}
         </div>
       )}
 
@@ -261,6 +273,7 @@ function CabinFormDialog({
   onClose: () => void;
   invalidate: () => void;
 }) {
+  const t = useT();
   const [form, setForm] = useState(() => ({
     ship: cabin?.ship ?? ships[0]?.id ?? 0,
     room_type: cabin?.room_type ?? null,
@@ -302,20 +315,24 @@ function CabinFormDialog({
   });
 
   return (
-    <DialogShell wide title={cabin ? `Edit — ${cabin.name}` : "New cabin"} onClose={onClose}>
+    <DialogShell
+      wide
+      title={cabin ? `${t("common.edit")} — ${cabin.name}` : t("cb.newCabin")}
+      onClose={onClose}
+    >
       <form
         className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
           if (!form.name.trim()) {
-            toast.error("Cabin name is required.");
+            toast.error(t("cb.nameRequired"));
             return;
           }
           saveMutation.mutate();
         }}
       >
         <div className="grid sm:grid-cols-2 gap-4">
-          <StaffField label="Cabin name *">
+          <StaffField label={t("cb.name")}>
             <input
               className={staffInputClass}
               value={form.name}
@@ -323,7 +340,7 @@ function CabinFormDialog({
               placeholder="Premier Balcony Suite"
             />
           </StaffField>
-          <StaffField label="Size badge (optional)">
+          <StaffField label={t("cb.sizeBadge")}>
             <input
               className={staffInputClass}
               value={form.size_label}
@@ -331,18 +348,20 @@ function CabinFormDialog({
               placeholder="32 m²"
             />
           </StaffField>
-          <StaffField label="Ship">
+          <StaffField label={t("common.ship")}>
             <select
               className={staffInputClass}
               value={form.ship}
               onChange={(e) => set("ship", Number(e.target.value))}
             >
               {ships.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
               ))}
             </select>
           </StaffField>
-          <StaffField label="Room type (shows occupancy on the card)">
+          <StaffField label={t("cb.roomTypeHint")}>
             <select
               className={staffInputClass}
               value={form.room_type ?? ""}
@@ -358,7 +377,7 @@ function CabinFormDialog({
           </StaffField>
         </div>
 
-        <StaffField label="Tagline (one line, under the name on the detail page)">
+        <StaffField label={t("cb.tagline")}>
           <input
             className={staffInputClass}
             value={form.tagline}
@@ -367,7 +386,7 @@ function CabinFormDialog({
           />
         </StaffField>
 
-        <StaffField label="Description (detail page 'About this cabin')">
+        <StaffField label={t("cb.description")}>
           <textarea
             className={`${staffInputClass} min-h-24`}
             value={form.description}
@@ -375,7 +394,7 @@ function CabinFormDialog({
           />
         </StaffField>
 
-        <StaffField label="Features — one per line (first 4 show on the card)">
+        <StaffField label={t("cb.features")}>
           <textarea
             className={`${staffInputClass} min-h-28 font-mono text-xs`}
             value={form.features}
@@ -384,7 +403,7 @@ function CabinFormDialog({
           />
         </StaffField>
 
-        <StaffField label="Cabin specs — one per line as Label: Value (detail page table)">
+        <StaffField label={t("cb.specs")}>
           <textarea
             className={`${staffInputClass} min-h-28 font-mono text-xs`}
             value={form.amenities}
@@ -393,17 +412,19 @@ function CabinFormDialog({
           />
         </StaffField>
 
-        <StaffField label="Highlights — one per line as Title | description (detail page blocks)">
+        <StaffField label={t("cb.highlights")}>
           <textarea
             className={`${staffInputClass} min-h-24 font-mono text-xs`}
             value={form.highlights}
             onChange={(e) => set("highlights", e.target.value)}
-            placeholder={"Private Balcony | Step outside at dawn and watch mist rise over the delta."}
+            placeholder={
+              "Private Balcony | Step outside at dawn and watch mist rise over the delta."
+            }
           />
         </StaffField>
 
         <div className="grid sm:grid-cols-2 gap-4">
-          <StaffField label="Display order (lower shows first)">
+          <StaffField label={t("cb.sortOrder")}>
             <input
               type="number"
               min={0}
@@ -447,6 +468,7 @@ function CabinPhotosDialog({
   onClose: () => void;
   invalidate: () => void;
 }) {
+  const t = useT();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const images = cabin.images;
@@ -454,9 +476,7 @@ function CabinPhotosDialog({
   const uploadMutation = useMutation({
     mutationFn: async (files: File[]) => {
       setUploading(true);
-      const nextOrder = images.length
-        ? Math.max(...images.map((i) => i.sort_order)) + 1
-        : 0;
+      const nextOrder = images.length ? Math.max(...images.map((i) => i.sort_order)) + 1 : 0;
       // Sequential, so sort_order stays deterministic and one failure
       // doesn't abort the files already uploaded.
       for (const [i, file] of files.entries()) {
@@ -485,7 +505,7 @@ function CabinPhotosDialog({
   const mainMutation = useMutation({
     mutationFn: (id: number) => updateStaffCabinImage(id, { is_main: true }),
     onSuccess: () => {
-      toast.success("Main photo updated — this now shows on the cabin card.");
+      toast.success(t("cb.mainUpdated"));
       invalidate();
     },
     onError: (err) => toast.error(errorText(err)),
@@ -501,7 +521,7 @@ function CabinPhotosDialog({
   const deleteMutation = useMutation({
     mutationFn: deleteStaffCabinImage,
     onSuccess: () => {
-      toast.success("Photo deleted.");
+      toast.success(t("gallery.photoDeleted"));
       invalidate();
     },
     onError: (err) => toast.error(errorText(err)),
@@ -512,8 +532,8 @@ function CabinPhotosDialog({
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div className="text-xs text-muted-foreground">
-            {images.length} photo(s). The <Star className="inline size-3 text-gold fill-gold" /> photo
-            is the cabin card's main image; the rest appear in the detail page gallery.
+            {images.length} photo(s). The <Star className="inline size-3 text-gold fill-gold" />{" "}
+            photo is the cabin card's main image; the rest appear in the detail page gallery.
           </div>
           <input
             ref={fileInputRef}
@@ -532,7 +552,11 @@ function CabinPhotosDialog({
             disabled={uploading}
             className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-40"
           >
-            {uploading ? <Loader2 className="size-3.5 animate-spin" /> : <ImagePlus className="size-3.5" />}
+            {uploading ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <ImagePlus className="size-3.5" />
+            )}
             Add photos
           </button>
         </div>
@@ -554,13 +578,13 @@ function CabinPhotosDialog({
                   />
                   {img.is_main && (
                     <span className="absolute top-1.5 left-1.5 flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold text-ocean text-[9px] font-semibold">
-                      <Star className="size-2.5 fill-ocean" /> Main
+                      <Star className="size-2.5 fill-ocean" /> {t("cb.main")}
                     </span>
                   )}
                   <div className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     {!img.is_main && (
                       <button
-                        title="Make this the card's main image"
+                        title={t("cb.makeMain")}
                         onClick={() => mainMutation.mutate(img.id)}
                         className="size-6 grid place-items-center rounded-full bg-black/55 text-white hover:bg-gold hover:text-ocean transition-colors"
                       >
@@ -568,9 +592,10 @@ function CabinPhotosDialog({
                       </button>
                     )}
                     <button
-                      title="Delete photo"
+                      title={t("gallery.deletePhoto")}
                       onClick={() => {
-                        if (window.confirm("Delete this photo?")) deleteMutation.mutate(img.id);
+                        if (window.confirm(t("cb.confirmDeletePhoto")))
+                          deleteMutation.mutate(img.id);
                       }}
                       className="size-6 grid place-items-center rounded-full bg-black/55 text-white hover:bg-destructive transition-colors"
                     >
@@ -580,7 +605,7 @@ function CabinPhotosDialog({
                 </div>
                 <input
                   defaultValue={img.caption}
-                  placeholder="Caption (optional)"
+                  placeholder={t("cb.captionOptional")}
                   className="w-full bg-background border border-border rounded-lg py-1.5 px-2 text-[11px] focus:outline-none focus:border-gold"
                   onBlur={(e) => {
                     if (e.target.value !== img.caption) {
