@@ -1431,9 +1431,26 @@ function StepPayment({
 
   const dueAmount = quote ? Number.parseFloat(quote.grand_total) : 0;
   const partialAmountNumber = Number.parseFloat(data.partialAmount || "0");
+  // The deposit floor comes from the sailing, not from a constant here: it is
+  // admin-editable per package, and the server refuses anything under it. The
+  // form has to refuse the same amounts, or the customer fills in the whole
+  // wizard and is turned away at the pay button.
+  const minDepositPercent = selectedPackage
+    ? Number.parseFloat(selectedPackage.min_deposit_percent)
+    : 0;
+  // Rounded UP to the paisa. Rounding down can land a hair under the server's
+  // own figure, which rejects it — and being a paisa over is harmless.
+  const minDeposit = Math.ceil(dueAmount * minDepositPercent) / 100;
+  // Quick amounts, built from the floor rather than fixed at 25/50/75. A 25%
+  // button under a 50% policy is a button that always fails — it looks valid,
+  // passes the form, and is refused at the pay step. 100% is left out because
+  // that is the Full option beside it, not a deposit.
+  const depositPresets = [minDepositPercent, 75, 90].filter(
+    (pct, i, all) => pct >= minDepositPercent && pct < 100 && all.indexOf(pct) === i,
+  );
   const partialInvalid =
     data.paymentType === "partial" &&
-    (!data.partialAmount || partialAmountNumber <= 0 || partialAmountNumber > dueAmount);
+    (!data.partialAmount || partialAmountNumber < minDeposit || partialAmountNumber > dueAmount);
 
   // Deliberately not persisted with the rest of the booking draft: consent is
   // given for THIS submission, and reloading the page should ask again.
@@ -1746,7 +1763,8 @@ function StepPayment({
                     htmlFor={partialAmountId}
                     className="eyebrow text-muted-foreground text-[10px] block"
                   >
-                    Amount to pay now — max {quote ? formatBDT(quote.grand_total) : "—"}
+                    Amount to pay now — {formatBDT(String(minDeposit))} to{" "}
+                    {quote ? formatBDT(quote.grand_total) : "—"}
                   </label>
                   <div className="relative">
                     <span
@@ -1758,7 +1776,7 @@ function StepPayment({
                     <input
                       id={partialAmountId}
                       type="number"
-                      min={0}
+                      min={minDeposit || 0}
                       max={dueAmount || undefined}
                       value={data.partialAmount}
                       onChange={(e) => update({ partialAmount: e.target.value })}
@@ -1770,12 +1788,12 @@ function StepPayment({
                   </div>
                   {dueAmount > 0 && (
                     <div className="flex gap-2">
-                      {[25, 50, 75].map((pct) => (
+                      {depositPresets.map((pct) => (
                         <button
                           key={pct}
                           type="button"
                           onClick={() =>
-                            update({ partialAmount: String(Math.round((dueAmount * pct) / 100)) })
+                            update({ partialAmount: String(Math.ceil((dueAmount * pct) / 100)) })
                           }
                           className="flex-1 min-h-11 rounded-lg border border-border py-1.5 text-[11px] font-semibold text-muted-foreground hover:border-gold hover:text-gold-text transition-colors"
                         >
@@ -1786,7 +1804,8 @@ function StepPayment({
                   )}
                   {partialInvalid && (
                     <div id={partialErrorId} role="alert" className="text-xs text-destructive">
-                      Enter an amount between 1 and the total.
+                      A deposit of at least {formatBDT(String(minDeposit))} ({minDepositPercent}% of
+                      the total) is required to confirm a booking.
                     </div>
                   )}
                 </div>

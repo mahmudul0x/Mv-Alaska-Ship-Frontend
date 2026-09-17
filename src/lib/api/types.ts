@@ -40,6 +40,11 @@ export interface Package {
    *  not), so the cards and the booking page cannot disagree about it. The
    *  real money always comes from the quote — this is the headline. */
   offer: PackageOffer | null;
+  /** Smallest first payment allowed, as a percent of the booking total. Per
+   *  sailing and admin-editable, so the booking form reads it rather than
+   *  carrying its own copy — a form that accepts what the server refuses
+   *  sends the customer all the way to the pay button before saying no. */
+  min_deposit_percent: Money;
 }
 
 export type OfferType = "percent" | "fixed";
