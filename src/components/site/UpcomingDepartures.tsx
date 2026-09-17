@@ -16,8 +16,14 @@ import type { Package } from "@/lib/api/types";
  * open, so the page never shows an empty shell. */
 export function UpcomingDepartures() {
   const { data: packages } = usePackages();
-  // API is ordered by start_date, so the first bookable ones are the soonest.
-  const upcoming = (packages ?? []).filter((p) => p.is_bookable).slice(0, 3);
+  // API is ordered by start_date, so these come out soonest-first.
+  //
+  // Every bookable sailing, not a fixed three: the cap was silently hiding a
+  // real departure the moment a fourth opened, and a voyage nobody can see is
+  // a voyage nobody books. "All packages" still sits beside the heading for
+  // the closed and past ones. The operator runs two or three sailings a month,
+  // so this stays a short strip on its own.
+  const upcoming = (packages ?? []).filter((p) => p.is_bookable);
   if (!upcoming.length) return null;
 
   return (
