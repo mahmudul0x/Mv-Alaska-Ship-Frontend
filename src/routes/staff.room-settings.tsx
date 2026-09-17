@@ -140,8 +140,8 @@ function RoomTypesSection() {
       {ship && <FareBasisCard ship={ship} />}
 
       <p className="text-xs text-muted-foreground">
-        Base price is charged once per room, on top of per-person fares. Pax limits are enforced by
-        the booking API — the frontend cannot bypass them.
+        A cabin&rsquo;s fare comes from the berths it has and the adult fare above. Pax limits are
+        enforced by the booking API — the frontend cannot bypass them.
       </p>
 
       {isLoading ? (
@@ -184,6 +184,9 @@ function RoomTypeCard({
   saving: boolean;
 }) {
   const [basePrice, setBasePrice] = useState(roomType.base_price);
+  // Shown only when it is doing something. A per-cabin surcharge is the rare
+  // case, but one silently adding money to every booking is worse than clutter.
+  const [showBase, setShowBase] = useState(Number(roomType.base_price) !== 0);
   const [maxAdults, setMaxAdults] = useState(roomType.max_adults);
   const [maxKids, setMaxKids] = useState(roomType.max_kids);
   const dirty =
@@ -215,24 +218,6 @@ function RoomTypeCard({
       </div>
 
       <div className="p-5 space-y-4">
-        <label className="block">
-          <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
-            Base price per room
-          </span>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-              ৳
-            </span>
-            <input
-              type="number"
-              min={0}
-              value={basePrice}
-              onChange={(e) => setBasePrice(e.target.value)}
-              className={`${staffInputClass} pl-8`}
-            />
-          </div>
-        </label>
-
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
             <span className="eyebrow text-muted-foreground text-[10px] mb-1.5 flex items-center gap-1">
@@ -267,6 +252,53 @@ function RoomTypeCard({
             />
           </label>
         </div>
+
+        {/* Folded away, because a cabin's fare comes from its berths and the
+            adult fare; a flat per-room amount is for the rare cabin that costs
+            more for a reason other than its size.
+
+            It opens itself whenever it is not zero. Hiding a field that is
+            quietly adding money to every booking would be far worse than
+            showing one nobody needs. */}
+        {showBase ? (
+          <label className="block">
+            <span className="eyebrow text-muted-foreground text-[10px] mb-1.5 flex items-center justify-between gap-2">
+              <span>Base price per room</span>
+              <button
+                type="button"
+                onClick={() => setShowBase(false)}
+                disabled={Number(basePrice || 0) !== 0}
+                className="normal-case tracking-normal text-[10px] text-muted-foreground hover:text-foreground disabled:opacity-0"
+              >
+                hide
+              </button>
+            </span>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                ৳
+              </span>
+              <input
+                type="number"
+                min={0}
+                value={basePrice}
+                onChange={(e) => setBasePrice(e.target.value)}
+                className={`${staffInputClass} pl-8`}
+              />
+            </div>
+            <span className="mt-1.5 block text-[10px] text-muted-foreground leading-snug">
+              Added once per cabin, on top of the berth fare. Leave at 0 unless this cabin costs
+              more for a reason other than its size.
+            </span>
+          </label>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowBase(true)}
+            className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+          >
+            Add a per-cabin base price
+          </button>
+        )}
 
         <CabinFarePreview
           basePrice={basePrice}
