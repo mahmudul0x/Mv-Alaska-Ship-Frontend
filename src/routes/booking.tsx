@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Anchor,
   Baby,
+  BedDouble,
   BadgeCheck,
   Bed,
   CalendarDays,
@@ -116,7 +117,20 @@ function isStepComplete(step: number, data: BookingData) {
 /** Add/remove/update helpers for the selected-rooms list, keyed by room id. */
 function addRoom(rooms: RoomSelection[], room: PackageRoom): RoomSelection[] {
   if (rooms.some((r) => r.room.id === room.id)) return rooms; // already selected
-  return [...rooms, { room, adultCount: 1, kidAges: [], foreignGuests: [] }];
+  // Filled to capacity, not to one. On a ship that sells cabins whole this is
+  // what the customer pays for either way, so opening at one adult would show
+  // them a price that does not drop when they add the second — which reads as
+  // a bug. Where cabins are sold per head the counter is theirs to lower, and
+  // most cabins are taken full regardless.
+  return [
+    ...rooms,
+    {
+      room,
+      adultCount: room.room_type.max_adults,
+      kidAges: [],
+      foreignGuests: [],
+    },
+  ];
 }
 function removeRoom(rooms: RoomSelection[], roomId: number): RoomSelection[] {
   return rooms.filter((r) => r.room.id !== roomId);
@@ -1331,6 +1345,37 @@ function GuestsCards({
  *  does not add up, and the customer is left working out whether the total
  *  already includes it. The label comes from the server alongside the amount,
  *  so a booking priced under an offer that has since ended still names it. */
+/** "Adults (2 × ৳3,000)", or "Cabin (2 berths × ৳3,000)" when the cabin was
+ *  billed at capacity and fewer people are travelling. The wording has to say
+ *  which, or a solo traveller reads "Adults (2 × …)" and wonders who the
+ *  second person is. */
+function adultLineLabel(room: import("@/lib/api/types").RoomPriceBreakdown): string {
+  const rate = formatBDT(room.adult_price);
+  if (room.charged_adults === room.adult_count) {
+    return `Adults (${room.adult_count} × ${rate})`;
+  }
+  return `Cabin (${room.charged_adults} berths × ${rate})`;
+}
+
+/** What came back for berths nobody is travelling in.
+ *
+ *  Shown right under the cabin fare, negative, because the two are one
+ *  bargain: you are buying the whole cabin, and this is what the empty half
+ *  gives back. Absent entirely on a ship sold per head. */
+function EmptyBerthLine({ room }: { room: import("@/lib/api/types").RoomPriceBreakdown }) {
+  if (!Number(room.empty_berth_discount)) return null;
+  return (
+    <div className="flex justify-between text-emerald-700">
+      <span className="flex items-center gap-1.5">
+        <BedDouble className="size-3 shrink-0" />
+        {room.empty_berth_count} unoccupied berth
+        {room.empty_berth_count === 1 ? "" : "s"}
+      </span>
+      <span className="font-medium">− {formatBDT(room.empty_berth_discount)}</span>
+    </div>
+  );
+}
+
 function DiscountLine({ room }: { room: import("@/lib/api/types").RoomPriceBreakdown }) {
   if (!Number(room.discount)) return null;
   return (
@@ -1680,9 +1725,7 @@ function StepPayment({
                         </span>
                       </div>
                       <div className="flex justify-between text-muted-foreground">
-                        <span>
-                          Adults ({room.adult_count} × {formatBDT(room.adult_price)})
-                        </span>
+                        <span>{adultLineLabel(room)}</span>
                         <span className="text-foreground font-medium">
                           {formatBDT(room.adults_subtotal)}
                         </span>
@@ -1695,6 +1738,7 @@ function StepPayment({
                           </span>
                         </div>
                       ))}
+                      <EmptyBerthLine room={room} />
                       <ForeignSurchargeLines room={room} />
                       <DiscountLine room={room} />
                     </div>
@@ -2362,9 +2406,7 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
                       <span>{formatBDT(room.room_base)}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>
-                        Adults ({room.adult_count} × {formatBDT(room.adult_price)})
-                      </span>
+                      <span>{adultLineLabel(room)}</span>
                       <span>{formatBDT(room.adults_subtotal)}</span>
                     </div>
                     {room.kids.map((kid, k) => (
@@ -2373,6 +2415,7 @@ function ConfirmScreen({ booking, contactName }: { booking: BookingPublic; conta
                         <span>{formatBDT(kid.charge)}</span>
                       </div>
                     ))}
+                    <EmptyBerthLine room={room} />
                     <ForeignSurchargeLines room={room} />
                     <DiscountLine room={room} />
                   </div>

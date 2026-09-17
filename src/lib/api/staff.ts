@@ -261,7 +261,11 @@ export async function updateStaffShip(
   payload: Partial<
     Pick<
       StaffShip,
-      "authority_phones" | "contact_notify_email" | "guide_report_density" | "default_adult_price"
+      | "authority_phones"
+      | "contact_notify_email"
+      | "guide_report_density"
+      | "default_adult_price"
+      | "meal_allowance"
     >
   >,
 ): Promise<StaffShip> {

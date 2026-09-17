@@ -246,6 +246,15 @@ export interface RoomPriceBreakdown {
   foreign_kid_count: number;
   foreigner_adult_surcharge: Money;
   foreigner_kid_surcharge: Money;
+  /** How many are travelling, and how many berths were billed. They differ
+   *  when a cabin is taken under capacity on a ship that sells cabins whole;
+   *  `empty_berth_discount` is what came back for the difference. All zero on
+   *  a ship sold per head, and on every booking priced before the model
+   *  existed. */
+  charged_adults: number;
+  empty_berth_count: number;
+  meal_allowance: Money;
+  empty_berth_discount: Money;
   foreigner_subtotal: Money;
   /** What the cabin costs before the sailing's offer, and what the offer takes
    *  off it. `discount` is "0.00" on a cabin sold at full price, and on every

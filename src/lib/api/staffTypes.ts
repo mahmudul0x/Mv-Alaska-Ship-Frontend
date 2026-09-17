@@ -34,6 +34,11 @@ export interface StaffShip {
    *  so raising this for next season cannot rewrite what people already
    *  booked at. */
   default_adult_price: Money | null;
+  /** Blank is not zero, and the difference is the pricing model:
+   *   null → cabins are sold per head (the default, and the original model)
+   *   "0"  → cabins are sold whole, nothing back for empty berths
+   *   "5000" → cabins sold whole, less 5000 per berth nobody takes */
+  meal_allowance: Money | null;
 }
 
 export type ContactMessageStatus = "new" | "read" | "archived";
