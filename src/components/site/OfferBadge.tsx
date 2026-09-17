@@ -30,19 +30,21 @@ export function offerSummary(offer: PackageOffer): string {
 export function OfferBadge({ offer, className = "" }: { offer: PackageOffer; className?: string }) {
   return (
     <span
-      // Dark glass, not the pale gold chip this started as. Every card that
-      // shows this puts it ON THE PHOTO, and bg-gold/15 is a tint meant for a
-      // white card — over a bright picture it washed out until the text was
-      // unreadable. Ocean at 90% with a blur gives the light gold something to
-      // sit on whatever the photograph behind it happens to be.
+      // Solid gold, the same accent the primary buttons use — a discount is
+      // the loudest thing a card has to say, and it should not have to compete
+      // with the photograph behind it. This started as a pale gold tint
+      // (bg-gold/15) meant for a white card, which on a mid-tone photo came
+      // out at 1.65:1 and was effectively invisible, then as dark glass, which
+      // was legible but blended into the picture.
       //
-      // Measured rather than eyeballed. Old chip on a mid-tone photograph:
-      // 1.65:1, which is why it read as invisible. This one is 5.23:1 against
-      // the worst case (a white photograph) and better on everything darker,
-      // so it clears WCAG AA on any picture the client uploads.
-      className={`inline-flex max-w-full items-center gap-1.5 rounded-full bg-ocean/90 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-gold-soft shadow-sm ring-1 ring-gold/45 backdrop-blur-md ${className}`}
+      // Text is MIDNIGHT, not ocean: measured on the gradient's darkest end,
+      // ocean gives 4.25:1 — under the 4.5:1 floor for text this size —
+      // while midnight gives 5.58:1, and 6.80:1 on the light end. The
+      // background is opaque, so unlike the earlier versions the contrast does
+      // not depend on which photograph the client uploaded.
+      className={`inline-flex max-w-full items-center gap-1.5 rounded-full gradient-gold px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-midnight shadow-luxe ring-1 ring-gold-soft/60 ${className}`}
     >
-      <Tag aria-hidden="true" className="size-3 shrink-0 text-gold" />
+      <Tag aria-hidden="true" className="size-3 shrink-0" />
       {/* The campaign name and the saving are not equally important. Run
           together in one weight — "EID OFFER — 19.97% OFF" — the pill reads as
           one long shout and the number, which is the part anyone actually
@@ -50,13 +52,15 @@ export function OfferBadge({ offer, className = "" }: { offer: PackageOffer; cla
           the thing. */}
       {offer.label && (
         <>
-          <span className="truncate font-medium text-gold-soft/75">{offer.label}</span>
-          <span aria-hidden="true" className="text-gold/50">
+          {/* Weight carries the hierarchy, NOT opacity: fading this to 75%
+              dropped it to 2.77:1 on gold and undid the whole point. */}
+          <span className="truncate font-medium">{offer.label}</span>
+          <span aria-hidden="true" className="opacity-45">
             ·
           </span>
         </>
       )}
-      <span className="shrink-0 font-bold text-gold-soft">{offerSummary(offer)}</span>
+      <span className="shrink-0 font-extrabold">{offerSummary(offer)}</span>
     </span>
   );
 }

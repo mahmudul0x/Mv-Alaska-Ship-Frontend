@@ -92,9 +92,13 @@ function DepartureCard({ pkg, index }: { pkg: Package; index: number }) {
           <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
           Booking open
         </span>
-        {/* Bottom-left, clear of the "Booking open" pill top-right: the two are
-            different kinds of news and must not collide on a narrow card. */}
-        {pkg.offer && <OfferBadge offer={pkg.offer} className="absolute bottom-3 left-3" />}
+        {/* Top-left, opposite the "Booking open" pill, so both pills sit on
+            one line instead of running diagonally across the picture. Down in
+            the bottom corner a discount reads as a footnote — it is the
+            loudest thing this card has to say. */}
+        {pkg.offer && (
+          <OfferBadge offer={pkg.offer} className="absolute top-3 left-3 max-w-[60%]" />
+        )}
       </div>
 
       <div className="flex flex-1 flex-col p-6">
