@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   AlertTriangle,
@@ -51,6 +51,16 @@ import { copyToClipboard } from "@/lib/clipboard";
 
 export const Route = createFileRoute("/staff/refunds")({
   component: RefundsPage,
+  // The sidebar bell links straight at a thing rather than at the page: a
+  // notification you then have to go hunting for is a worse version of a
+  // number. `request` opens that cancellation dialog; `tab` picks the tab.
+  validateSearch: (s: Record<string, unknown>) => ({
+    request: typeof s.request === "number" ? s.request : undefined,
+    tab:
+      s.tab === "queue" || s.tab === "register" || s.tab === "review"
+        ? (s.tab as "queue" | "register" | "review")
+        : undefined,
+  }),
 });
 
 const REQUEST_FILTERS: { value: string; label: StringKey }[] = [
@@ -77,7 +87,12 @@ const PAYOUT_METHODS: { value: string; label: StringKey | "bKash" | "Nagad" }[] 
 
 function RefundsPage() {
   const { t, lang } = useLanguage();
-  const [tab, setTab] = useState<"queue" | "register" | "review">("queue");
+  const search = Route.useSearch();
+  // A linked-to request is always in the queue, so the tab follows from it
+  // without the link having to say both.
+  const [tab, setTab] = useState<"queue" | "register" | "review">(
+    search.request ? "queue" : (search.tab ?? "queue"),
+  );
 
   const requestSummary = useQuery({
     queryKey: ["staff", "cancellation-summary"],
@@ -178,7 +193,7 @@ function RefundsPage() {
       </div>
 
       {tab === "queue" ? (
-        <CancellationQueue />
+        <CancellationQueue openRequestId={search.request} />
       ) : tab === "review" ? (
         <ReviewQueue />
       ) : (
@@ -402,12 +417,34 @@ function ResolvePaymentDialog({
 
 /* ── Cancellation queue ──────────────────────────────────────────────────── */
 
-function CancellationQueue() {
+function CancellationQueue({ openRequestId }: { openRequestId?: number }) {
   const t = useT();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [status, setStatus] = useState("pending");
   const [search, setSearch] = useState("");
-  const [openId, setOpenId] = useState<number | null>(null);
+  // Seeded from the URL so a bell link lands on the open dialog, not on the
+  // queue with the reader left to find the row again.
+  const [openId, setOpenId] = useState<number | null>(openRequestId ?? null);
+
+  // ...and re-opened when the link is followed from THIS page, where the
+  // component never unmounts and the initial state above would never run
+  // again. Guarded on the id so closing the dialog does not immediately
+  // reopen it.
+  useEffect(() => {
+    if (openRequestId) setOpenId(openRequestId);
+  }, [openRequestId]);
+
+  /** Closing drops the id from the URL as well as from state. Leaving it there
+   *  would mean the same bell link, followed twice, opened nothing the second
+   *  time — the search param would not have changed, so the effect above would
+   *  not fire. */
+  function close() {
+    setOpenId(null);
+    if (openRequestId) {
+      navigate({ to: "/staff/refunds", search: {}, replace: true });
+    }
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ["staff", "cancellation-requests", status, search],
@@ -471,9 +508,9 @@ function CancellationQueue() {
       {openId !== null && (
         <RequestDialog
           id={openId}
-          onClose={() => setOpenId(null)}
+          onClose={close}
           onDecided={() => {
-            setOpenId(null);
+            close();
             refresh();
           }}
         />

@@ -1,5 +1,5 @@
 import { staffClient } from "./staffClient";
-import type { RoomType } from "./types";
+import type { Money, RoomType } from "./types";
 import type {
   ContactMessageStatus,
   Paginated,
@@ -522,5 +522,41 @@ export async function resolveStaffPayment(
   payload: { status: PaymentResolution; note?: string },
 ): Promise<StaffPayment> {
   const { data } = await staffClient.post(`/staff/payments/${id}/resolve/`, payload);
+  return data;
+}
+
+/* --- The sidebar bell --- */
+
+export interface StaffNotifications {
+  /** One number for the badge. Everything counted in it needs a decision. */
+  total: number;
+  cancellation_requests: {
+    count: number;
+    items: {
+      id: number;
+      booking_code: string;
+      customer_name: string;
+      refund_amount: Money;
+      requested_at: string;
+    }[];
+  };
+  overdue_refunds: {
+    count: number;
+    items: {
+      id: number;
+      booking_code: string;
+      customer_name: string;
+      amount: Money;
+      age_days: number;
+    }[];
+  };
+  payments_needing_review: {
+    count: number;
+    items: { id: number; booking_code: string; amount: Money; high_risk: boolean }[];
+  };
+}
+
+export async function getStaffNotifications(): Promise<StaffNotifications> {
+  const { data } = await staffClient.get("/staff/notifications/");
   return data;
 }

@@ -1313,6 +1313,22 @@ export const STRINGS = {
     en: "The gateway flagged them, or we could not process them — each is holding money, a cabin, or both. Open Refunds to clear them.",
     bn: "গেটওয়ে এগুলো চিহ্নিত করেছে, অথবা আমরা প্রক্রিয়া করতে পারিনি — প্রতিটাই টাকা, কেবিন, বা দুটোই আটকে রেখেছে। মেটাতে Refunds পাতায় যান।",
   },
+
+  /* The sidebar bell */
+  "notif.title": { en: "Notifications", bn: "বিজ্ঞপ্তি" },
+  "notif.needsYou": {
+    en: "{n} thing(s) waiting on you",
+    bn: "{n}টি বিষয় আপনার সিদ্ধান্তের অপেক্ষায়",
+  },
+  "notif.allClear": { en: "Nothing waiting", bn: "কিছু অপেক্ষায় নেই" },
+  "notif.nothing": {
+    en: "Nothing needs you right now.",
+    bn: "এই মুহূর্তে আপনার কিছু করার নেই।",
+  },
+  "notif.groupRequests": { en: "Cancellation requests", bn: "বাতিলের আবেদন" },
+  "notif.groupOverdue": { en: "Payouts past their window", bn: "সময় পেরোনো ফেরত" },
+  "notif.groupFlagged": { en: "Payments to check", bn: "যাচাই দরকার এমন পেমেন্ট" },
+  "notif.waitingDays": { en: "Waiting {n} days", bn: "{n} দিন ধরে অপেক্ষায়" },
 } as const;
 
 export type StringKey = keyof typeof STRINGS;
