@@ -6,11 +6,14 @@
  * here rather than typed into each page — a licence number that appears in four
  * places is a licence number that will eventually disagree with itself.
  *
- * ⚠️ PENDING: the registration numbers below are placeholders. Replace them
- * with the values exactly as they appear on the trade licence — SSLCommerz
- * checks them against the documents, and a transposed digit fails the review.
- * `isPlaceholder` lets the UI hide a row rather than publish "———" to a
- * customer.
+ * The registration numbers are the real ones, transcribed from the trade
+ * licence and the VAT certificate. SSLCommerz check them against those
+ * documents, so a transposed digit fails the review — change one only against
+ * the paperwork, never from memory.
+ *
+ * A number the business does not hold stays `PENDING` rather than being
+ * guessed: `isPlaceholder` then hides that row instead of publishing "———" to
+ * customers, which is what the live footer once did.
  */
 
 const PENDING = "———";

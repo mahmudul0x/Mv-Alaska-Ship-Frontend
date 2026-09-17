@@ -1,8 +1,9 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Anchor, Loader2, Lock, User } from "lucide-react";
+import { Loader2, Lock, User } from "lucide-react";
 import { LanguageProvider, useT } from "@/lib/i18n";
 
+import logo from "@/assets/logo.png";
 import { staffLogin } from "@/lib/api/staff";
 import { isStaffLoggedIn, setStaffSession } from "@/lib/staffAuth";
 import type { ApiError } from "@/lib/api/types";
@@ -54,9 +55,12 @@ function StaffLoginPage() {
     <div className="min-h-screen bg-linear-to-br from-ocean via-ocean to-midnight flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="size-14 rounded-2xl gradient-gold grid place-items-center mx-auto mb-4 shadow-luxe">
-            <Anchor className="size-7 text-ocean" />
-          </div>
+          <img
+            src={logo}
+            alt="MV Alaska"
+            className="h-16 w-auto object-contain mx-auto mb-4"
+            draggable={false}
+          />
           <h1 className="font-display text-3xl text-background">MV Alaska</h1>
           <p className="eyebrow text-gold-soft text-[10px] mt-1">{t("shell.dashboard")}</p>
         </div>

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 import {
-  Anchor,
   BedDouble,
   CalendarRange,
   ChefHat,
@@ -18,6 +17,7 @@ import {
   Wallet,
 } from "lucide-react";
 
+import logo from "@/assets/logo.png";
 import { staffLogout } from "@/lib/api/staff";
 import { LanguageProvider, useLanguage } from "@/lib/i18n";
 import type { StringKey } from "@/lib/i18n/strings";
@@ -89,10 +89,23 @@ function StaffLayout() {
       <aside
         className={`fixed inset-y-0 left-0 z-40 ${width} bg-linear-to-b from-ocean to-midnight text-background flex flex-col transition-[width] duration-300 ease-in-out`}
       >
-        <div className="h-16 flex items-center gap-3 px-4 border-b border-white/10 shrink-0">
-          <div className="size-8 rounded-lg gradient-gold grid place-items-center shrink-0">
-            <Anchor className="size-4 text-ocean" />
-          </div>
+        {/* The ship's own mark, straight on the dark ground — the same way the
+            public navbar carries it. It sat in a gold tile with a stock anchor
+            in it, which is a logo for no particular ship.
+
+            Narrower padding when collapsed: the rail is 64px, and px-4 leaves
+            32px of it, which is not enough of the mark to recognise. */}
+        <div
+          className={`h-16 flex items-center gap-3 border-b border-white/10 shrink-0 ${
+            collapsed ? "px-2 justify-center" : "px-4"
+          }`}
+        >
+          <img
+            src={logo}
+            alt="MV Alaska"
+            className="size-10 object-contain shrink-0"
+            draggable={false}
+          />
           {!collapsed && (
             <div className="min-w-0">
               <div className="font-display text-lg leading-none truncate">MV Alaska</div>
