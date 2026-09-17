@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
+import type { LucideIcon } from "lucide-react";
 import {
   Anchor,
   BedDouble,
@@ -18,10 +19,19 @@ import {
 } from "lucide-react";
 
 import { staffLogout } from "@/lib/api/staff";
+import { LanguageProvider, useLanguage } from "@/lib/i18n";
+import type { StringKey } from "@/lib/i18n/strings";
 import { clearStaffSession, getRefreshToken, getStaffUser, isStaffLoggedIn } from "@/lib/staffAuth";
 
 export const Route = createFileRoute("/staff")({
-  component: StaffLayout,
+  // The provider wraps the layout rather than sitting inside it, so the layout
+  // itself can call useLanguage() — and so every staff page is inside it
+  // without each one remembering to be.
+  component: () => (
+    <LanguageProvider>
+      <StaffLayout />
+    </LanguageProvider>
+  ),
   beforeLoad: () => {
     if (!isStaffLoggedIn()) {
       throw redirect({ to: "/staff/login" });
