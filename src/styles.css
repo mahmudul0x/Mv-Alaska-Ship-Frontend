@@ -135,6 +135,20 @@
 
   h1, h2, h3, h4, .font-display { font-family: var(--font-display); letter-spacing: -0.01em; }
   ::selection { background: var(--gold); color: var(--ocean); }
+
+  /* Tailwind v4's Preflight gives buttons `cursor: default`, where v3 gave
+     them `cursor: pointer`. Nothing in this app wants that: every button here
+     is a button. Restored once, in the base layer, rather than as
+     `cursor-pointer` on each of 170 elements — which is a class that WILL be
+     forgotten on the 171st.
+
+     Disabled buttons are excluded: a pointer on something that does nothing is
+     a small lie, and several disabled buttons here are deliberately inert. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary {
+    cursor: pointer;
+  }
 }
 
 @layer utilities {

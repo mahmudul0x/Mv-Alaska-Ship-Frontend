@@ -44,77 +44,74 @@ function SettingsPage() {
         subtitle="Your account, and the details printed on documents customers receive."
       />
 
-      {/* Two columns from lg up: a sticky index beside the content. The page is
-          four unrelated settings groups, and a flat scroll gives no sense of
-          how many there are or where you are among them. */}
-      <div className="mt-6 flex flex-col lg:flex-row gap-8 items-start">
-        <nav
-          aria-label="Settings sections"
-          className="hidden lg:block w-52 shrink-0 sticky top-8 space-y-1"
-        >
-          {SECTIONS.map(({ id, label, icon: Icon }) => (
-            <a
-              key={id}
-              href={`#${id}`}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            >
-              <Icon className="size-4 shrink-0 text-gold" />
-              {label}
-            </a>
-          ))}
-        </nav>
+      {/* A row, not a left rail: these are four short groups, and a horizontal
+          index reads the same way as the tabs on Room Settings — one dashboard,
+          one idea of what a section switcher looks like. It scrolls sideways on
+          a phone rather than wrapping into a block of its own. */}
+      <nav
+        aria-label="Settings sections"
+        className="mt-6 flex items-center gap-1 overflow-x-auto border-b border-border pb-px"
+      >
+        {SECTIONS.map(({ id, label, icon: Icon }) => (
+          <a
+            key={id}
+            href={`#${id}`}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-sm whitespace-nowrap text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          >
+            <Icon className="size-4 shrink-0 text-gold" />
+            {label}
+          </a>
+        ))}
+      </nav>
 
-        <div className="min-w-0 flex-1 max-w-2xl space-y-10">
-          {/* scroll-mt: anchored jumps must not tuck a heading under the
-              sticky dashboard chrome. */}
-          <section id="account" className="scroll-mt-8 space-y-4">
-            <SectionHeading
-              icon={UserRound}
-              title="Account"
-              hint="Who you are signed in as. Changing it is an administrator job."
-            />
+      <div className="mt-8 max-w-2xl space-y-10">
+        <section id="account" className="scroll-mt-8 space-y-4">
+          <SectionHeading
+            icon={UserRound}
+            title="Account"
+            hint="Who you are signed in as. Changing it is an administrator job."
+          />
 
-            <div className="rounded-2xl border border-border bg-card overflow-hidden">
-              <div className="px-6 py-5 border-b border-border flex items-center gap-4">
-                <div className="size-14 rounded-full gradient-gold grid place-items-center shrink-0">
-                  <span className="font-display text-xl text-ocean">{initial}</span>
-                </div>
-                <div className="min-w-0">
-                  <div className="font-display text-xl leading-tight truncate">
-                    {user?.first_name || user?.username || "Staff"}
-                  </div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    @{user?.username ?? "—"}
-                  </div>
-                </div>
+          <div className="rounded-2xl border border-border bg-card overflow-hidden">
+            <div className="px-6 py-5 border-b border-border flex items-center gap-4">
+              <div className="size-14 rounded-full gradient-gold grid place-items-center shrink-0">
+                <span className="font-display text-xl text-ocean">{initial}</span>
               </div>
-
-              <div className="divide-y divide-border">
-                <ProfileRow icon={UserRound} label="Username" value={user?.username ?? "—"} />
-                <ProfileRow
-                  icon={ShieldCheck}
-                  label="Role"
-                  value={user?.is_staff ? "Staff (dashboard access)" : "—"}
-                />
-              </div>
-
-              <div className="px-6 py-3 bg-muted/40 border-t border-border text-[11px] text-muted-foreground">
-                To change your name, username or password, ask an administrator to do it in the
-                Django admin panel.
+              <div className="min-w-0">
+                <div className="font-display text-xl leading-tight truncate">
+                  {user?.first_name || user?.username || "Staff"}
+                </div>
+                <div className="text-xs text-muted-foreground truncate">
+                  @{user?.username ?? "—"}
+                </div>
               </div>
             </div>
-          </section>
 
-          <section id="inbox" className="scroll-mt-8">
-            <NotificationInboxSection />
-          </section>
-          <section id="helpline" className="scroll-mt-8">
-            <HelplineSection />
-          </section>
-          <section id="report" className="scroll-mt-8">
-            <GuideReportSection />
-          </section>
-        </div>
+            <div className="divide-y divide-border">
+              <ProfileRow icon={UserRound} label="Username" value={user?.username ?? "—"} />
+              <ProfileRow
+                icon={ShieldCheck}
+                label="Role"
+                value={user?.is_staff ? "Staff (dashboard access)" : "—"}
+              />
+            </div>
+
+            <div className="px-6 py-3 bg-muted/40 border-t border-border text-[11px] text-muted-foreground">
+              To change your name, username or password, ask an administrator to do it in the Django
+              admin panel.
+            </div>
+          </div>
+        </section>
+
+        <section id="inbox" className="scroll-mt-8">
+          <NotificationInboxSection />
+        </section>
+        <section id="helpline" className="scroll-mt-8">
+          <HelplineSection />
+        </section>
+        <section id="report" className="scroll-mt-8">
+          <GuideReportSection />
+        </section>
       </div>
     </div>
   );
