@@ -40,6 +40,7 @@ import {
   voidRefund,
 } from "@/lib/api/staffRefunds";
 import type { StaffCancellationRequest, StaffRefund } from "@/lib/api/staffRefundTypes";
+import { useT } from "@/lib/i18n";
 import { formatBDT } from "@/lib/money";
 
 export const Route = createFileRoute("/staff/refunds")({
@@ -69,6 +70,7 @@ const PAYOUT_METHODS = [
 ];
 
 function RefundsPage() {
+  const t = useT();
   const [tab, setTab] = useState<"queue" | "register">("queue");
 
   const requestSummary = useQuery({
@@ -82,14 +84,11 @@ function RefundsPage() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      <PageHeader
-        title="Cancellations & refunds"
-        subtitle="Decide cancellation requests, and record the money that goes back out."
-      />
+      <PageHeader title={t("rf.title")} subtitle={t("rf.subtitle")} />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Awaiting decision"
+          label={t("rf.awaitingDecision")}
           value={String(requestSummary.data?.pending_count ?? 0)}
           icon={Clock3}
           highlight={(requestSummary.data?.pending_count ?? 0) > 0}
@@ -103,21 +102,21 @@ function RefundsPage() {
             In accounting terms it is a debt the company is carrying, and it is
             invisible anywhere else in the system. */}
         <StatCard
-          label="Refund liability"
+          label={t("rf.liability")}
           value={formatBDT(refundSummary.data?.liability_total ?? "0.00")}
           icon={Wallet}
           tone="destructive"
           hint={`${refundSummary.data?.liability_count ?? 0} payout(s) owed`}
         />
         <StatCard
-          label="Overdue payouts"
+          label={t("rf.overduePayouts")}
           value={String(refundSummary.data?.overdue_count ?? 0)}
           icon={AlertTriangle}
           tone={refundSummary.data?.overdue_count ? "destructive" : "default"}
-          hint="Past the refund promise we made"
+          hint={t("rf.overdueHint")}
         />
         <StatCard
-          label="Paid out"
+          label={t("rf.paidOut")}
           value={formatBDT(refundSummary.data?.paid_total ?? "0.00")}
           icon={Banknote}
           tone="emerald"
@@ -165,6 +164,7 @@ function RefundsPage() {
 /* ── Cancellation queue ──────────────────────────────────────────────────── */
 
 function CancellationQueue() {
+  const t = useT();
   const queryClient = useQueryClient();
   const [status, setStatus] = useState("pending");
   const [search, setSearch] = useState("");
@@ -208,7 +208,7 @@ function CancellationQueue() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Booking code, name or phone"
+          placeholder={t("rf.searchRequest")}
           className={`${staffInputClass} max-w-xs ml-auto`}
         />
       </div>
@@ -220,7 +220,9 @@ function CancellationQueue() {
           </div>
         )}
         {!isLoading && rows.length === 0 && (
-          <div className="p-10 text-center text-sm text-muted-foreground">Nothing here.</div>
+          <div className="p-10 text-center text-sm text-muted-foreground">
+            {t("common.nothingHere")}
+          </div>
         )}
         {rows.map((row) => (
           <QueueRow key={row.id} row={row} onOpen={() => setOpenId(row.id)} />
@@ -242,6 +244,7 @@ function CancellationQueue() {
 }
 
 function QueueRow({ row, onOpen }: { row: StaffCancellationRequest; onOpen: () => void }) {
+  const t = useT();
   return (
     <button
       onClick={onOpen}
@@ -268,7 +271,7 @@ function QueueRow({ row, onOpen }: { row: StaffCancellationRequest; onOpen: () =
         <div className="flex items-center gap-1.5 justify-end mt-0.5">
           {row.departure_passed && row.status === "pending" && (
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-semibold">
-              Departed
+              {t("rf.departed")}
             </span>
           )}
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-semibold">
@@ -289,6 +292,7 @@ function RequestDialog({
   onClose: () => void;
   onDecided: () => void;
 }) {
+  const t = useT();
   const [note, setNote] = useState("");
   const { data, isLoading } = useQuery({
     queryKey: ["staff", "cancellation-request", id],
@@ -298,7 +302,7 @@ function RequestDialog({
   const approve = useMutation({
     mutationFn: () => approveCancellation(id, note),
     onSuccess: () => {
-      toast.success("Cancelled and refund raised.");
+      toast.success(t("rf.cancelledRaised"));
       onDecided();
     },
     onError: (err) => toast.error(errorText(err)),
@@ -307,7 +311,7 @@ function RequestDialog({
   const reject = useMutation({
     mutationFn: () => rejectCancellation(id, note),
     onSuccess: () => {
-      toast.success("Request rejected — the customer has been emailed.");
+      toast.success(t("rf.rejected"));
       onDecided();
     },
     onError: (err) => toast.error(errorText(err)),
@@ -317,7 +321,7 @@ function RequestDialog({
   const busy = approve.isPending || reject.isPending;
 
   return (
-    <DialogShell title="Cancellation request" onClose={onClose}>
+    <DialogShell title={t("rf.request")} onClose={onClose}>
       {isLoading || !data ? (
         <div className="py-10 text-center">
           <Loader2 className="size-5 animate-spin mx-auto text-muted-foreground" />
@@ -325,12 +329,12 @@ function RequestDialog({
       ) : (
         <div className="space-y-5">
           <div className="grid grid-cols-2 gap-4">
-            <Info label="Booking" value={data.booking_code} />
-            <Info label="Customer" value={`${data.customer_name} · ${data.phone}`} />
-            <Info label="Departure" value={data.package_start_date} />
-            <Info label="Requested" value={new Date(data.requested_at).toLocaleString()} />
-            <Info label="Reason" value={data.reason_label} />
-            <Info label="Source" value={data.source === "staff" ? "Staff" : "Website"} />
+            <Info label={t("rf.booking")} value={data.booking_code} />
+            <Info label={t("rf.customer")} value={`${data.customer_name} · ${data.phone}`} />
+            <Info label={t("rf.departure")} value={data.package_start_date} />
+            <Info label={t("rf.requested")} value={new Date(data.requested_at).toLocaleString()} />
+            <Info label={t("bk.reason")} value={data.reason_label} />
+            <Info label={t("rf.source")} value={data.source === "staff" ? "Staff" : "Website"} />
           </div>
 
           {data.reason_note && (
@@ -344,9 +348,9 @@ function RequestDialog({
               Quoted {data.tier_label} — fixed when the customer submitted
             </div>
             <div className="divide-y divide-border text-sm">
-              <MoneyRow label="Paid by customer" value={data.paid_amount} />
-              <MoneyRow label="Cancellation charge" value={data.cancellation_charge} />
-              <MoneyRow label="Refund due" value={data.refund_amount} strong />
+              <MoneyRow label={t("rf.paidByCustomer")} value={data.paid_amount} />
+              <MoneyRow label={t("rf.charge")} value={data.cancellation_charge} />
+              <MoneyRow label={t("rf.refundDue")} value={data.refund_amount} strong />
               {data.shortfall_amount !== "0.00" && (
                 <div className="px-4 py-2.5 text-xs text-muted-foreground">
                   Charge not covered by the deposit: {formatBDT(data.shortfall_amount)} — recorded
@@ -358,18 +362,18 @@ function RequestDialog({
 
           {data.refund_account_number && (
             <div className="grid grid-cols-2 gap-4">
-              <Info label="Payout to" value={data.refund_method} />
-              <Info label="Account" value={data.refund_account_number} />
-              <Info label="Account name" value={data.refund_account_name} />
+              <Info label={t("rf.payoutTo")} value={data.refund_method} />
+              <Info label={t("rf.account")} value={data.refund_account_number} />
+              <Info label={t("payout.accountName")} value={data.refund_account_name} />
               {data.bank_name && (
-                <Info label="Bank" value={`${data.bank_name} — ${data.branch_name}`} />
+                <Info label={t("rf.bank")} value={`${data.bank_name} — ${data.branch_name}`} />
               )}
             </div>
           )}
 
           {pending ? (
             <>
-              <StaffField label="Note (required to reject, shown to the customer)">
+              <StaffField label={t("rf.noteReject")}>
                 <textarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
@@ -383,7 +387,7 @@ function RequestDialog({
                   disabled={busy}
                   className="flex-1 min-h-11 rounded-full border border-border text-sm hover:border-destructive hover:text-destructive transition-colors disabled:opacity-40"
                 >
-                  Reject
+                  {t("rf.reject")}
                 </button>
                 <button
                   onClick={() => approve.mutate()}
@@ -419,6 +423,7 @@ function RequestDialog({
 /* ── Refund register ─────────────────────────────────────────────────────── */
 
 function RefundRegister() {
+  const t = useT();
   const queryClient = useQueryClient();
   const [status, setStatus] = useState("pending");
   const [search, setSearch] = useState("");
@@ -470,14 +475,14 @@ function RefundRegister() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Booking, name, phone or reference"
+          placeholder={t("rf.searchRefund")}
           className={`${staffInputClass} max-w-xs ml-auto`}
         />
         <button
           onClick={() => setCreating(true)}
           className="min-h-11 px-4 rounded-full border border-border text-xs font-semibold hover:border-gold hover:text-gold flex items-center gap-2"
         >
-          <Plus className="size-3.5" /> Raise refund
+          <Plus className="size-3.5" /> {t("rf.raiseShort")}
         </button>
         <button
           onClick={() => download("pdf")}
@@ -500,9 +505,7 @@ function RefundRegister() {
           </div>
         )}
         {!isLoading && rows.length === 0 && (
-          <div className="p-10 text-center text-sm text-muted-foreground">
-            No refunds match this filter.
-          </div>
+          <div className="p-10 text-center text-sm text-muted-foreground">{t("rf.noMatch")}</div>
         )}
         {rows.map((refund) => (
           <div key={refund.id} className="px-5 py-4 flex flex-wrap items-center gap-4">
@@ -540,7 +543,7 @@ function RefundRegister() {
                 <div className="flex gap-1.5 justify-end">
                   {refund.overdue && (
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-semibold">
-                      Overdue
+                      {t("rf.overdue")}
                     </span>
                   )}
                   <span
@@ -562,7 +565,7 @@ function RefundRegister() {
                     onClick={() => setPayFor(refund)}
                     className="min-h-11 px-4 rounded-full gradient-gold text-ocean text-[11px] uppercase tracking-wider font-semibold"
                   >
-                    Mark paid
+                    {t("rf.markPaid")}
                   </button>
                   <VoidButton refund={refund} onDone={refresh} />
                 </div>
@@ -596,10 +599,11 @@ function RefundRegister() {
 }
 
 function VoidButton({ refund, onDone }: { refund: StaffRefund; onDone: () => void }) {
+  const t = useT();
   const mutation = useMutation({
     mutationFn: (note: string) => voidRefund(refund.id, note),
     onSuccess: () => {
-      toast.success("Refund voided.");
+      toast.success(t("rf.voided"));
       onDone();
     },
     onError: (err) => toast.error(errorText(err)),
@@ -630,6 +634,7 @@ function MarkPaidDialog({
   onClose: () => void;
   onDone: () => void;
 }) {
+  const t = useT();
   const [method, setMethod] = useState(refund.method || "bkash");
   const [reference, setReference] = useState("");
   const [note, setNote] = useState("");
@@ -642,7 +647,7 @@ function MarkPaidDialog({
         note,
       }),
     onSuccess: () => {
-      toast.success("Recorded — the customer has been emailed the reference.");
+      toast.success(t("rf.recorded"));
       onDone();
     },
     onError: (err) => toast.error(errorText(err)),
@@ -652,15 +657,20 @@ function MarkPaidDialog({
     <DialogShell title={`Record payout — ${formatBDT(refund.amount)}`} onClose={onClose}>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <Info label="Booking" value={refund.booking_code} />
-          <Info label="Customer" value={refund.customer_name} />
+          <Info label={t("rf.booking")} value={refund.booking_code} />
+          <Info label={t("rf.customer")} value={refund.customer_name} />
           {refund.account_number && (
-            <Info label="Send to" value={`${refund.method_label} ${refund.account_number}`} />
+            <Info
+              label={t("rf.sendTo")}
+              value={`${refund.method_label} ${refund.account_number}`}
+            />
           )}
-          {refund.account_name && <Info label="Account name" value={refund.account_name} />}
+          {refund.account_name && (
+            <Info label={t("payout.accountName")} value={refund.account_name} />
+          )}
         </div>
 
-        <StaffField label="How was it sent?">
+        <StaffField label={t("rf.howSent")}>
           <select
             value={method}
             onChange={(e) => setMethod(e.target.value)}
@@ -674,7 +684,7 @@ function MarkPaidDialog({
           </select>
         </StaffField>
 
-        <StaffField label="Transaction id">
+        <StaffField label={t("rf.transactionId")}>
           <input
             value={reference}
             onChange={(e) => setReference(e.target.value)}
@@ -687,7 +697,7 @@ function MarkPaidDialog({
           statement, and the register stops being an accounting document.
         </p>
 
-        <StaffField label="Note (optional)">
+        <StaffField label={t("rf.noteOptional")}>
           <input
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -713,6 +723,7 @@ function MarkPaidDialog({
 }
 
 function RaiseRefundDialog({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const t = useT();
   const [bookingCode, setBookingCode] = useState("");
   const [reason, setReason] = useState<
     "overpayment" | "duplicate_payment" | "goodwill" | "operator_cancellation"
@@ -731,14 +742,14 @@ function RaiseRefundDialog({ onClose, onDone }: { onClose: () => void; onDone: (
         allow_outside_claim_window: override,
       }),
     onSuccess: () => {
-      toast.success("Refund raised.");
+      toast.success(t("rf.raised"));
       onDone();
     },
     onError: (err) => toast.error(errorText(err)),
   });
 
   return (
-    <DialogShell title="Raise a refund" onClose={onClose}>
+    <DialogShell title={t("rf.raise")} onClose={onClose}>
       <div className="space-y-4">
         <p className="text-xs text-muted-foreground leading-relaxed">
           For money that was never ours (overpayment, a duplicate settlement) or a decision someone
@@ -746,7 +757,7 @@ function RaiseRefundDialog({ onClose, onDone }: { onClose: () => void; onDone: (
           creates those, so the charge schedule cannot be bypassed.
         </p>
 
-        <StaffField label="Booking code">
+        <StaffField label={t("bk.bookingCode")}>
           <input
             value={bookingCode}
             onChange={(e) => setBookingCode(e.target.value)}
@@ -755,20 +766,20 @@ function RaiseRefundDialog({ onClose, onDone }: { onClose: () => void; onDone: (
           />
         </StaffField>
 
-        <StaffField label="Reason">
+        <StaffField label={t("bk.reason")}>
           <select
             value={reason}
             onChange={(e) => setReason(e.target.value as typeof reason)}
             className={staffInputClass}
           >
-            <option value="overpayment">Overpayment</option>
-            <option value="duplicate_payment">Duplicate payment</option>
-            <option value="goodwill">Goodwill / service issue</option>
-            <option value="operator_cancellation">Operator cancellation</option>
+            <option value="overpayment">{t("rfReason.overpayment")}</option>
+            <option value="duplicate_payment">{t("rfReason.duplicate")}</option>
+            <option value="goodwill">{t("rfReason.goodwill")}</option>
+            <option value="operator_cancellation">{t("rfReason.operator")}</option>
           </select>
         </StaffField>
 
-        <StaffField label="Amount (BDT)">
+        <StaffField label={t("rf.amountBdt")}>
           <input
             inputMode="decimal"
             value={amount}
@@ -781,7 +792,7 @@ function RaiseRefundDialog({ onClose, onDone }: { onClose: () => void; onDone: (
           the money that came in.
         </p>
 
-        <StaffField label="Note">
+        <StaffField label={t("common.notes")}>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -798,7 +809,7 @@ function RaiseRefundDialog({ onClose, onDone }: { onClose: () => void; onDone: (
             className="mt-0.5 size-4 accent-gold"
           />
           <span>
-            This sailing ended outside the normal claim window — override.
+            {t("rf.overrideWindow")}
             <span className="text-muted-foreground">
               {" "}
               Reopens a closed accounting period, so the note is mandatory.
@@ -811,7 +822,7 @@ function RaiseRefundDialog({ onClose, onDone }: { onClose: () => void; onDone: (
           disabled={mutation.isPending || !bookingCode || !amount}
           className="w-full min-h-11 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.14em] font-semibold disabled:opacity-40"
         >
-          {mutation.isPending ? "Saving…" : "Raise refund"}
+          {mutation.isPending ? t("common.saving") : t("rf.raiseShort")}
         </button>
       </div>
     </DialogShell>

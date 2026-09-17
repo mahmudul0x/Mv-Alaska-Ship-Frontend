@@ -45,6 +45,8 @@ import {
   updateStaffPackage,
   uploadStaffPackageHero,
 } from "@/lib/api/staff";
+import { useT } from "@/lib/i18n";
+import type { StringKey } from "@/lib/i18n/strings";
 import { parseLocalDate } from "@/lib/dates";
 import { formatBDT, parseMoney } from "@/lib/money";
 import type {
@@ -74,10 +76,10 @@ const EMPTY_BY_GROUP: Record<PackageGroup, string> = {
   cancelled: "Nothing has been cancelled — which is the way it should be.",
 };
 
-const GROUPS: { value: PackageGroup; label: string }[] = [
-  { value: "active", label: "Active" },
-  { value: "past", label: "Past" },
-  { value: "cancelled", label: "Cancelled" },
+const GROUPS: { value: PackageGroup; label: StringKey }[] = [
+  { value: "active", label: "pk.groupActive" },
+  { value: "past", label: "pk.groupPast" },
+  { value: "cancelled", label: "pk.groupCancelled" },
 ];
 
 function nightsBetween(start: string, end: string): number {
@@ -117,6 +119,7 @@ function isSailingNow(p: StaffPackage): boolean {
 }
 
 function PackagesPage() {
+  const t = useT();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   // Active by default: a sailing that has been and gone, or was called off, is
@@ -168,7 +171,7 @@ function PackagesPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteStaffPackage(id),
     onSuccess: () => {
-      toast.success("Package deleted.");
+      toast.success(t("pk.deleted"));
       invalidate();
     },
     onError: (err) => toast.error(errorText(err)),
@@ -212,36 +215,36 @@ function PackagesPage() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      <PageHeader title="Packages" subtitle={data ? `${data.count} package(s)` : "Loading…"}>
+      <PageHeader title={t("pk.title")} subtitle={data ? `${data.count} package(s)` : "Loading…"}>
         <button
           onClick={() => setCreating(true)}
           className="flex items-center gap-2 px-5 py-2.5 rounded-full gradient-gold text-ocean text-xs uppercase tracking-[0.15em] font-semibold shadow-luxe"
         >
-          <Plus className="size-4" /> New package
+          <Plus className="size-4" /> {t("pk.newPackage")}
         </button>
       </PageHeader>
 
       {/* Summary cards */}
       <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard label="Total packages" value={String(summary.count)} icon={PackageIcon} />
+        <StatCard label={t("pk.totalPackages")} value={String(summary.count)} icon={PackageIcon} />
         <StatCard
-          label="Open for booking"
+          label={t("pk.openForBooking")}
           value={String(summary.openCount)}
           icon={CalendarRange}
           tone="emerald"
         />
         <StatCard
-          label="Collected"
+          label={t("label.collected")}
           value={formatBDT(String(summary.collected))}
           icon={Wallet}
           tone="emerald"
         />
         <StatCard
-          label="Outstanding due"
+          label={t("bk.outstandingDue")}
           value={formatBDT(String(summary.due))}
           icon={Wallet}
           highlight
-          hint="Across shown packages"
+          hint={t("pk.acrossShown")}
         />
       </div>
 
@@ -252,7 +255,7 @@ function PackagesPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search title / ship…"
+            placeholder={t("pk.searchPlaceholder")}
             className="w-64 bg-card border border-border rounded-xl py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:border-gold"
           />
         </div>
@@ -273,7 +276,7 @@ function PackagesPage() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {label}
+              {t(label)}
             </button>
           ))}
         </div>
@@ -315,7 +318,7 @@ function PackagesPage() {
               onClick={() => setCreating(true)}
               className="mt-4 text-xs text-gold hover:underline"
             >
-              Create your first package →
+              {t("pk.createFirst")}
             </button>
           )}
         </div>
@@ -325,13 +328,13 @@ function PackagesPage() {
             <table className="w-full text-sm min-w-220">
               <thead>
                 <tr className="border-b border-border bg-muted/40 text-left">
-                  <Th>Package</Th>
-                  <Th>Dates</Th>
-                  <Th>Status</Th>
-                  <Th className="w-40">Occupancy</Th>
-                  <Th className="text-right">Collected</Th>
-                  <Th className="text-right">Due</Th>
-                  <Th className="text-right pr-5">Actions</Th>
+                  <Th>{t("pk.colPackage")}</Th>
+                  <Th>{t("pk.colDates")}</Th>
+                  <Th>{t("bk.statusCol")}</Th>
+                  <Th className="w-40">{t("pk.colOccupancy")}</Th>
+                  <Th className="text-right">{t("label.collected")}</Th>
+                  <Th className="text-right">{t("label.due")}</Th>
+                  <Th className="text-right pr-5">{t("common.actions")}</Th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -345,8 +348,7 @@ function PackagesPage() {
                     onReport={(scope) => handleReport(p, scope)}
                     onCancelDeparture={() => setCancellingDeparture(p)}
                     onDelete={() => {
-                      if (confirm("Delete this package? This cannot be undone."))
-                        deleteMutation.mutate(p.id);
+                      if (confirm(t("pk.confirmDelete"))) deleteMutation.mutate(p.id);
                     }}
                   />
                 ))}
@@ -480,6 +482,7 @@ function PackageRow({
   onCancelDeparture: () => void;
   onDelete: () => void;
 }) {
+  const t = useT();
   const rooms = p.rooms_total ?? 0;
   const bookings = p.bookings_count ?? 0;
   const occupancy = rooms > 0 ? Math.min(100, Math.round((bookings / rooms) * 100)) : 0;
@@ -507,7 +510,7 @@ function PackageRow({
           </span>
           {p.is_bookable ? (
             <span className="inline-flex items-center gap-1 text-emerald-600">
-              <CheckCircle2 className="size-3" /> Bookable
+              <CheckCircle2 className="size-3" /> {t("pk.bookable")}
             </span>
           ) : (
             <span className="inline-flex items-center gap-1" title={notBookableReason(p)}>
@@ -516,7 +519,7 @@ function PackageRow({
           )}
           {isSailingNow(p) && (
             <span className="inline-flex items-center gap-1 text-gold-text font-medium">
-              <Ship className="size-3" /> Sailing now
+              <Ship className="size-3" /> {t("pk.sailingNow")}
             </span>
           )}
         </div>
@@ -553,18 +556,18 @@ function PackageRow({
       {/* Actions */}
       <td className="px-4 py-3">
         <div className="flex items-center gap-1 justify-end">
-          <RowAction title="Edit" onClick={onEdit} icon={Pencil} />
+          <RowAction title={t("pk.edit")} onClick={onEdit} icon={Pencil} />
           <RowAction
             title={p.is_booking_open ? "Close booking" : "Reopen booking"}
             onClick={onToggle}
             icon={p.is_booking_open ? Ban : CheckCircle2}
           />
-          <RowAction title="Generate rooms" onClick={onGenerateRooms} icon={DoorOpen} />
+          <RowAction title={t("pk.generateRooms")} onClick={onGenerateRooms} icon={DoorOpen} />
           <GuideReportMenu
             onSelect={onReport}
             trigger={(open) => (
               <span
-                title="Guide report (PDF)"
+                title={t("pk.guideReport")}
                 className={`size-8 rounded-lg grid place-items-center transition-colors ${
                   open ? "text-gold bg-gold/10" : "text-ocean/60 hover:text-gold hover:bg-gold/10"
                 }`}
@@ -577,12 +580,12 @@ function PackageRow({
               Involuntary, so every booking is refunded in full — hence its own
               action with a preview, not a status change. */}
           <RowAction
-            title="Cancel departure (refund everyone)"
+            title={t("pk.cancelDeparture")}
             onClick={onCancelDeparture}
             icon={CloudOff}
             destructive
           />
-          <RowAction title="Delete" onClick={onDelete} icon={Trash2} destructive />
+          <RowAction title={t("common.delete")} onClick={onDelete} icon={Trash2} destructive />
         </div>
       </td>
     </tr>
@@ -641,6 +644,7 @@ function fromDhakaInput(value: string): string {
 }
 
 function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose: () => void }) {
+  const t = useT();
   const queryClient = useQueryClient();
   // The ship's starting fare, for a NEW package only. Editing an existing one
   // must never show a figure other than what it is actually priced at.
@@ -722,7 +726,7 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
     >
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <StaffField label="Start date">
+          <StaffField label={t("pk.startDate")}>
             <input
               type="date"
               value={form.start_date}
@@ -730,7 +734,7 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
               className={staffInputClass}
             />
           </StaffField>
-          <StaffField label="End date">
+          <StaffField label={t("pk.endDate")}>
             <input
               type="date"
               value={form.end_date}
@@ -738,7 +742,7 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
               className={staffInputClass}
             />
           </StaffField>
-          <StaffField label="Adult price (BDT)">
+          <StaffField label={t("pk.adultPrice")}>
             <input
               type="number"
               min={0}
@@ -747,7 +751,7 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
               className={staffInputClass}
             />
           </StaffField>
-          <StaffField label="Status">
+          <StaffField label={t("bk.statusCol")}>
             <select
               value={form.status}
               onChange={(e) => set({ status: e.target.value as PackageStatus })}
@@ -772,10 +776,10 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
             onChange={(e) => set({ is_booking_open: e.target.checked })}
             className="accent-gold"
           />
-          Booking open (manual override)
+          {t("pk.bookingOpenOverride")}
         </label>
 
-        <StaffField label="Booking cutoff — Bangladesh time (UTC+6)">
+        <StaffField label={t("pk.cutoff")}>
           <input
             type="datetime-local"
             value={toDhakaInput(form.booking_cutoff_datetime)}
@@ -792,15 +796,15 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
           </span>
         </StaffField>
 
-        <StaffField label="Marketing title">
+        <StaffField label={t("pk.marketingTitle")}>
           <input
             value={form.marketing_title}
             onChange={(e) => set({ marketing_title: e.target.value })}
-            placeholder="e.g. Sundarbans Explorer"
+            placeholder={t("pk.marketingTitlePh")}
             className={staffInputClass}
           />
         </StaffField>
-        <StaffField label="Marketing description">
+        <StaffField label={t("pk.marketingDesc")}>
           <textarea
             rows={3}
             value={form.marketing_description}
@@ -808,7 +812,7 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
             className={`${staffInputClass} resize-none`}
           />
         </StaffField>
-        <StaffField label="Highlights (one per line)">
+        <StaffField label={t("pk.highlights")}>
           <textarea
             rows={3}
             value={(form.highlights ?? []).join("\n")}
@@ -822,7 +826,7 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
             turns it on; the amount alone does nothing, and the server refuses
             an amount left behind with no type so a dormant discount cannot
             reappear later as one nobody chose. */}
-        <StaffField label="Offer">
+        <StaffField label={t("pk.offer")}>
           <div className="space-y-2.5">
             <div className="grid grid-cols-2 gap-3">
               <select
@@ -840,9 +844,9 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
                 }}
                 className={staffInputClass}
               >
-                <option value="none">No offer</option>
-                <option value="percent">Percentage off</option>
-                <option value="fixed">Taka off, per cabin</option>
+                <option value="none">{t("pk.noOffer")}</option>
+                <option value="percent">{t("pk.percentOff")}</option>
+                <option value="fixed">{t("pk.takaOff")}</option>
               </select>
               <input
                 type="number"
@@ -860,13 +864,11 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
                 <input
                   value={form.offer_label ?? ""}
                   onChange={(e) => set({ offer_label: e.target.value })}
-                  placeholder="Offer name, e.g. Eid Offer"
+                  placeholder={t("pk.offerNamePh")}
                   className={staffInputClass}
                 />
                 <label className="block">
-                  <span className="text-[10px] text-muted-foreground">
-                    Ends at (optional — leave blank to run until you remove it)
-                  </span>
+                  <span className="text-[10px] text-muted-foreground">{t("pk.offerEndsAt")}</span>
                   <input
                     type="datetime-local"
                     value={form.offer_ends_at ? form.offer_ends_at.slice(0, 16) : ""}
@@ -889,7 +891,7 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
         {/* The picture the public package card shows. Sits with the marketing
             copy because that is what it is — the card's photograph, not an
             operational setting. */}
-        <StaffField label="Cover photo">
+        <StaffField label={t("pk.coverPhoto")}>
           <div className="flex items-start gap-3">
             <div className="size-20 rounded-xl overflow-hidden bg-muted grid place-items-center shrink-0 border border-border">
               {heroPreview ? (
@@ -928,7 +930,7 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
                   }}
                   className="block text-[11px] text-destructive hover:underline"
                 >
-                  Remove photo
+                  {t("pk.removePhoto")}
                 </button>
               )}
               <p className="text-[10px] text-muted-foreground leading-relaxed">
