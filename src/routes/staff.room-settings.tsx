@@ -19,6 +19,7 @@ import {
   Trash2,
   UserRound,
   Users,
+  Wallet,
 } from "lucide-react";
 
 import { DialogShell, PageHeader, errorText, staffInputClass } from "@/components/staff/ui";
@@ -31,14 +32,16 @@ import {
   getStaffRoomImages,
   getStaffRooms,
   getStaffRoomTypes,
+  getStaffShips,
   updateStaffForeignerSurcharge,
   updateStaffKidRule,
   updateStaffRoomImage,
   updateStaffRoomType,
+  updateStaffShip,
   uploadStaffRoomImage,
 } from "@/lib/api/staff";
 import { formatBDT } from "@/lib/money";
-import type { StaffKidRule, StaffRoom, StaffRoomImage } from "@/lib/api/staffTypes";
+import type { StaffKidRule, StaffRoom, StaffRoomImage, StaffShip } from "@/lib/api/staffTypes";
 import type { KidChargeType, RoomType } from "@/lib/api/types";
 
 export const Route = createFileRoute("/staff/room-settings")({
@@ -51,6 +54,11 @@ const TABS = [
   // Sits beside kid pricing because it is the same kind of thing: a global
   // fare policy, not a per-sailing price.
   { key: "foreigner", label: "Foreigner Surcharge", hint: "Extra per foreign guest", icon: Globe },
+  // Fare policy that is not per room type: what a new sailing starts at, and
+  // whether a cabin is sold by the head or as a whole room. Here rather than
+  // on the account Settings page because this is where staff come to change
+  // what things cost.
+  { key: "pricing", label: "Fare Basis", hint: "Default fare & whole-cabin pricing", icon: Wallet },
   { key: "room-photos", label: "Room Photos", hint: "Per-room gallery", icon: Images },
 ] as const;
 
@@ -96,6 +104,11 @@ function RoomSettingsPage() {
         <KidPricingSection />
       ) : activeTab === "foreigner" ? (
         <ForeignerSurchargeSection />
+      ) : activeTab === "pricing" ? (
+        <div className="space-y-10">
+          <DefaultFareSection />
+          <CabinPricingSection />
+        </div>
       ) : (
         <RoomPhotosSection />
       )}
@@ -1188,6 +1201,301 @@ function KidRuleCard({
               ...(isFixed ? { amount: String(amount) } : {}),
             })
           }
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
+        >
+          {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+          {dirty ? "Save changes" : "Saved"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Default adult fare (per-ship starting figure for new packages) ───────── */
+
+function DefaultFareSection() {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["staff", "ships"],
+    queryFn: getStaffShips,
+  });
+  const [savingId, setSavingId] = useState<number | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: ({ id, price }: { id: number; price: string | null }) => {
+      setSavingId(id);
+      return updateStaffShip(id, { default_adult_price: price });
+    },
+    onSuccess: () => {
+      toast.success("Default fare saved — new packages will start at this figure.");
+      queryClient.invalidateQueries({ queryKey: ["staff", "ships"] });
+    },
+    onError: (err) => toast.error(errorText(err)),
+    onSettled: () => setSavingId(null),
+  });
+
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 className="font-display text-xl flex items-center gap-2">
+          <Wallet className="size-5 text-gold" /> Default adult fare
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          What a new package&rsquo;s per-adult fare starts at, so you stop retyping the same figure.
+          Every sailing can still be priced differently — a five-night voyage is not priced like a
+          three-night one — this is only the starting number.
+        </p>
+      </div>
+
+      {isLoading ? (
+        <div className="p-12 flex items-center justify-center gap-3 text-muted-foreground">
+          <Loader2 className="size-5 animate-spin text-gold" /> Loading…
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {data?.map((ship) => (
+            <ShipDefaultFareCard
+              key={ship.id}
+              ship={ship}
+              saving={savingId === ship.id && mutation.isPending}
+              onSave={(price) => mutation.mutate({ id: ship.id, price })}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ShipDefaultFareCard({
+  ship,
+  onSave,
+  saving,
+}: {
+  ship: StaffShip;
+  onSave: (price: string | null) => void;
+  saving: boolean;
+}) {
+  const stored = ship.default_adult_price ?? "";
+  const [value, setValue] = useState(stored);
+  // Compared as numbers so "4500" and "4500.00" are not reported as a pending
+  // change the staffer never made.
+  const blank = value.trim() === "";
+  const dirty = blank ? stored !== "" : Number(value) !== Number(stored || NaN);
+
+  return (
+    <div
+      className={`rounded-2xl border bg-card overflow-hidden transition-all ${
+        dirty ? "border-gold/50 shadow-luxe" : "border-border"
+      }`}
+    >
+      <div className="px-5 py-4 border-b border-border flex items-center gap-3">
+        <div className="size-9 rounded-xl bg-ocean/8 grid place-items-center shrink-0">
+          <BedDouble className="size-4.5 text-ocean" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-display text-base leading-tight truncate">{ship.name}</div>
+          <div className="text-[10px] text-muted-foreground">Starting fare for new packages</div>
+        </div>
+        {dirty && (
+          <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-gold/15 text-gold shrink-0">
+            Unsaved
+          </span>
+        )}
+      </div>
+
+      <div className="p-5 space-y-4">
+        <label className="block">
+          <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
+            Per adult (BDT) — leave blank for no default
+          </span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={value}
+            placeholder="e.g. 4500"
+            onChange={(e) => setValue(e.target.value)}
+            className={staffInputClass}
+          />
+        </label>
+
+        <div className="rounded-xl bg-muted/40 px-4 py-2.5 text-xs text-muted-foreground">
+          {blank ? (
+            <>New packages open with an empty fare and ask for one.</>
+          ) : (
+            <>
+              New packages open at <strong className="text-foreground">{formatBDT(value)}</strong>{" "}
+              per adult. Changing this never re-prices a package that already exists.
+            </>
+          )}
+        </div>
+
+        <button
+          disabled={!dirty || saving}
+          onClick={() => onSave(blank ? null : value)}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
+        >
+          {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+          {dirty ? "Save changes" : "Saved"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Whole-cabin pricing & the unoccupied-berth allowance ─────────────────── */
+
+function CabinPricingSection() {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["staff", "ships"],
+    queryFn: getStaffShips,
+  });
+  const [savingId, setSavingId] = useState<number | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: ({ id, allowance }: { id: number; allowance: string | null }) => {
+      setSavingId(id);
+      return updateStaffShip(id, { meal_allowance: allowance });
+    },
+    onSuccess: () => {
+      toast.success("Cabin pricing saved — applies to new bookings only.");
+      queryClient.invalidateQueries({ queryKey: ["staff", "ships"] });
+    },
+    onError: (err) => toast.error(errorText(err)),
+    onSettled: () => setSavingId(null),
+  });
+
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 className="font-display text-xl flex items-center gap-2">
+          <BedDouble className="size-5 text-gold" /> Cabin pricing
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Whether a cabin is sold by the head or as a whole room. Selling it whole means a cabin
+          taken by one guest still costs the cabin — less the food that the empty berth would have
+          eaten.
+        </p>
+      </div>
+
+      {isLoading ? (
+        <div className="p-12 flex items-center justify-center gap-3 text-muted-foreground">
+          <Loader2 className="size-5 animate-spin text-gold" /> Loading…
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {data?.map((ship) => (
+            <ShipCabinPricingCard
+              key={ship.id}
+              ship={ship}
+              saving={savingId === ship.id && mutation.isPending}
+              onSave={(allowance) => mutation.mutate({ id: ship.id, allowance })}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ShipCabinPricingCard({
+  ship,
+  onSave,
+  saving,
+}: {
+  ship: StaffShip;
+  onSave: (allowance: string | null) => void;
+  saving: boolean;
+}) {
+  // Null and "0" are different answers, so the toggle and the amount are
+  // separate pieces of state: "sell whole cabins, allow nothing back" has to
+  // be expressible.
+  const [whole, setWhole] = useState(ship.meal_allowance !== null);
+  const [amount, setAmount] = useState(ship.meal_allowance ?? "");
+
+  const next = whole ? (amount.trim() === "" ? "0" : amount) : null;
+  const dirty =
+    next === null
+      ? ship.meal_allowance !== null
+      : ship.meal_allowance === null || Number(next) !== Number(ship.meal_allowance);
+
+  return (
+    <div
+      className={`rounded-2xl border bg-card overflow-hidden transition-all ${
+        dirty ? "border-gold/50 shadow-luxe" : "border-border"
+      }`}
+    >
+      <div className="px-5 py-4 border-b border-border flex items-center gap-3">
+        <div className="size-9 rounded-xl bg-ocean/8 grid place-items-center shrink-0">
+          <BedDouble className="size-4.5 text-ocean" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-display text-base leading-tight truncate">{ship.name}</div>
+          <div className="text-[10px] text-muted-foreground">
+            How a cabin&rsquo;s fare is worked out
+          </div>
+        </div>
+        {dirty && (
+          <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-gold/15 text-gold shrink-0">
+            Unsaved
+          </span>
+        )}
+      </div>
+
+      <div className="p-5 space-y-4">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={whole}
+            onChange={(e) => setWhole(e.target.checked)}
+            className="mt-0.5 size-4 shrink-0 accent-gold"
+          />
+          <span className="text-sm">
+            Sell cabins whole
+            <span className="block text-[11px] text-muted-foreground mt-0.5">
+              A cabin is charged at its full berth count however many people take it.
+            </span>
+          </span>
+        </label>
+
+        {whole && (
+          <label className="block">
+            <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
+              Allowance per unoccupied berth (BDT)
+            </span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={amount}
+              placeholder="e.g. 5000"
+              onChange={(e) => setAmount(e.target.value)}
+              className={staffInputClass}
+            />
+          </label>
+        )}
+
+        <div className="rounded-xl bg-muted/40 px-4 py-2.5 text-xs text-muted-foreground">
+          {!whole ? (
+            <>Charged per person: one guest in a four-berth cabin pays for one guest.</>
+          ) : Number(next) > 0 ? (
+            <>
+              A two-berth cabin taken by one guest costs the full cabin less{" "}
+              <strong className="text-foreground">{formatBDT(next ?? "0")}</strong>.
+            </>
+          ) : (
+            <>The full cabin is charged whoever takes it, with nothing returned.</>
+          )}
+          <span className="block mt-1">
+            Applies to new bookings only — bookings already made keep the price they were given.
+          </span>
+        </div>
+
+        <button
+          disabled={!dirty || saving}
+          onClick={() => onSave(next)}
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
         >
           {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}

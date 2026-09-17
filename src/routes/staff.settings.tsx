@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import type { LucideIcon } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -10,67 +11,132 @@ import {
   Save,
   ShieldCheck,
   Ship as ShipIcon,
-  BedDouble,
   UserRound,
-  Wallet,
 } from "lucide-react";
 
-import { errorText, staffInputClass } from "@/components/staff/ui";
+import { PageHeader, errorText, staffInputClass } from "@/components/staff/ui";
 import { getStaffShips, updateStaffShip } from "@/lib/api/staff";
 import { getStaffUser } from "@/lib/staffAuth";
 import type { GuideReportDensity, StaffShip } from "@/lib/api/staffTypes";
-import { formatBDT } from "@/lib/money";
 
 export const Route = createFileRoute("/staff/settings")({
   component: SettingsPage,
 });
+
+/** The page's own contents, in the order they appear, so the side rail and the
+ *  body cannot drift apart. Fare policy is deliberately NOT here — it lives on
+ *  Room Settings, where staff go to change what things cost. */
+const SECTIONS = [
+  { id: "account", label: "Account", icon: UserRound },
+  { id: "inbox", label: "Contact inbox", icon: Mail },
+  { id: "helpline", label: "Helpline numbers", icon: Phone },
+  { id: "report", label: "Guide report", icon: FileText },
+] as const;
 
 function SettingsPage() {
   const user = getStaffUser();
   const initial = (user?.first_name || user?.username || "S").charAt(0).toUpperCase();
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-2xl">
-      <div>
-        <h1 className="font-display text-3xl">Settings</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Your account and document settings on the MV Alaska staff dashboard.
-        </p>
-      </div>
+    <div className="p-6 lg:p-8">
+      <PageHeader
+        title="Settings"
+        subtitle="Your account, and the details printed on documents customers receive."
+      />
 
-      <div className="rounded-2xl border border-border bg-card overflow-hidden">
-        <div className="px-6 py-5 border-b border-border flex items-center gap-4">
-          <div className="size-14 rounded-full gradient-gold grid place-items-center shrink-0">
-            <span className="font-display text-xl text-ocean">{initial}</span>
-          </div>
-          <div className="min-w-0">
-            <div className="font-display text-xl leading-tight truncate">
-              {user?.first_name || user?.username || "Staff"}
+      {/* Two columns from lg up: a sticky index beside the content. The page is
+          four unrelated settings groups, and a flat scroll gives no sense of
+          how many there are or where you are among them. */}
+      <div className="mt-6 flex flex-col lg:flex-row gap-8 items-start">
+        <nav
+          aria-label="Settings sections"
+          className="hidden lg:block w-52 shrink-0 sticky top-8 space-y-1"
+        >
+          {SECTIONS.map(({ id, label, icon: Icon }) => (
+            <a
+              key={id}
+              href={`#${id}`}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            >
+              <Icon className="size-4 shrink-0 text-gold" />
+              {label}
+            </a>
+          ))}
+        </nav>
+
+        <div className="min-w-0 flex-1 max-w-2xl space-y-10">
+          {/* scroll-mt: anchored jumps must not tuck a heading under the
+              sticky dashboard chrome. */}
+          <section id="account" className="scroll-mt-8 space-y-4">
+            <SectionHeading
+              icon={UserRound}
+              title="Account"
+              hint="Who you are signed in as. Changing it is an administrator job."
+            />
+
+            <div className="rounded-2xl border border-border bg-card overflow-hidden">
+              <div className="px-6 py-5 border-b border-border flex items-center gap-4">
+                <div className="size-14 rounded-full gradient-gold grid place-items-center shrink-0">
+                  <span className="font-display text-xl text-ocean">{initial}</span>
+                </div>
+                <div className="min-w-0">
+                  <div className="font-display text-xl leading-tight truncate">
+                    {user?.first_name || user?.username || "Staff"}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    @{user?.username ?? "—"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="divide-y divide-border">
+                <ProfileRow icon={UserRound} label="Username" value={user?.username ?? "—"} />
+                <ProfileRow
+                  icon={ShieldCheck}
+                  label="Role"
+                  value={user?.is_staff ? "Staff (dashboard access)" : "—"}
+                />
+              </div>
+
+              <div className="px-6 py-3 bg-muted/40 border-t border-border text-[11px] text-muted-foreground">
+                To change your name, username or password, ask an administrator to do it in the
+                Django admin panel.
+              </div>
             </div>
-            <div className="text-xs text-muted-foreground truncate">@{user?.username ?? "—"}</div>
-          </div>
-        </div>
+          </section>
 
-        <div className="divide-y divide-border">
-          <ProfileRow icon={UserRound} label="Username" value={user?.username ?? "—"} />
-          <ProfileRow
-            icon={ShieldCheck}
-            label="Role"
-            value={user?.is_staff ? "Staff (dashboard access)" : "—"}
-          />
+          <section id="inbox" className="scroll-mt-8">
+            <NotificationInboxSection />
+          </section>
+          <section id="helpline" className="scroll-mt-8">
+            <HelplineSection />
+          </section>
+          <section id="report" className="scroll-mt-8">
+            <GuideReportSection />
+          </section>
         </div>
       </div>
+    </div>
+  );
+}
 
-      <p className="text-xs text-muted-foreground">
-        To change your name, username, or password, contact an administrator in the Django admin
-        panel.
-      </p>
-
-      <NotificationInboxSection />
-      <HelplineSection />
-      <DefaultFareSection />
-      <CabinPricingSection />
-      <GuideReportSection />
+/** One heading style for every group on the page, so four unrelated settings
+ *  do not each announce themselves differently. */
+function SectionHeading({
+  icon: Icon,
+  title,
+  hint,
+}: {
+  icon: LucideIcon;
+  title: string;
+  hint: string;
+}) {
+  return (
+    <div>
+      <h2 className="font-display text-xl flex items-center gap-2">
+        <Icon className="size-5 text-gold" /> {title}
+      </h2>
+      <p className="text-sm text-muted-foreground mt-1">{hint}</p>
     </div>
   );
 }
@@ -484,301 +550,6 @@ function ProfileRow({
       <Icon className="size-4 text-ocean/50 shrink-0" />
       <span className="text-xs text-muted-foreground w-24 shrink-0">{label}</span>
       <span className="text-sm font-medium truncate">{value}</span>
-    </div>
-  );
-}
-
-/* ── Default adult fare (per-ship starting figure for new packages) ───────── */
-
-function DefaultFareSection() {
-  const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({
-    queryKey: ["staff", "ships"],
-    queryFn: getStaffShips,
-  });
-  const [savingId, setSavingId] = useState<number | null>(null);
-
-  const mutation = useMutation({
-    mutationFn: ({ id, price }: { id: number; price: string | null }) => {
-      setSavingId(id);
-      return updateStaffShip(id, { default_adult_price: price });
-    },
-    onSuccess: () => {
-      toast.success("Default fare saved — new packages will start at this figure.");
-      queryClient.invalidateQueries({ queryKey: ["staff", "ships"] });
-    },
-    onError: (err) => toast.error(errorText(err)),
-    onSettled: () => setSavingId(null),
-  });
-
-  return (
-    <section className="space-y-4">
-      <div>
-        <h2 className="font-display text-xl flex items-center gap-2">
-          <Wallet className="size-5 text-gold" /> Default adult fare
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          What a new package&rsquo;s per-adult fare starts at, so you stop retyping the same figure.
-          Every sailing can still be priced differently — a five-night voyage is not priced like a
-          three-night one — this is only the starting number.
-        </p>
-      </div>
-
-      {isLoading ? (
-        <div className="p-12 flex items-center justify-center gap-3 text-muted-foreground">
-          <Loader2 className="size-5 animate-spin text-gold" /> Loading…
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {data?.map((ship) => (
-            <ShipDefaultFareCard
-              key={ship.id}
-              ship={ship}
-              saving={savingId === ship.id && mutation.isPending}
-              onSave={(price) => mutation.mutate({ id: ship.id, price })}
-            />
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function ShipDefaultFareCard({
-  ship,
-  onSave,
-  saving,
-}: {
-  ship: StaffShip;
-  onSave: (price: string | null) => void;
-  saving: boolean;
-}) {
-  const stored = ship.default_adult_price ?? "";
-  const [value, setValue] = useState(stored);
-  // Compared as numbers so "4500" and "4500.00" are not reported as a pending
-  // change the staffer never made.
-  const blank = value.trim() === "";
-  const dirty = blank ? stored !== "" : Number(value) !== Number(stored || NaN);
-
-  return (
-    <div
-      className={`rounded-2xl border bg-card overflow-hidden transition-all ${
-        dirty ? "border-gold/50 shadow-luxe" : "border-border"
-      }`}
-    >
-      <div className="px-5 py-4 border-b border-border flex items-center gap-3">
-        <div className="size-9 rounded-xl bg-ocean/8 grid place-items-center shrink-0">
-          <ShipIcon className="size-4.5 text-ocean" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="font-display text-base leading-tight truncate">{ship.name}</div>
-          <div className="text-[10px] text-muted-foreground">Starting fare for new packages</div>
-        </div>
-        {dirty && (
-          <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-gold/15 text-gold shrink-0">
-            Unsaved
-          </span>
-        )}
-      </div>
-
-      <div className="p-5 space-y-4">
-        <label className="block">
-          <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
-            Per adult (BDT) — leave blank for no default
-          </span>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={value}
-            placeholder="e.g. 4500"
-            onChange={(e) => setValue(e.target.value)}
-            className={staffInputClass}
-          />
-        </label>
-
-        <div className="rounded-xl bg-muted/40 px-4 py-2.5 text-xs text-muted-foreground">
-          {blank ? (
-            <>New packages open with an empty fare and ask for one.</>
-          ) : (
-            <>
-              New packages open at <strong className="text-foreground">{formatBDT(value)}</strong>{" "}
-              per adult. Changing this never re-prices a package that already exists.
-            </>
-          )}
-        </div>
-
-        <button
-          disabled={!dirty || saving}
-          onClick={() => onSave(blank ? null : value)}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
-        >
-          {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-          {dirty ? "Save changes" : "Saved"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ── Whole-cabin pricing & the unoccupied-berth allowance ─────────────────── */
-
-function CabinPricingSection() {
-  const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({
-    queryKey: ["staff", "ships"],
-    queryFn: getStaffShips,
-  });
-  const [savingId, setSavingId] = useState<number | null>(null);
-
-  const mutation = useMutation({
-    mutationFn: ({ id, allowance }: { id: number; allowance: string | null }) => {
-      setSavingId(id);
-      return updateStaffShip(id, { meal_allowance: allowance });
-    },
-    onSuccess: () => {
-      toast.success("Cabin pricing saved — applies to new bookings only.");
-      queryClient.invalidateQueries({ queryKey: ["staff", "ships"] });
-    },
-    onError: (err) => toast.error(errorText(err)),
-    onSettled: () => setSavingId(null),
-  });
-
-  return (
-    <section className="space-y-4">
-      <div>
-        <h2 className="font-display text-xl flex items-center gap-2">
-          <BedDouble className="size-5 text-gold" /> Cabin pricing
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Whether a cabin is sold by the head or as a whole room. Selling it whole means a cabin
-          taken by one guest still costs the cabin — less the food that the empty berth would have
-          eaten.
-        </p>
-      </div>
-
-      {isLoading ? (
-        <div className="p-12 flex items-center justify-center gap-3 text-muted-foreground">
-          <Loader2 className="size-5 animate-spin text-gold" /> Loading…
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {data?.map((ship) => (
-            <ShipCabinPricingCard
-              key={ship.id}
-              ship={ship}
-              saving={savingId === ship.id && mutation.isPending}
-              onSave={(allowance) => mutation.mutate({ id: ship.id, allowance })}
-            />
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function ShipCabinPricingCard({
-  ship,
-  onSave,
-  saving,
-}: {
-  ship: StaffShip;
-  onSave: (allowance: string | null) => void;
-  saving: boolean;
-}) {
-  // Null and "0" are different answers, so the toggle and the amount are
-  // separate pieces of state: "sell whole cabins, allow nothing back" has to
-  // be expressible.
-  const [whole, setWhole] = useState(ship.meal_allowance !== null);
-  const [amount, setAmount] = useState(ship.meal_allowance ?? "");
-
-  const next = whole ? (amount.trim() === "" ? "0" : amount) : null;
-  const dirty =
-    next === null
-      ? ship.meal_allowance !== null
-      : ship.meal_allowance === null || Number(next) !== Number(ship.meal_allowance);
-
-  return (
-    <div
-      className={`rounded-2xl border bg-card overflow-hidden transition-all ${
-        dirty ? "border-gold/50 shadow-luxe" : "border-border"
-      }`}
-    >
-      <div className="px-5 py-4 border-b border-border flex items-center gap-3">
-        <div className="size-9 rounded-xl bg-ocean/8 grid place-items-center shrink-0">
-          <ShipIcon className="size-4.5 text-ocean" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="font-display text-base leading-tight truncate">{ship.name}</div>
-          <div className="text-[10px] text-muted-foreground">
-            How a cabin&rsquo;s fare is worked out
-          </div>
-        </div>
-        {dirty && (
-          <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-gold/15 text-gold shrink-0">
-            Unsaved
-          </span>
-        )}
-      </div>
-
-      <div className="p-5 space-y-4">
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={whole}
-            onChange={(e) => setWhole(e.target.checked)}
-            className="mt-0.5 size-4 shrink-0 accent-gold"
-          />
-          <span className="text-sm">
-            Sell cabins whole
-            <span className="block text-[11px] text-muted-foreground mt-0.5">
-              A cabin is charged at its full berth count however many people take it.
-            </span>
-          </span>
-        </label>
-
-        {whole && (
-          <label className="block">
-            <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
-              Allowance per unoccupied berth (BDT)
-            </span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={amount}
-              placeholder="e.g. 5000"
-              onChange={(e) => setAmount(e.target.value)}
-              className={staffInputClass}
-            />
-          </label>
-        )}
-
-        <div className="rounded-xl bg-muted/40 px-4 py-2.5 text-xs text-muted-foreground">
-          {!whole ? (
-            <>Charged per person: one guest in a four-berth cabin pays for one guest.</>
-          ) : Number(next) > 0 ? (
-            <>
-              A two-berth cabin taken by one guest costs the full cabin less{" "}
-              <strong className="text-foreground">{formatBDT(next ?? "0")}</strong>.
-            </>
-          ) : (
-            <>The full cabin is charged whoever takes it, with nothing returned.</>
-          )}
-          <span className="block mt-1">
-            Applies to new bookings only — bookings already made keep the price they were given.
-          </span>
-        </div>
-
-        <button
-          disabled={!dirty || saving}
-          onClick={() => onSave(next)}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
-        >
-          {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-          {dirty ? "Save changes" : "Saved"}
-        </button>
-      </div>
     </div>
   );
 }
