@@ -19,6 +19,7 @@ import { useBookingLookup } from "@/hooks/queries/useCancellation";
 import { getBookingInvoices } from "@/lib/api/bookings";
 import { useQuery } from "@tanstack/react-query";
 import { formatBDT } from "@/lib/money";
+import { customerError } from "@/lib/errors";
 import type { ApiError, BookingPublic } from "@/lib/api/types";
 
 export const Route = createFileRoute("/manage")({
@@ -51,14 +52,7 @@ function ManageBookingPage() {
       });
       setBooking(result);
     } catch (err) {
-      const apiError = err as ApiError;
-      setError(
-        apiError.detail ??
-          Object.values(apiError.fieldErrors ?? {})
-            .flat()
-            .join(" ") ??
-          "We could not find that booking.",
-      );
+      setError(customerError(err, "We could not find that booking."));
     }
   }
 

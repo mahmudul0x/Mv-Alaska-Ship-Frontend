@@ -8,6 +8,7 @@ import { INQUIRY_TYPES, submitContactMessage, type InquiryType } from "@/lib/api
 import type { ApiError } from "@/lib/api/types";
 import canal from "@/assets/canal-mangrove.jpg";
 import { COMPANY, fullAddress } from "@/lib/company";
+import { customerError } from "@/lib/errors";
 
 // The reservations WhatsApp line — the "Send via WhatsApp" button opens a
 // pre-filled chat to this number. Digits only, international format, no "+".
@@ -79,14 +80,11 @@ function Contact() {
       setStatus("sent");
       setForm(EMPTY);
     } catch (err) {
-      const apiErr = err as ApiError;
-      const firstFieldError = apiErr.fieldErrors
-        ? Object.values(apiErr.fieldErrors)[0]?.[0]
-        : undefined;
       setError(
-        apiErr.detail ||
-          firstFieldError ||
+        customerError(
+          err,
           "Something went wrong sending your inquiry. Please try again or WhatsApp us.",
+        ),
       );
       setStatus("idle");
     }

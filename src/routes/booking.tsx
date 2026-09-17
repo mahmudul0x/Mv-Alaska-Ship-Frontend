@@ -35,6 +35,7 @@ import {
   X,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { customerError } from "@/lib/errors";
 import img109 from "@/assets/109.jpeg";
 import { AvailabilityCalendar } from "@/components/booking/AvailabilityCalendar";
 import { PackagePicker } from "@/components/booking/PackagePicker";
@@ -239,10 +240,17 @@ function Booking() {
         });
         window.location.assign(payment.gateway_url);
         return; // keep the button in its redirecting state during navigation
-      } catch {
+      } catch (err) {
         setRedirecting(false);
+        // The cabin IS held — the booking was created a moment ago — so the
+        // reassurance leads and whatever the gateway objected to follows it.
+        // Telling someone only that payment failed, right after taking their
+        // details, reads as though the whole thing was lost.
         toast.error(
-          "Your room is reserved, but the payment gateway didn't respond — use Pay Now below to retry.",
+          `Your room is reserved, but we couldn't start the payment. ${customerError(
+            err,
+            "Please use Pay Now below to try again.",
+          )}`,
         );
         setBookingResult(booking);
       }
@@ -252,10 +260,14 @@ function Booking() {
         toast.error("One of your rooms was just booked by someone else. Please pick again.");
         update({ rooms: [] });
         setStep(STEP_ROOM);
-      } else if (apiError.fieldErrors) {
-        toast.error(Object.values(apiError.fieldErrors).flat().join(" "));
       } else {
-        toast.error(apiError.detail || "Couldn't complete your booking. Please try again.");
+        toast.error(
+          customerError(
+            err,
+            "We couldn't complete your booking. Please try again.",
+            data.rooms.length,
+          ),
+        );
       }
     }
   }
@@ -1699,9 +1711,11 @@ function StepPayment({
               )}
               {quoteError && (
                 <div role="alert" className="text-destructive text-xs">
-                  {quoteError.fieldErrors
-                    ? Object.values(quoteError.fieldErrors).flat().join(" ")
-                    : quoteError.detail || "Couldn't calculate a price for this selection."}
+                  {customerError(
+                    quoteError,
+                    "We couldn't work out a price for this selection.",
+                    data.rooms.length,
+                  )}
                 </div>
               )}
               {quote && (

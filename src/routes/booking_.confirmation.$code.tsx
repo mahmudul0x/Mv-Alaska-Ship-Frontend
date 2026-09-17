@@ -19,6 +19,7 @@ import { ResultShell } from "@/components/booking/ResultShell";
 import { useBooking } from "@/hooks/queries/useBooking";
 import { useInitiatePayment } from "@/hooks/queries/useInitiatePayment";
 import { formatBDT, parseMoney } from "@/lib/money";
+import { customerError } from "@/lib/errors";
 import type { ApiError, PaymentType } from "@/lib/api/types";
 
 export const Route = createFileRoute("/booking_/confirmation/$code")({
@@ -45,12 +46,7 @@ function BookingConfirmationPage() {
       const { gateway_url } = await initiatePayment.mutateAsync(payload);
       window.location.href = gateway_url;
     } catch (err) {
-      const apiError = err as ApiError;
-      toast.error(
-        apiError.fieldErrors
-          ? Object.values(apiError.fieldErrors).flat().join(" ")
-          : apiError.detail || "Couldn't start payment. Please try again.",
-      );
+      toast.error(customerError(err, "We couldn't start your payment. Please try again."));
     }
   }
 
