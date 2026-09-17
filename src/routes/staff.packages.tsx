@@ -40,6 +40,7 @@ import {
   downloadGuideReport,
   generatePackageRooms,
   getStaffPackages,
+  getStaffShips,
   togglePackageBooking,
   updateStaffPackage,
   uploadStaffPackageHero,
@@ -641,8 +642,18 @@ function fromDhakaInput(value: string): string {
 
 function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose: () => void }) {
   const queryClient = useQueryClient();
+  // The ship's starting fare, for a NEW package only. Editing an existing one
+  // must never show a figure other than what it is actually priced at.
+  const { data: ships } = useQuery({
+    queryKey: ["staff", "ships"],
+    queryFn: getStaffShips,
+    enabled: !pkg,
+  });
+  const shipId = pkg?.ship ?? 1;
+  const defaultFare = ships?.find((s) => s.id === shipId)?.default_adult_price ?? "";
+
   const [form, setForm] = useState<StaffPackageWrite>({
-    ship: pkg?.ship ?? 1,
+    ship: shipId,
     start_date: pkg?.start_date ?? "",
     end_date: pkg?.end_date ?? "",
     adult_price: pkg?.adult_price ?? "",
@@ -659,6 +670,15 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
   });
 
   const set = (patch: Partial<StaffPackageWrite>) => setForm((f) => ({ ...f, ...patch }));
+
+  // The ships query resolves after the form mounts, so the default is applied
+  // here rather than in the initial state. Only ever into an EMPTY field: once
+  // a figure is on screen it is either what the package costs or what the
+  // staffer typed, and overwriting either would be worse than asking.
+  useEffect(() => {
+    if (pkg || !defaultFare) return;
+    setForm((f) => (f.adult_price ? f : { ...f, adult_price: defaultFare }));
+  }, [pkg, defaultFare]);
 
   // The picked file, and what to show for it. `heroPreview` is a blob URL for a
   // new pick, the saved URL for an existing package, and null once removed —

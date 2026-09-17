@@ -11,12 +11,14 @@ import {
   ShieldCheck,
   Ship as ShipIcon,
   UserRound,
+  Wallet,
 } from "lucide-react";
 
 import { errorText, staffInputClass } from "@/components/staff/ui";
 import { getStaffShips, updateStaffShip } from "@/lib/api/staff";
 import { getStaffUser } from "@/lib/staffAuth";
 import type { GuideReportDensity, StaffShip } from "@/lib/api/staffTypes";
+import { formatBDT } from "@/lib/money";
 
 export const Route = createFileRoute("/staff/settings")({
   component: SettingsPage,
@@ -59,12 +61,13 @@ function SettingsPage() {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        To change your name, username, or password, contact an administrator in the Django
-        admin panel.
+        To change your name, username, or password, contact an administrator in the Django admin
+        panel.
       </p>
 
       <NotificationInboxSection />
       <HelplineSection />
+      <DefaultFareSection />
       <GuideReportSection />
     </div>
   );
@@ -100,9 +103,8 @@ function NotificationInboxSection() {
           <Mail className="size-5 text-gold" /> Message notifications
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Where inquiries from the website contact form are emailed. Leave blank to use the
-          system default. Every message also appears in{" "}
-          <span className="font-medium">Messages</span>.
+          Where inquiries from the website contact form are emailed. Leave blank to use the system
+          default. Every message also appears in <span className="font-medium">Messages</span>.
         </p>
       </div>
 
@@ -218,8 +220,8 @@ function HelplineSection() {
           <Phone className="size-5 text-gold" /> Helpline numbers
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Printed in the top corner of every guide report and customer invoice. Separate
-          multiple numbers with commas.
+          Printed in the top corner of every guide report and customer invoice. Separate multiple
+          numbers with commas.
         </p>
       </div>
 
@@ -368,8 +370,8 @@ function GuideReportSection() {
           <FileText className="size-5 text-gold" /> Guide report size
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Controls the text size and rows-per-page of the guide collection report PDF.
-          Compact fits more rooms on a page; Large prints bigger, easier-to-read type.
+          Controls the text size and rows-per-page of the guide collection report PDF. Compact fits
+          more rooms on a page; Large prints bigger, easier-to-read type.
         </p>
       </div>
 
@@ -480,6 +482,139 @@ function ProfileRow({
       <Icon className="size-4 text-ocean/50 shrink-0" />
       <span className="text-xs text-muted-foreground w-24 shrink-0">{label}</span>
       <span className="text-sm font-medium truncate">{value}</span>
+    </div>
+  );
+}
+
+/* ── Default adult fare (per-ship starting figure for new packages) ───────── */
+
+function DefaultFareSection() {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["staff", "ships"],
+    queryFn: getStaffShips,
+  });
+  const [savingId, setSavingId] = useState<number | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: ({ id, price }: { id: number; price: string | null }) => {
+      setSavingId(id);
+      return updateStaffShip(id, { default_adult_price: price });
+    },
+    onSuccess: () => {
+      toast.success("Default fare saved — new packages will start at this figure.");
+      queryClient.invalidateQueries({ queryKey: ["staff", "ships"] });
+    },
+    onError: (err) => toast.error(errorText(err)),
+    onSettled: () => setSavingId(null),
+  });
+
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 className="font-display text-xl flex items-center gap-2">
+          <Wallet className="size-5 text-gold" /> Default adult fare
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          What a new package&rsquo;s per-adult fare starts at, so you stop retyping the same figure.
+          Every sailing can still be priced differently — a five-night voyage is not priced like a
+          three-night one — this is only the starting number.
+        </p>
+      </div>
+
+      {isLoading ? (
+        <div className="p-12 flex items-center justify-center gap-3 text-muted-foreground">
+          <Loader2 className="size-5 animate-spin text-gold" /> Loading…
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {data?.map((ship) => (
+            <ShipDefaultFareCard
+              key={ship.id}
+              ship={ship}
+              saving={savingId === ship.id && mutation.isPending}
+              onSave={(price) => mutation.mutate({ id: ship.id, price })}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ShipDefaultFareCard({
+  ship,
+  onSave,
+  saving,
+}: {
+  ship: StaffShip;
+  onSave: (price: string | null) => void;
+  saving: boolean;
+}) {
+  const stored = ship.default_adult_price ?? "";
+  const [value, setValue] = useState(stored);
+  // Compared as numbers so "4500" and "4500.00" are not reported as a pending
+  // change the staffer never made.
+  const blank = value.trim() === "";
+  const dirty = blank ? stored !== "" : Number(value) !== Number(stored || NaN);
+
+  return (
+    <div
+      className={`rounded-2xl border bg-card overflow-hidden transition-all ${
+        dirty ? "border-gold/50 shadow-luxe" : "border-border"
+      }`}
+    >
+      <div className="px-5 py-4 border-b border-border flex items-center gap-3">
+        <div className="size-9 rounded-xl bg-ocean/8 grid place-items-center shrink-0">
+          <ShipIcon className="size-4.5 text-ocean" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-display text-base leading-tight truncate">{ship.name}</div>
+          <div className="text-[10px] text-muted-foreground">Starting fare for new packages</div>
+        </div>
+        {dirty && (
+          <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-gold/15 text-gold shrink-0">
+            Unsaved
+          </span>
+        )}
+      </div>
+
+      <div className="p-5 space-y-4">
+        <label className="block">
+          <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
+            Per adult (BDT) — leave blank for no default
+          </span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={value}
+            placeholder="e.g. 4500"
+            onChange={(e) => setValue(e.target.value)}
+            className={staffInputClass}
+          />
+        </label>
+
+        <div className="rounded-xl bg-muted/40 px-4 py-2.5 text-xs text-muted-foreground">
+          {blank ? (
+            <>New packages open with an empty fare and ask for one.</>
+          ) : (
+            <>
+              New packages open at <strong className="text-foreground">{formatBDT(value)}</strong>{" "}
+              per adult. Changing this never re-prices a package that already exists.
+            </>
+          )}
+        </div>
+
+        <button
+          disabled={!dirty || saving}
+          onClick={() => onSave(blank ? null : value)}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-xs uppercase tracking-[0.15em] font-semibold gradient-gold text-ocean shadow-luxe disabled:opacity-30 disabled:shadow-none"
+        >
+          {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+          {dirty ? "Save changes" : "Saved"}
+        </button>
+      </div>
     </div>
   );
 }

@@ -29,6 +29,11 @@ export interface StaffShip {
   contact_notify_email: string;
   /** Guide report PDF text size / rows-per-page. */
   guide_report_density: GuideReportDensity;
+  /** Where a new package's per-adult fare starts. Null means no default, and
+   *  the form asks. A DEFAULT, not the price: each package keeps its own copy,
+   *  so raising this for next season cannot rewrite what people already
+   *  booked at. */
+  default_adult_price: Money | null;
 }
 
 export type ContactMessageStatus = "new" | "read" | "archived";
