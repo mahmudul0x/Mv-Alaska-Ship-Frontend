@@ -10,14 +10,16 @@
     font-style: normal;
     font-weight: 300 700;
     font-display: swap;
-    src: url("https://fonts.gstatic.com/s/cormorantgaramond/v16/co3YmX5slCNuHLi8bLeY9MK7whWMhyjornFLsS6V7w.woff2") format("woff2");
+    src: url("https://fonts.gstatic.com/s/cormorantgaramond/v16/co3YmX5slCNuHLi8bLeY9MK7whWMhyjornFLsS6V7w.woff2")
+      format("woff2");
   }
   @font-face {
     font-family: "Inter";
     font-style: normal;
     font-weight: 300 700;
     font-display: swap;
-    src: url("https://fonts.gstatic.com/s/inter/v18/UcCo3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTc2dRJC4Y.woff2") format("woff2");
+    src: url("https://fonts.gstatic.com/s/inter/v18/UcCo3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTc2dRJC4Y.woff2")
+      format("woff2");
   }
 }
 
@@ -61,11 +63,11 @@
 :root {
   --radius: 0.25rem;
   /* Emerald Prestige palette */
-  --ocean: oklch(0.32 0.07 162);          /* #064e3b deep emerald */
-  --midnight: oklch(0.24 0.055 162);      /* darker emerald */
-  --mangrove: oklch(0.50 0.10 162);       /* #0d7a5f mid emerald */
-  --gold: oklch(0.76 0.13 85);            /* #c9a84c luxury gold — FILLS ONLY */
-  --gold-soft: oklch(0.88 0.10 88);       /* #f0d78c soft gold */
+  --ocean: oklch(0.32 0.07 162); /* #064e3b deep emerald */
+  --midnight: oklch(0.24 0.055 162); /* darker emerald */
+  --mangrove: oklch(0.5 0.1 162); /* #0d7a5f mid emerald */
+  --gold: oklch(0.76 0.13 85); /* #c9a84c luxury gold — FILLS ONLY */
+  --gold-soft: oklch(0.88 0.1 88); /* #f0d78c soft gold */
   /* Gold as *text on a light surface*. --gold itself is far too light to read:
    * 2.16:1 on white and 1.92:1 on the cream background, against WCAG AA's 4.5.
    * This darker gold clears AA on every light surface in the app (5.5:1 on the
@@ -74,11 +76,11 @@
    * rather than brown. Keep using --gold for gradients, fills, borders and
    * icons; use this only where gold is the colour of *text*. */
   --gold-text: oklch(0.52 0.13 85);
-  --sand: oklch(0.95 0.035 88);           /* #f5f0e0 cream */
-  --teal: oklch(0.62 0.09 168);           /* emerald glow */
-  --sunset: oklch(0.74 0.15 70);          /* warm amber */
+  --sand: oklch(0.95 0.035 88); /* #f5f0e0 cream */
+  --teal: oklch(0.62 0.09 168); /* emerald glow */
+  --sunset: oklch(0.74 0.15 70); /* warm amber */
 
-  --background: oklch(0.96 0.025 88);     /* cream #f5f0e0 */
+  --background: oklch(0.96 0.025 88); /* cream #f5f0e0 */
   --foreground: oklch(0.22 0.05 162);
   --card: oklch(1 0 0);
   --card-foreground: var(--foreground);
@@ -111,9 +113,9 @@
   --popover-foreground: oklch(0.98 0.008 80);
   --primary: var(--gold);
   --primary-foreground: var(--ocean);
-  --secondary: oklch(0.30 0.045 245);
+  --secondary: oklch(0.3 0.045 245);
   --secondary-foreground: oklch(0.98 0.008 80);
-  --muted: oklch(0.30 0.045 245);
+  --muted: oklch(0.3 0.045 245);
   --muted-foreground: oklch(0.75 0.015 80);
   --accent: var(--gold);
   --accent-foreground: var(--ocean);
@@ -123,8 +125,12 @@
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
-  html { scroll-behavior: smooth; }
+  * {
+    border-color: var(--color-border);
+  }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -133,8 +139,18 @@
     text-rendering: optimizeLegibility;
   }
 
-  h1, h2, h3, h4, .font-display { font-family: var(--font-display); letter-spacing: -0.01em; }
-  ::selection { background: var(--gold); color: var(--ocean); }
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+  ::selection {
+    background: var(--gold);
+    color: var(--ocean);
+  }
 
   /* Tailwind v4's Preflight gives buttons `cursor: default`, where v3 gave
      them `cursor: pointer`. Nothing in this app wants that: every button here
@@ -190,25 +206,31 @@
   }
 
   .gradient-hero {
-    background: linear-gradient(180deg,
+    background: linear-gradient(
+      180deg,
       color-mix(in oklab, var(--ocean) 22%, transparent) 0%,
       color-mix(in oklab, var(--ocean) 42%, transparent) 50%,
-      color-mix(in oklab, var(--ocean) 82%, transparent) 100%);
+      color-mix(in oklab, var(--ocean) 82%, transparent) 100%
+    );
   }
   /* Soft pool of shade behind the hero copy only — keeps the slide images
    * bright at the edges while the centered text stays readable. */
   .hero-scrim {
-    background: radial-gradient(ellipse 62% 52% at 50% 42%,
+    background: radial-gradient(
+      ellipse 62% 52% at 50% 42%,
       color-mix(in oklab, var(--midnight) 48%, transparent) 0%,
       color-mix(in oklab, var(--midnight) 26%, transparent) 50%,
-      transparent 78%);
+      transparent 78%
+    );
   }
   /* Primary-CTA fill. Deliberately near-solid: the old tri-stop
    * accent/soft/accent gradient read as shiny "foil" — flashy, not premium. */
   .gradient-gold {
-    background: linear-gradient(135deg,
+    background: linear-gradient(
+      135deg,
       var(--gold) 0%,
-      color-mix(in oklab, var(--gold) 82%, white) 100%);
+      color-mix(in oklab, var(--gold) 82%, white) 100%
+    );
   }
   .gradient-ocean {
     background: linear-gradient(180deg, var(--ocean) 0%, var(--midnight) 100%);
@@ -244,11 +266,19 @@
     box-shadow: 0 16px 40px -14px color-mix(in oklab, var(--gold) 38%, transparent);
   }
   .hover-lift {
-    transition: transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 600ms;
+    transition:
+      transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 600ms;
   }
-  .hover-lift:hover { transform: translateY(-6px); }
-  .image-zoom { transition: transform 1200ms cubic-bezier(0.2, 0.8, 0.2, 1); }
-  .group:hover .image-zoom { transform: scale(1.06); }
+  .hover-lift:hover {
+    transform: translateY(-6px);
+  }
+  .image-zoom {
+    transition: transform 1200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .group:hover .image-zoom {
+    transform: scale(1.06);
+  }
 
   .gold-rule {
     height: 1px;
@@ -259,15 +289,26 @@
     animation: marquee 40s linear infinite;
   }
   @keyframes marquee {
-    from { transform: translateX(0); }
-    to { transform: translateX(-50%); }
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
   }
 
   @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
   }
-  .animate-float { animation: float 6s ease-in-out infinite; }
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
 
   .eyebrow {
     font-family: var(--font-sans);
@@ -277,6 +318,53 @@
     font-weight: 500;
   }
 
-  .container-luxe { max-width: 1400px; margin-inline: auto; padding-inline: 1.5rem; }
-  @media (min-width: 768px) { .container-luxe { padding-inline: 2.5rem; } }
+  .container-luxe {
+    max-width: 1400px;
+    margin-inline: auto;
+    padding-inline: 1.5rem;
+  }
+  @media (min-width: 768px) {
+    .container-luxe {
+      padding-inline: 2.5rem;
+    }
+  }
+
+  /* A scrollable area on a dark ground.
+   *
+   * Windows draws a wide light-grey scrollbar with arrow buttons at each end,
+   * which on the emerald sidebar reads as a piece of some other application
+   * wedged into the nav. This keeps the bar — the nav really does scroll on a
+   * short window, and hiding it entirely leaves no sign of that — but makes it
+   * a thin translucent thumb that belongs to the surface it sits on.
+   *
+   * Both syntaxes on purpose: `scrollbar-*` is the standard and the only thing
+   * Firefox honours; `::-webkit-scrollbar` is what Chrome and Edge on Windows
+   * actually use for a bar this narrow. */
+  /* Built from currentColor so one class serves both grounds: in the emerald
+   * sidebar the text is light and the thumb comes out light, in a popover on
+   * card it is dark and the thumb comes out dark. A fixed white would be
+   * invisible on the second. */
+  .scroll-subtle {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, currentColor 25%, transparent) transparent;
+  }
+  .scroll-subtle::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scroll-subtle::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scroll-subtle::-webkit-scrollbar-thumb {
+    background: color-mix(in oklch, currentColor 22%, transparent);
+    border-radius: 999px;
+  }
+  .scroll-subtle::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklch, currentColor 38%, transparent);
+  }
+  /* The stepper arrows at each end are the ugliest part of the Windows bar and
+   * have no use on a list this short. */
+  .scroll-subtle::-webkit-scrollbar-button {
+    display: none;
+  }
 }

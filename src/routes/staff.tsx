@@ -119,12 +119,14 @@ function StaffLayout() {
           {!collapsed && (
             <div className="min-w-0">
               <div className="font-display text-lg leading-none truncate">MV Alaska</div>
-              <div className="eyebrow text-gold-soft text-[8px] mt-0.5">{t("shell.dashboard")}</div>
+              <div className="eyebrow text-gold-soft text-[8px] tracking-[0.18em] mt-0.5 whitespace-nowrap">
+                {t("shell.dashboard")}
+              </div>
             </div>
           )}
         </div>
 
-        <nav className="flex-1 py-4 space-y-1 px-2 lg:px-3 overflow-y-auto">
+        <nav className="flex-1 py-4 space-y-1 px-2 lg:px-3 overflow-y-auto scroll-subtle">
           {NAV.map(({ to, label, icon: Icon, exact }) => (
             <Link
               key={to}
@@ -292,7 +294,7 @@ function NotificationBell() {
         <div
           // Upwards and to the right: the bell sits at the bottom of a
           // full-height rail, so a downward popover would open off-screen.
-          className="absolute bottom-full left-0 mb-2 w-80 max-h-[70vh] overflow-y-auto rounded-2xl border border-border bg-card text-foreground shadow-luxe z-50"
+          className="absolute bottom-full left-0 mb-2 w-80 max-h-[70vh] overflow-y-auto scroll-subtle rounded-2xl border border-border bg-card text-foreground shadow-luxe z-50"
         >
           <div className="px-4 py-3 border-b border-border">
             <div className="font-display text-base leading-none">{t("notif.title")}</div>
