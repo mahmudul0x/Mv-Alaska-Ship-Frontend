@@ -165,6 +165,112 @@ export const STRINGS = {
     bn: "গ্যালারি থেকে এই ছবিটি মুছে ফেলবেন? এটি আর ফেরানো যাবে না।",
   },
   "gallery.photoAlt": { en: "Gallery photo", bn: "গ্যালারির ছবি" },
+
+  // ── Bookings ────────────────────────────────────────────────────────────
+  "bk.title": { en: "Bookings", bn: "বুকিং" },
+  "bk.searchPlaceholder": {
+    en: "Search code / name / phone…",
+    bn: "কোড / নাম / ফোন দিয়ে খুঁজুন…",
+  },
+  "bk.exportCsv": { en: "Export CSV", bn: "CSV নামান" },
+  "bk.newBooking": { en: "New booking", bn: "নতুন বুকিং" },
+  "bk.newManualBooking": { en: "New manual booking", bn: "হাতে নতুন বুকিং" },
+  "bk.nothingToExport": { en: "Nothing to export.", bn: "নামানোর মতো কিছু নেই।" },
+
+  "bk.totalBookings": { en: "Total bookings", bn: "মোট বুকিং" },
+  "bk.collected": { en: "Collected", bn: "আদায়" },
+  "bk.outstandingDue": { en: "Outstanding due", bn: "বকেয়া" },
+  "bk.fullyPaidRate": { en: "Fully-paid rate", bn: "সম্পূর্ণ পরিশোধের হার" },
+
+  "bk.allPackages": { en: "All packages", bn: "সব প্যাকেজ" },
+  "bk.allStatuses": { en: "All statuses", bn: "সব অবস্থা" },
+  "bk.dueOnly": { en: "Due only", bn: "শুধু বকেয়া" },
+  "bk.refundsOwed": { en: "Refunds owed", bn: "ফেরত বাকি" },
+  "bk.clear": { en: "Clear", bn: "মুছুন" },
+  "bk.noMatch": {
+    en: "No bookings match these filters.",
+    bn: "এই ছাঁকনিতে কোনো বুকিং মেলেনি।",
+  },
+
+  "bk.code": { en: "Code", bn: "কোড" },
+  "bk.customer": { en: "Customer", bn: "গ্রাহক" },
+  "bk.room": { en: "Room", bn: "রুম" },
+  "bk.pax": { en: "Pax", bn: "যাত্রী" },
+  "bk.paidProgress": { en: "Paid / Progress", bn: "পরিশোধ / অগ্রগতি" },
+  "bk.statusCol": { en: "Status", bn: "অবস্থা" },
+  "bk.created": { en: "Created", bn: "তৈরি" },
+  "bk.refundOwed": { en: "Refund owed", bn: "ফেরত বাকি" },
+
+  "bk.bookingCode": { en: "Booking code", bn: "বুকিং কোড" },
+  "bk.phone": { en: "Phone", bn: "ফোন" },
+  "bk.email": { en: "Email", bn: "ইমেইল" },
+  "bk.package": { en: "Package", bn: "প্যাকেজ" },
+  "bk.total": { en: "Total", bn: "মোট" },
+  "bk.paid": { en: "Paid", bn: "পরিশোধিত" },
+  "bk.due": { en: "Due", bn: "বকেয়া" },
+  "bk.passport": { en: "Passport", bn: "পাসপোর্ট" },
+  "bk.reason": { en: "Reason", bn: "কারণ" },
+  "bk.note": { en: "Note", bn: "মন্তব্য" },
+
+  "bk.collectionProgress": { en: "Collection progress", bn: "আদায়ের অগ্রগতি" },
+  "bk.foreignManifest": {
+    en: "Foreign nationals — boarding manifest",
+    bn: "বিদেশি নাগরিক — বোর্ডিং তালিকা",
+  },
+  "bk.changeStatus": { en: "Change status", bn: "অবস্থা বদলান" },
+  "bk.statusUpdated": { en: "Status updated.", bn: "অবস্থা বদলানো হয়েছে।" },
+  "bk.payments": { en: "Payments", bn: "পেমেন্ট" },
+  "bk.noPayments": { en: "No payments yet.", bn: "এখনো কোনো পেমেন্ট হয়নি।" },
+  "bk.amount": { en: "Amount", bn: "টাকার অঙ্ক" },
+  "bk.paymentRecorded": {
+    en: "Payment recorded — invoice email sent.",
+    bn: "পেমেন্ট লেখা হয়েছে — ইনভয়েস ইমেইল পাঠানো হয়েছে।",
+  },
+  "bk.invoices": { en: "Invoices", bn: "ইনভয়েস" },
+  "bk.resend": { en: "Resend", bn: "আবার পাঠান" },
+  "bk.invoiceResent": { en: "Invoice email resent.", bn: "ইনভয়েস ইমেইল আবার পাঠানো হয়েছে।" },
+  "bk.statusHistory": { en: "Status history", bn: "অবস্থার ইতিহাস" },
+  "bk.markedRefunded": { en: "Marked as refunded.", bn: "ফেরত দেওয়া হয়েছে বলে চিহ্নিত।" },
+
+  "bk.select": { en: "Select…", bn: "বেছে নিন…" },
+  "bk.adults": { en: "Adults", bn: "প্রাপ্তবয়স্ক" },
+  "bk.kidAges": { en: "Kid ages (comma separated)", bn: "শিশুদের বয়স (কমা দিয়ে)" },
+  "bk.kidAgesPlaceholder": { en: "e.g. 4, 7", bn: "যেমন ৪, ৭" },
+  "bk.customerName": { en: "Customer name", bn: "গ্রাহকের নাম" },
+  "bk.bookingCreated": { en: "Booking created.", bn: "বুকিং তৈরি হয়েছে।" },
+
+  "bk.cancelWithPolicy": {
+    en: "Cancel booking (apply cancellation policy)",
+    bn: "বুকিং বাতিল করুন (বাতিলের নীতি প্রয়োগ হবে)",
+  },
+  "bk.cancelThis": { en: "Cancel this booking", bn: "এই বুকিংটি বাতিল করুন" },
+  "bk.confirmCancel": {
+    en: "Cancel this booking? The room becomes available again.",
+    bn: "বুকিংটি বাতিল করবেন? রুমটি আবার খালি হয়ে যাবে।",
+  },
+  "bk.cancelledRefundRaised": {
+    en: "Booking cancelled and refund raised.",
+    bn: "বুকিং বাতিল হয়েছে, ফেরতের হিসাব খোলা হয়েছে।",
+  },
+  "bk.workingOutCharge": { en: "Working out the charge…", bn: "চার্জ হিসাব করা হচ্ছে…" },
+  "bk.waiveCharge": {
+    en: "Waive the cancellation charge — refund everything.",
+    bn: "বাতিলের চার্জ মাফ করে দিন — পুরো টাকা ফেরত যাবে।",
+  },
+
+  "reason.plansChanged": { en: "Plans changed", bn: "পরিকল্পনা বদলেছে" },
+  "reason.medical": { en: "Illness / emergency", bn: "অসুস্থতা / জরুরি অবস্থা" },
+  "reason.dateChange": { en: "Wants a different date", bn: "অন্য তারিখ চান" },
+  "reason.mistake": { en: "Booked by mistake", bn: "ভুল করে বুক করেছেন" },
+  "reason.other": { en: "Other", bn: "অন্য কারণ" },
+
+  "payout.method": { en: "Payout method…", bn: "কোন মাধ্যমে ফেরত…" },
+  "payout.nagad": { en: "Nagad", bn: "নগদ" },
+  "payout.bank": { en: "Bank transfer", bn: "ব্যাংক ট্রান্সফার" },
+  "payout.cash": { en: "Cash", bn: "নগদ টাকা" },
+  "payout.accountName": { en: "Account name", bn: "অ্যাকাউন্টের নাম" },
+  "payout.accountNumber": { en: "Account / wallet number", bn: "অ্যাকাউন্ট / ওয়ালেট নম্বর" },
+  "common.back": { en: "Back", bn: "ফিরে যান" },
 } as const;
 
 export type StringKey = keyof typeof STRINGS;

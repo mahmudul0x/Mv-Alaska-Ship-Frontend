@@ -29,6 +29,8 @@ import {
   staffInputClass,
 } from "@/components/staff/ui";
 import { getStaffCancelQuote, staffCancelBooking } from "@/lib/api/staffRefunds";
+import { useLanguage, useT } from "@/lib/i18n";
+import { money } from "@/lib/i18n/format";
 
 import {
   createStaffBooking,
@@ -185,6 +187,7 @@ function toCsv(
 }
 
 function BookingsPage() {
+  const t = useT();
   const statusLabel = useStatusLabel();
   const [page, setPage] = useState(1);
   const [packageFilter, setPackageFilter] = useState<number | undefined>();
@@ -259,7 +262,7 @@ function BookingsPage() {
 
   function exportCsv() {
     if (rows.length === 0) {
-      toast.error("Nothing to export.");
+      toast.error(t("bk.nothingToExport"));
       return;
     }
     const blob = new Blob([toCsv(rows, statusLabel)], { type: "text/csv;charset=utf-8;" });
@@ -275,12 +278,12 @@ function BookingsPage() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      <PageHeader title="Bookings" subtitle={data ? `${data.count} booking(s)` : "Loading…"}>
+      <PageHeader title={t("bk.title")} subtitle={data ? `${data.count} booking(s)` : "Loading…"}>
         <button
           onClick={exportCsv}
           className="flex items-center gap-2 px-4 py-2.5 rounded-full border border-border text-xs font-medium text-ocean hover:border-gold hover:text-gold transition-colors"
         >
-          <Download className="size-4" /> Export CSV
+          <Download className="size-4" /> {t("bk.exportCsv")}
         </button>
         <button
           onClick={() => setShowCreate(true)}
@@ -293,27 +296,27 @@ function BookingsPage() {
       {/* Summary cards — true totals across the filtered set */}
       <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard
-          label="Total bookings"
+          label={t("bk.totalBookings")}
           value={summary ? String(summary.count) : "—"}
           icon={ClipboardList}
           hint={filtersActive ? "Matching current filters" : "All bookings"}
         />
         <StatCard
-          label="Collected"
+          label={t("bk.collected")}
           value={summary ? formatBDT(summary.paid_amount) : "—"}
           icon={Banknote}
           tone="emerald"
           hint={summary ? `of ${formatBDT(summary.total_amount)} booked` : undefined}
         />
         <StatCard
-          label="Outstanding due"
+          label={t("bk.outstandingDue")}
           value={summary ? formatBDT(summary.due_amount) : "—"}
           icon={Wallet}
           highlight
           hint="To collect"
         />
         <StatCard
-          label="Fully-paid rate"
+          label={t("bk.fullyPaidRate")}
           value={summary ? `${summary.fully_paid_rate}%` : "—"}
           icon={Percent}
           hint="Of active bookings"
@@ -385,7 +388,7 @@ function BookingsPage() {
           <input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search code / name / phone…"
+            placeholder={t("bk.searchPlaceholder")}
             className="w-64 bg-card border border-border rounded-xl py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:border-gold"
           />
         </form>
@@ -397,7 +400,7 @@ function BookingsPage() {
           }}
           className="bg-card border border-border rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-gold"
         >
-          <option value="">All packages</option>
+          <option value="">{t("bk.allPackages")}</option>
           {packages?.results.map((p) => (
             <option key={p.id} value={p.id}>
               {p.marketing_title || `${p.ship_name} ${p.start_date}`}
@@ -412,7 +415,7 @@ function BookingsPage() {
           }}
           className="bg-card border border-border rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-gold"
         >
-          <option value="">All statuses</option>
+          <option value="">{t("bk.allStatuses")}</option>
           {STATUSES.map((s) => (
             <option key={s} value={s}>
               {s.replace("_", " ")}
@@ -443,19 +446,19 @@ function BookingsPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/40 text-left">
-              <Th>Code</Th>
-              <Th>Customer</Th>
+              <Th>{t("bk.code")}</Th>
+              <Th>{t("bk.customer")}</Th>
               <Th>Package</Th>
-              <Th>Room</Th>
-              <Th>Pax</Th>
+              <Th>{t("bk.room")}</Th>
+              <Th>{t("bk.pax")}</Th>
               <Th sortKey="total" active={sortKey} dir={sortDir} onSort={toggleSort}>
                 Total
               </Th>
-              <Th>Paid / Progress</Th>
+              <Th>{t("bk.paidProgress")}</Th>
               <Th sortKey="due" active={sortKey} dir={sortDir} onSort={toggleSort}>
                 Due
               </Th>
-              <Th>Status</Th>
+              <Th>{t("bk.statusCol")}</Th>
               <Th sortKey="created" active={sortKey} dir={sortDir} onSort={toggleSort}>
                 Created
               </Th>
@@ -472,7 +475,7 @@ function BookingsPage() {
             {!isLoading && rows.length === 0 && (
               <tr>
                 <td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">
-                  No bookings match these filters.
+                  {t("bk.noMatch")}
                 </td>
               </tr>
             )}
@@ -610,6 +613,8 @@ function Th({
 
 /* ── Detail dialog ── */
 function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClose: () => void }) {
+  const { t, lang } = useLanguage();
+  const bdt = (amount: string) => money(amount, lang);
   const queryClient = useQueryClient();
   const { data: booking } = useQuery({
     queryKey: ["staff", "booking", bookingId],
@@ -628,7 +633,7 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
   const statusMutation = useMutation({
     mutationFn: (status: BookingStatus) => updateStaffBooking(bookingId, { status }),
     onSuccess: () => {
-      toast.success("Status updated.");
+      toast.success(t("bk.statusUpdated"));
       invalidate();
     },
     onError: (err) => toast.error(errorText(err)),
@@ -643,7 +648,7 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
         gateway: "cash",
       }),
     onSuccess: () => {
-      toast.success("Payment recorded — invoice email sent.");
+      toast.success(t("bk.paymentRecorded"));
       setPayAmount("");
       invalidate();
     },
@@ -657,7 +662,7 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
         refund_note: note,
       }),
     onSuccess: () => {
-      toast.success("Marked as refunded.");
+      toast.success(t("bk.markedRefunded"));
       invalidate();
     },
     onError: (err) => toast.error(errorText(err)),
@@ -665,7 +670,7 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
 
   const resendMutation = useMutation({
     mutationFn: (invoiceId: number) => resendInvoice(invoiceId),
-    onSuccess: () => toast.success("Invoice email resent."),
+    onSuccess: () => toast.success(t("bk.invoiceResent")),
     onError: (err) => toast.error(errorText(err)),
   });
 
@@ -684,7 +689,7 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
               <div className="font-medium truncate">{booking.customer_name}</div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="font-medium text-ocean">{booking.booking_code}</span>
-                <CopyButton value={booking.booking_code} label="Booking code" />
+                <CopyButton value={booking.booking_code} label={t("bk.bookingCode")} />
               </div>
             </div>
             <div className="ml-auto">
@@ -694,15 +699,15 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
 
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div className="flex items-start justify-between gap-2">
-              <Info label="Phone" value={booking.phone} />
-              <CopyButton value={booking.phone} label="Phone" />
+              <Info label={t("bk.phone")} value={booking.phone} />
+              <CopyButton value={booking.phone} label={t("bk.phone")} />
             </div>
             <div className="flex items-start justify-between gap-2">
-              <Info label="Email" value={booking.email} />
-              <CopyButton value={booking.email} label="Email" />
+              <Info label={t("bk.email")} value={booking.email} />
+              <CopyButton value={booking.email} label={t("bk.email")} />
             </div>
             <Info label={booking.rooms.length > 1 ? "Rooms" : "Room"} value={booking.room_number} />
-            <Info label="Package" value={booking.package_title} />
+            <Info label={t("bk.package")} value={booking.package_title} />
             {/* Per-room pax: a family taking several cabins has a party per room. */}
             {booking.rooms.map((r) => (
               <Info
@@ -716,15 +721,15 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
                 }
               />
             ))}
-            <Info label="Total" value={formatBDT(booking.total_amount)} />
-            <Info label="Paid" value={formatBDT(booking.paid_amount)} />
-            <Info label="Due" value={formatBDT(booking.due_amount)} />
+            <Info label={t("bk.total")} value={bdt(booking.total_amount)} />
+            <Info label={t("bk.paid")} value={bdt(booking.paid_amount)} />
+            <Info label={t("bk.due")} value={bdt(booking.due_amount)} />
           </div>
 
           {/* Payment progress */}
           <div>
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-              <span>Collection progress</span>
+              <span>{t("bk.collectionProgress")}</span>
               <span>
                 {parseMoney(booking.total_amount) > 0
                   ? Math.round(
@@ -761,7 +766,7 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
           {booking.rooms.some((r) => r.foreign_guests?.length) && (
             <div className="rounded-xl border border-border p-4 space-y-3">
               <div className="eyebrow text-[10px] text-muted-foreground">
-                Foreign nationals — boarding manifest
+                {t("bk.foreignManifest")}
               </div>
               <div className="space-y-2">
                 {booking.rooms.flatMap((room) =>
@@ -782,7 +787,7 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <span className="font-mono tracking-wide">{guest.passport_number}</span>
-                        <CopyButton value={guest.passport_number} label="Passport" />
+                        <CopyButton value={guest.passport_number} label={t("bk.passport")} />
                       </div>
                     </div>
                   )),
@@ -835,18 +840,16 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
 
           {/* Status change */}
           <div className="rounded-xl border border-border p-4">
-            <div className="eyebrow text-muted-foreground text-[10px] mb-3">Change status</div>
+            <div className="eyebrow text-muted-foreground text-[10px] mb-3">
+              {t("bk.changeStatus")}
+            </div>
             <div className="flex gap-2 flex-wrap">
               {STATUSES.map((s) => (
                 <button
                   key={s}
                   disabled={booking.status === s || statusMutation.isPending}
                   onClick={() => {
-                    if (
-                      s === "cancelled" &&
-                      !confirm("Cancel this booking? The room becomes available again.")
-                    )
-                      return;
+                    if (s === "cancelled" && !confirm(t("bk.confirmCancel"))) return;
                     statusMutation.mutate(s);
                   }}
                   className={`px-3 py-1.5 rounded-full text-xs capitalize border transition-colors ${
@@ -873,7 +876,7 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
                   min={1}
                   value={payAmount}
                   onChange={(e) => setPayAmount(e.target.value)}
-                  placeholder="Amount"
+                  placeholder={t("bk.amount")}
                   className="flex-1 bg-background border border-border rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-gold"
                 />
                 <button
@@ -889,9 +892,9 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
 
           {/* Payments */}
           <div>
-            <div className="eyebrow text-muted-foreground text-[10px] mb-2">Payments</div>
+            <div className="eyebrow text-muted-foreground text-[10px] mb-2">{t("bk.payments")}</div>
             {booking.payments.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No payments yet.</div>
+              <div className="text-sm text-muted-foreground">{t("bk.noPayments")}</div>
             ) : (
               <div className="divide-y divide-border rounded-xl border border-border text-sm">
                 {booking.payments.map((p) => (
@@ -914,7 +917,9 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
           {/* Invoices */}
           {invoices && invoices.results.length > 0 && (
             <div>
-              <div className="eyebrow text-muted-foreground text-[10px] mb-2">Invoices</div>
+              <div className="eyebrow text-muted-foreground text-[10px] mb-2">
+                {t("bk.invoices")}
+              </div>
               <div className="divide-y divide-border rounded-xl border border-border text-sm">
                 {invoices.results.map((inv) => (
                   <div key={inv.id} className="px-4 py-2.5 flex items-center justify-between gap-2">
@@ -951,7 +956,9 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
 
           {/* Status history */}
           <div>
-            <div className="eyebrow text-muted-foreground text-[10px] mb-2">Status history</div>
+            <div className="eyebrow text-muted-foreground text-[10px] mb-2">
+              {t("bk.statusHistory")}
+            </div>
             <div className="space-y-1.5 text-xs text-muted-foreground">
               {booking.status_logs.map((log, i) => (
                 <div key={i}>
@@ -970,6 +977,7 @@ function BookingDetailDialog({ bookingId, onClose }: { bookingId: number; onClos
 
 /* ── Create booking dialog ── */
 function CreateBookingDialog({ onClose }: { onClose: () => void }) {
+  const t = useT();
   const queryClient = useQueryClient();
   const [packageId, setPackageId] = useState<number | undefined>();
   const [roomId, setRoomId] = useState<number | undefined>();
@@ -1001,7 +1009,7 @@ function CreateBookingDialog({ onClose }: { onClose: () => void }) {
         email,
       }),
     onSuccess: () => {
-      toast.success("Booking created.");
+      toast.success(t("bk.bookingCreated"));
       queryClient.invalidateQueries({ queryKey: ["staff"] });
       onClose();
     },
@@ -1011,7 +1019,7 @@ function CreateBookingDialog({ onClose }: { onClose: () => void }) {
   const canSubmit = packageId && roomId && name && phone && email;
 
   return (
-    <DialogShell onClose={onClose} title="New manual booking">
+    <DialogShell onClose={onClose} title={t("bk.newManualBooking")}>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
@@ -1024,7 +1032,7 @@ function CreateBookingDialog({ onClose }: { onClose: () => void }) {
               }}
               className="w-full bg-background border border-border rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-gold"
             >
-              <option value="">Select…</option>
+              <option value="">{t("bk.select")}</option>
               {packages?.results.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.marketing_title || `${p.ship_name} ${p.start_date}`}
@@ -1033,14 +1041,16 @@ function CreateBookingDialog({ onClose }: { onClose: () => void }) {
             </select>
           </label>
           <label className="block">
-            <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">Room</span>
+            <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
+              {t("bk.room")}
+            </span>
             <select
               value={roomId ?? ""}
               onChange={(e) => setRoomId(e.target.value ? Number(e.target.value) : undefined)}
               disabled={!rooms}
               className="w-full bg-background border border-border rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:border-gold disabled:opacity-40"
             >
-              <option value="">Select…</option>
+              <option value="">{t("bk.select")}</option>
               {rooms
                 ?.filter((r) => r.availability === "available")
                 .map((r) => (
@@ -1054,7 +1064,9 @@ function CreateBookingDialog({ onClose }: { onClose: () => void }) {
 
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
-            <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">Adults</span>
+            <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
+              {t("bk.adults")}
+            </span>
             <input
               type="number"
               min={1}
@@ -1065,10 +1077,10 @@ function CreateBookingDialog({ onClose }: { onClose: () => void }) {
           </label>
           <label className="block">
             <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
-              Kid ages (comma separated)
+              {t("bk.kidAges")}
             </span>
             <input
-              placeholder="e.g. 4, 7"
+              placeholder={t("bk.kidAgesPlaceholder")}
               onChange={(e) =>
                 setKidAges(
                   e.target.value
@@ -1085,7 +1097,7 @@ function CreateBookingDialog({ onClose }: { onClose: () => void }) {
         <div className="grid grid-cols-2 gap-3">
           <label className="block col-span-2">
             <span className="eyebrow text-muted-foreground text-[10px] block mb-1.5">
-              Customer name
+              {t("bk.customerName")}
             </span>
             <input
               value={name}
@@ -1133,6 +1145,7 @@ function CreateBookingDialog({ onClose }: { onClose: () => void }) {
  *  that has to be justified in writing.
  */
 function StaffCancelPanel({ booking, onDone }: { booking: { id: number }; onDone: () => void }) {
+  const t = useT();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [reasonCode, setReasonCode] = useState("plans_changed");
@@ -1159,7 +1172,7 @@ function StaffCancelPanel({ booking, onDone }: { booking: { id: number }; onDone
         refund_account_number: accountNumber,
       }),
     onSuccess: () => {
-      toast.success("Booking cancelled and refund raised.");
+      toast.success(t("bk.cancelledRefundRaised"));
       queryClient.invalidateQueries({ queryKey: ["staff"] });
       onDone();
     },
@@ -1172,7 +1185,7 @@ function StaffCancelPanel({ booking, onDone }: { booking: { id: number }; onDone
         onClick={() => setOpen(true)}
         className="w-full min-h-11 rounded-full border border-border text-sm text-muted-foreground hover:border-destructive hover:text-destructive transition-colors"
       >
-        Cancel booking (apply cancellation policy)
+        {t("bk.cancelWithPolicy")}
       </button>
     );
   }
@@ -1182,11 +1195,11 @@ function StaffCancelPanel({ booking, onDone }: { booking: { id: number }; onDone
 
   return (
     <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 space-y-4">
-      <div className="eyebrow text-destructive text-[10px]">Cancel this booking</div>
+      <div className="eyebrow text-destructive text-[10px]">{t("bk.cancelThis")}</div>
 
       {quote.isLoading && (
         <div className="text-sm text-muted-foreground flex items-center gap-2">
-          <Loader2 className="size-4 animate-spin" /> Working out the charge…
+          <Loader2 className="size-4 animate-spin" /> {t("bk.workingOutCharge")}
         </div>
       )}
 
@@ -1226,21 +1239,21 @@ function StaffCancelPanel({ booking, onDone }: { booking: { id: number }; onDone
             )}
           </div>
 
-          <StaffField label="Reason">
+          <StaffField label={t("bk.reason")}>
             <select
               value={reasonCode}
               onChange={(e) => setReasonCode(e.target.value)}
               className={staffInputClass}
             >
-              <option value="plans_changed">Plans changed</option>
-              <option value="medical">Illness / emergency</option>
-              <option value="date_change">Wants a different date</option>
-              <option value="booked_by_mistake">Booked by mistake</option>
-              <option value="other">Other</option>
+              <option value="plans_changed">{t("reason.plansChanged")}</option>
+              <option value="medical">{t("reason.medical")}</option>
+              <option value="date_change">{t("reason.dateChange")}</option>
+              <option value="booked_by_mistake">{t("reason.mistake")}</option>
+              <option value="other">{t("reason.other")}</option>
             </select>
           </StaffField>
 
-          <StaffField label="Note">
+          <StaffField label={t("bk.note")}>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -1256,22 +1269,22 @@ function StaffCancelPanel({ booking, onDone }: { booking: { id: number }; onDone
                 onChange={(e) => setMethod(e.target.value)}
                 className={staffInputClass}
               >
-                <option value="">Payout method…</option>
+                <option value="">{t("payout.method")}</option>
                 <option value="bkash">bKash</option>
-                <option value="nagad">Nagad</option>
-                <option value="bank_transfer">Bank transfer</option>
-                <option value="cash">Cash</option>
+                <option value="nagad">{t("payout.nagad")}</option>
+                <option value="bank_transfer">{t("payout.bank")}</option>
+                <option value="cash">{t("payout.cash")}</option>
               </select>
               <input
                 value={accountName}
                 onChange={(e) => setAccountName(e.target.value)}
-                placeholder="Account name"
+                placeholder={t("payout.accountName")}
                 className={staffInputClass}
               />
               <input
                 value={accountNumber}
                 onChange={(e) => setAccountNumber(e.target.value)}
-                placeholder="Account / wallet number"
+                placeholder={t("payout.accountNumber")}
                 className={staffInputClass}
               />
             </div>
@@ -1285,7 +1298,7 @@ function StaffCancelPanel({ booking, onDone }: { booking: { id: number }; onDone
               className="mt-0.5 size-4 accent-gold"
             />
             <span>
-              Waive the cancellation charge — refund everything.
+              {t("bk.waiveCharge")}
               <span className="text-muted-foreground">
                 {" "}
                 Money given away, so the note becomes mandatory and is recorded against your name.
