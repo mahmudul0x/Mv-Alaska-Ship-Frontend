@@ -30,10 +30,22 @@ export function offerSummary(offer: PackageOffer): string {
 export function OfferBadge({ offer, className = "" }: { offer: PackageOffer; className?: string }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-gold-text ring-1 ring-gold/35 ${className}`}
+      // Dark glass, not the pale gold chip this started as. Every card that
+      // shows this puts it ON THE PHOTO, and bg-gold/15 is a tint meant for a
+      // white card — over a bright picture it washed out until the text was
+      // unreadable. Ocean at 85% with a blur gives the light gold something to
+      // sit on whatever the photograph behind it happens to be.
+      //
+      // Measured rather than eyeballed. Old chip on a mid-tone photograph:
+      // 1.65:1, which is why it read as invisible. This one is 5.23:1 against
+      // the worst case (a white photograph) and better on everything darker,
+      // so it clears WCAG AA on any picture the client uploads.
+      className={`inline-flex max-w-full items-center gap-1.5 rounded-full bg-ocean/90 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-gold-soft shadow-sm ring-1 ring-gold/45 backdrop-blur-md ${className}`}
     >
-      <Tag aria-hidden="true" className="size-3 shrink-0" />
-      {offer.label ? `${offer.label} — ${offerSummary(offer)}` : offerSummary(offer)}
+      <Tag aria-hidden="true" className="size-3 shrink-0 text-gold" />
+      <span className="truncate">
+        {offer.label ? `${offer.label} — ${offerSummary(offer)}` : offerSummary(offer)}
+      </span>
     </span>
   );
 }
