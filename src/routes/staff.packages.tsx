@@ -15,6 +15,7 @@ import {
   Pencil,
   Plus,
   Search,
+  Ship,
   Trash2,
   Upload,
   Users,
@@ -100,6 +101,18 @@ function notBookableReason(p: StaffPackage): string {
   if (!p.booking_cutoff_datetime) return "No cutoff set";
   if (new Date(p.booking_cutoff_datetime) <= new Date()) return "Cutoff passed";
   return "Closed";
+}
+
+/** True while the ship is out: departed, not yet returned.
+ *
+ *  These stay in Active on purpose. Booking is shut, but the sailing is very
+ *  much live work — the guide report is printed from it and the balance is
+ *  collected on board. Filing it under Past the moment its cutoff passed would
+ *  hide it on the day staff need it most. */
+function isSailingNow(p: StaffPackage): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return parseLocalDate(p.start_date) <= today && parseLocalDate(p.end_date) >= today;
 }
 
 function PackagesPage() {
@@ -339,17 +352,26 @@ function PackagesPage() {
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-border bg-muted/30 font-medium">
-                  <td className="px-4 py-3" colSpan={4}>
+                  <td className="px-4 py-3 whitespace-nowrap" colSpan={4}>
                     <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                      {filtered.length} package(s) shown
+                      Total · {filtered.length} package(s)
                     </span>
+                    {/* Said out loud when it matters: these add up the rows on
+                        screen, not every package in the tab. A footer that
+                        looks like a grand total but is not is worse than no
+                        footer. */}
+                    {totalPages > 1 && (
+                      <span className="ml-2 text-[10px] text-muted-foreground normal-case">
+                        (this page only)
+                      </span>
+                    )}
                   </td>
-                  <td className="px-4 py-3 text-right text-emerald-600">
+                  <td className="px-4 py-3 text-right text-emerald-600 whitespace-nowrap">
                     {formatBDT(
                       String(filtered.reduce((s, p) => s + parseMoney(p.paid_total ?? "0"), 0)),
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right text-gold">
+                  <td className="px-4 py-3 text-right text-gold whitespace-nowrap">
                     {formatBDT(
                       String(filtered.reduce((s, p) => s + parseMoney(p.due_total ?? "0"), 0)),
                     )}
@@ -489,6 +511,11 @@ function PackageRow({
           ) : (
             <span className="inline-flex items-center gap-1" title={notBookableReason(p)}>
               <Ban className="size-3" /> {notBookableReason(p)}
+            </span>
+          )}
+          {isSailingNow(p) && (
+            <span className="inline-flex items-center gap-1 text-gold-text font-medium">
+              <Ship className="size-3" /> Sailing now
             </span>
           )}
         </div>
