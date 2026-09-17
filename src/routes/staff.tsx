@@ -142,21 +142,28 @@ function StaffLayout() {
           ))}
         </nav>
 
-        {/* Log out only. The language switch lives on Settings — a preference
-            set once belongs with the other settings, not in the rail beside a
-            button staff press every day. */}
-        <div className="p-2 lg:p-3 border-t border-white/10 shrink-0 space-y-1">
-          <NotificationBell collapsed={collapsed} />
+        {/* Log out, with the bell beside it. Stacked on the collapsed rail,
+            where 64px will not hold two things side by side.
+
+            The language switch is deliberately NOT here — a preference set
+            once belongs on Settings, not in the rail beside a button staff
+            press every day. */}
+        <div
+          className={`p-2 lg:p-3 border-t border-white/10 shrink-0 flex items-center gap-1 ${
+            collapsed ? "flex-col" : ""
+          }`}
+        >
           <button
             onClick={handleLogout}
             title={collapsed ? t("shell.logout") : undefined}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-background/70 hover:text-destructive hover:bg-white/5 transition-colors ${
-              collapsed ? "justify-center" : ""
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-background/70 hover:text-destructive hover:bg-white/5 transition-colors ${
+              collapsed ? "justify-center w-full" : "flex-1 min-w-0"
             }`}
           >
             <LogOut className="size-4.5 shrink-0" />
-            {!collapsed && <span>{t("shell.logout")}</span>}
+            {!collapsed && <span className="truncate">{t("shell.logout")}</span>}
           </button>
+          <NotificationBell />
         </div>
 
         {/* Collapse / expand toggle — sits on the sidebar's edge */}
@@ -225,7 +232,7 @@ function NavBadge({ count, collapsed }: { count: number; collapsed: boolean }) {
  *  flagged. Each row navigates straight to the thing — a notification you have
  *  to go hunting for after reading it is just a worse version of a number.
  */
-function NotificationBell({ collapsed }: { collapsed: boolean }) {
+function NotificationBell() {
   const { t, lang } = useLanguage();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -254,32 +261,30 @@ function NotificationBell({ collapsed }: { collapsed: boolean }) {
 
   return (
     <div ref={ref} className="relative">
+      {/* Icon only, at the end of the logout row. The count rides the icon as
+          a corner bubble rather than sitting beside a label — there is no
+          label, and a bell everyone recognises does not need one. The title
+          carries the name for anyone hovering or using a screen reader. */}
       <button
         onClick={() => setOpen((v) => !v)}
-        title={t("notif.title")}
+        title={
+          total > 0
+            ? `${t("notif.title")} — ${t("notif.needsYou", { n: num(total, lang) })}`
+            : t("notif.title")
+        }
         aria-label={t("notif.title")}
         aria-expanded={open}
-        className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
+        className={`relative shrink-0 size-10 grid place-items-center rounded-xl transition-colors ${
           total > 0
             ? "text-gold-soft hover:bg-white/5"
             : "text-background/70 hover:text-background hover:bg-white/5"
-        } ${collapsed ? "justify-center" : ""}`}
+        }`}
       >
-        <span className="relative shrink-0">
-          <Bell className="size-4.5" />
-          {total > 0 && (
-            <span className="absolute -top-1 -right-1 size-2 rounded-full bg-destructive ring-2 ring-ocean" />
-          )}
-        </span>
-        {!collapsed && (
-          <>
-            <span className="truncate">{t("notif.title")}</span>
-            {total > 0 && (
-              <span className="ml-auto shrink-0 min-w-5 px-1.5 h-5 grid place-items-center rounded-full bg-destructive text-[10px] font-bold text-white">
-                {total > 99 ? "99+" : total}
-              </span>
-            )}
-          </>
+        <Bell className="size-4.5" />
+        {total > 0 && (
+          <span className="absolute top-1 right-0.5 min-w-4 h-4 px-1 grid place-items-center rounded-full bg-destructive text-[9px] font-bold text-white ring-2 ring-ocean">
+            {total > 9 ? "9+" : total}
+          </span>
         )}
       </button>
 
