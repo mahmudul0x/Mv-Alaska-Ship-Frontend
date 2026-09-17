@@ -77,6 +77,11 @@ export interface StaffPackage {
   is_bookable: boolean;
 }
 
+/** The three tabs the packages dashboard is split into. "active" is what
+ *  staff work on day to day; the other two are history, kept apart because a
+ *  voyage that happened and one that was called off are different news. */
+export type PackageGroup = "active" | "past" | "cancelled";
+
 export interface StaffPackageWrite {
   ship: number;
   start_date: string;

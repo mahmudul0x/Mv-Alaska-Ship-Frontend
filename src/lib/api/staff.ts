@@ -16,6 +16,7 @@ import type {
   StaffInvoice,
   StaffForeignerSurcharge,
   StaffKidRule,
+  PackageGroup,
   StaffOverview,
   StaffPackage,
   StaffPackageRoom,
@@ -47,8 +48,14 @@ export async function getStaffOverview(): Promise<StaffOverview> {
 }
 
 // ── Packages ──────────────────────────────────────────────────────────────
-export async function getStaffPackages(page = 1): Promise<Paginated<StaffPackage>> {
-  const { data } = await staffClient.get("/staff/packages/", { params: { page } });
+/** `group` is applied server-side on purpose: the list is paginated, so
+ *  filtering a 25-row page in the browser would show an empty Cancelled tab
+ *  whenever those sailings happen to sit on page two. */
+export async function getStaffPackages(
+  page = 1,
+  group?: PackageGroup,
+): Promise<Paginated<StaffPackage>> {
+  const { data } = await staffClient.get("/staff/packages/", { params: { page, group } });
   return data;
 }
 

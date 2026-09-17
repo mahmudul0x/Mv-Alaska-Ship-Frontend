@@ -45,13 +45,38 @@ import {
 } from "@/lib/api/staff";
 import { parseLocalDate } from "@/lib/dates";
 import { formatBDT, parseMoney } from "@/lib/money";
-import type { PackageStatus, StaffPackage, StaffPackageWrite } from "@/lib/api/staffTypes";
+import type {
+  PackageGroup,
+  PackageStatus,
+  StaffPackage,
+  StaffPackageWrite,
+} from "@/lib/api/staffTypes";
 
 export const Route = createFileRoute("/staff/packages")({
   component: PackagesPage,
 });
 
+/** Every status a package can be set to, for the form's dropdown. */
 const PACKAGE_STATUSES: PackageStatus[] = ["draft", "open", "closed", "completed", "cancelled"];
+
+/** The subset worth filtering by inside the Active tab. "completed" and
+ *  "cancelled" are missing on purpose: they are tabs of their own, so a chip
+ *  for them would always come back empty. */
+const ACTIVE_STATUSES: PackageStatus[] = ["draft", "open", "closed"];
+
+/** An empty tab should say which emptiness it is. "No packages yet" under
+ *  Cancelled reads as though the whole dashboard is empty. */
+const EMPTY_BY_GROUP: Record<PackageGroup, string> = {
+  active: "No packages yet.",
+  past: "No sailings have finished yet.",
+  cancelled: "Nothing has been cancelled — which is the way it should be.",
+};
+
+const GROUPS: { value: PackageGroup; label: string }[] = [
+  { value: "active", label: "Active" },
+  { value: "past", label: "Past" },
+  { value: "cancelled", label: "Cancelled" },
+];
 
 function nightsBetween(start: string, end: string): number {
   const ms = parseLocalDate(end).getTime() - parseLocalDate(start).getTime();
@@ -80,6 +105,9 @@ function notBookableReason(p: StaffPackage): string {
 function PackagesPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  // Active by default: a sailing that has been and gone, or was called off, is
+  // history — not something staff should have to scroll past to reach the work.
+  const [group, setGroup] = useState<PackageGroup>("active");
   const [statusFilter, setStatusFilter] = useState<PackageStatus | "">("");
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<StaffPackage | null>(null);
@@ -87,9 +115,19 @@ function PackagesPage() {
   const [cancellingDeparture, setCancellingDeparture] = useState<StaffPackage | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["staff", "packages", page],
-    queryFn: () => getStaffPackages(page),
+    queryKey: ["staff", "packages", page, group],
+    queryFn: () => getStaffPackages(page, group),
   });
+
+  function changeGroup(next: PackageGroup) {
+    setGroup(next);
+    // Page 3 of Active is rarely page 3 of Cancelled, and an out-of-range page
+    // comes back empty — which reads as "nothing here" rather than "wrong page".
+    setPage(1);
+    // The status chips only exist under Active; leaving one set would silently
+    // narrow the tab the staffer just opened.
+    setStatusFilter("");
+  }
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ["staff"] });
@@ -204,20 +242,45 @@ function PackagesPage() {
             className="w-64 bg-card border border-border rounded-xl py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:border-gold"
           />
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <FilterChip active={statusFilter === ""} onClick={() => setStatusFilter("")}>
-            All
-          </FilterChip>
-          {PACKAGE_STATUSES.map((s) => (
-            <FilterChip
-              key={s}
-              active={statusFilter === s}
-              onClick={() => setStatusFilter((cur) => (cur === s ? "" : s))}
+        {/* Active is the work; Past and Cancelled are the record. Kept apart
+            rather than mixed with a status filter, because "cancelled" and
+            "finished" are different news and staff reach for them for
+            different reasons. */}
+        <div className="flex items-center gap-1 p-1 rounded-full bg-muted/60 border border-border">
+          {GROUPS.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => changeGroup(value)}
+              aria-pressed={group === value}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                group === value
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
-              <span className="capitalize">{s}</span>
-            </FilterChip>
+              {label}
+            </button>
           ))}
         </div>
+
+        {/* Only under Active: the other two tabs ARE a status. */}
+        {group === "active" && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <FilterChip active={statusFilter === ""} onClick={() => setStatusFilter("")}>
+              All
+            </FilterChip>
+            {ACTIVE_STATUSES.map((s) => (
+              <FilterChip
+                key={s}
+                active={statusFilter === s}
+                onClick={() => setStatusFilter((cur) => (cur === s ? "" : s))}
+              >
+                <span className="capitalize">{s}</span>
+              </FilterChip>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Package table */}
@@ -229,9 +292,11 @@ function PackagesPage() {
         <div className="rounded-2xl border border-dashed border-border bg-card py-16 text-center">
           <PackageIcon className="size-8 text-muted-foreground/40 mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">
-            {filtersActive ? "No packages match these filters." : "No packages yet."}
+            {filtersActive ? "No packages match these filters." : EMPTY_BY_GROUP[group]}
           </p>
-          {!filtersActive && (
+          {/* Only Active offers the create shortcut: "create your first
+              package" under the Cancelled tab would be nonsense. */}
+          {!filtersActive && group === "active" && (
             <button
               onClick={() => setCreating(true)}
               className="mt-4 text-xs text-gold hover:underline"
