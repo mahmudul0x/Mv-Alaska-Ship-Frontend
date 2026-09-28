@@ -8,6 +8,8 @@ import { Stats } from "@/components/site/Stats";
 import { UpcomingDepartures } from "@/components/site/UpcomingDepartures";
 import { Testimonials } from "@/components/site/Testimonials";
 import { CTA } from "@/components/site/CTA";
+import { PromotionModal } from "@/components/site/PromotionModal";
+import { PromotionBanner } from "@/components/site/PromotionBanner";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -26,7 +28,14 @@ export const Route = createFileRoute("/")({
 function Index() {
   return (
     <>
+      {/* Opens by itself after a short delay, and only if this visitor has not
+          already dismissed this version of it. Renders nothing when no
+          promotion is live. */}
+      <PromotionModal />
       <Hero />
+      {/* High on the page, directly after the departures a visitor came to
+          see — an offer buried under the testimonials is one nobody reads. */}
+      <PromotionBanner />
       <UpcomingDepartures />
       <Stats />
       <WhyChoose />

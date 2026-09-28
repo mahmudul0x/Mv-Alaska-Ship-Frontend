@@ -31,6 +31,7 @@ import { Route as StaffSettingsRouteImport } from './routes/staff.settings'
 import { Route as StaffRoomsRouteImport } from './routes/staff.rooms'
 import { Route as StaffRoomSettingsRouteImport } from './routes/staff.room-settings'
 import { Route as StaffRefundsRouteImport } from './routes/staff.refunds'
+import { Route as StaffPromotionsRouteImport } from './routes/staff.promotions'
 import { Route as StaffPackagesRouteImport } from './routes/staff.packages'
 import { Route as StaffMessagesRouteImport } from './routes/staff.messages'
 import { Route as StaffGalleryRouteImport } from './routes/staff.gallery'
@@ -153,6 +154,11 @@ const StaffRefundsRoute = StaffRefundsRouteImport.update({
   path: '/refunds',
   getParentRoute: () => StaffRoute,
 } as any)
+const StaffPromotionsRoute = StaffPromotionsRouteImport.update({
+  id: '/promotions',
+  path: '/promotions',
+  getParentRoute: () => StaffRoute,
+} as any)
 const StaffPackagesRoute = StaffPackagesRouteImport.update({
   id: '/packages',
   path: '/packages',
@@ -236,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/staff/gallery': typeof StaffGalleryRoute
   '/staff/messages': typeof StaffMessagesRoute
   '/staff/packages': typeof StaffPackagesRoute
+  '/staff/promotions': typeof StaffPromotionsRoute
   '/staff/refunds': typeof StaffRefundsRoute
   '/staff/room-settings': typeof StaffRoomSettingsRoute
   '/staff/rooms': typeof StaffRoomsRoute
@@ -270,6 +277,7 @@ export interface FileRoutesByTo {
   '/staff/gallery': typeof StaffGalleryRoute
   '/staff/messages': typeof StaffMessagesRoute
   '/staff/packages': typeof StaffPackagesRoute
+  '/staff/promotions': typeof StaffPromotionsRoute
   '/staff/refunds': typeof StaffRefundsRoute
   '/staff/room-settings': typeof StaffRoomSettingsRoute
   '/staff/rooms': typeof StaffRoomsRoute
@@ -306,6 +314,7 @@ export interface FileRoutesById {
   '/staff/gallery': typeof StaffGalleryRoute
   '/staff/messages': typeof StaffMessagesRoute
   '/staff/packages': typeof StaffPackagesRoute
+  '/staff/promotions': typeof StaffPromotionsRoute
   '/staff/refunds': typeof StaffRefundsRoute
   '/staff/room-settings': typeof StaffRoomSettingsRoute
   '/staff/rooms': typeof StaffRoomsRoute
@@ -343,6 +352,7 @@ export interface FileRouteTypes {
     | '/staff/gallery'
     | '/staff/messages'
     | '/staff/packages'
+    | '/staff/promotions'
     | '/staff/refunds'
     | '/staff/room-settings'
     | '/staff/rooms'
@@ -377,6 +387,7 @@ export interface FileRouteTypes {
     | '/staff/gallery'
     | '/staff/messages'
     | '/staff/packages'
+    | '/staff/promotions'
     | '/staff/refunds'
     | '/staff/room-settings'
     | '/staff/rooms'
@@ -412,6 +423,7 @@ export interface FileRouteTypes {
     | '/staff/gallery'
     | '/staff/messages'
     | '/staff/packages'
+    | '/staff/promotions'
     | '/staff/refunds'
     | '/staff/room-settings'
     | '/staff/rooms'
@@ -602,6 +614,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffRefundsRouteImport
       parentRoute: typeof StaffRoute
     }
+    '/staff/promotions': {
+      id: '/staff/promotions'
+      path: '/promotions'
+      fullPath: '/staff/promotions'
+      preLoaderRoute: typeof StaffPromotionsRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/staff/packages': {
       id: '/staff/packages'
       path: '/packages'
@@ -689,6 +708,7 @@ interface StaffRouteChildren {
   StaffGalleryRoute: typeof StaffGalleryRoute
   StaffMessagesRoute: typeof StaffMessagesRoute
   StaffPackagesRoute: typeof StaffPackagesRoute
+  StaffPromotionsRoute: typeof StaffPromotionsRoute
   StaffRefundsRoute: typeof StaffRefundsRoute
   StaffRoomSettingsRoute: typeof StaffRoomSettingsRoute
   StaffRoomsRoute: typeof StaffRoomsRoute
@@ -703,6 +723,7 @@ const StaffRouteChildren: StaffRouteChildren = {
   StaffGalleryRoute: StaffGalleryRoute,
   StaffMessagesRoute: StaffMessagesRoute,
   StaffPackagesRoute: StaffPackagesRoute,
+  StaffPromotionsRoute: StaffPromotionsRoute,
   StaffRefundsRoute: StaffRefundsRoute,
   StaffRoomSettingsRoute: StaffRoomSettingsRoute,
   StaffRoomsRoute: StaffRoomsRoute,

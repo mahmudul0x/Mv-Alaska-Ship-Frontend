@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { SISTER_SHIP } from "@/components/site/SisterShipCard";
+import { PromotionStrip } from "@/components/site/PromotionStrip";
 import heroImg from "@/assets/hero-cruise.jpg";
 import img21 from "@/assets/21.jpeg";
 import img23 from "@/assets/23.jpeg";
@@ -185,6 +186,13 @@ export function Hero() {
             </p>
           </motion.div>
         </AnimatePresence>
+
+        {/* Between the headline and the actions on purpose: the slide's own
+            copy still lands first, and the offer is the last thing read before
+            the eye reaches "Book Your Journey". Renders nothing at all when no
+            promotion is live, so the hero's spacing is unchanged the rest of
+            the year. */}
+        <PromotionStrip className="mt-8" />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
