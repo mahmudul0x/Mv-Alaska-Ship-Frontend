@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-router";
 
 import { Navbar } from "@/components/site/Navbar";
+import { PromotionBar } from "@/components/site/PromotionBar";
 import { Footer } from "@/components/site/Footer";
 import { FloatingCTA } from "@/components/site/FloatingCTA";
 import { Toaster } from "@/components/ui/sonner";
@@ -98,6 +99,11 @@ function RootComponent() {
       >
         Skip to content
       </a>
+      {/* Above the navbar and outside it, so it spans the full width and the
+          navbar drops below it (PromotionBar publishes its height as
+          --promo-bar-h). Site-wide rather than home-only: a visitor who lands
+          on /packages from a search result should see the offer too. */}
+      {!isStaffArea && <PromotionBar />}
       {!isStaffArea && <Navbar />}
       <main id="main" className="min-h-screen">
         <Outlet />

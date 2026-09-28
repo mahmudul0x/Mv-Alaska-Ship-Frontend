@@ -33,15 +33,17 @@ function Index() {
           promotion is live. */}
       <PromotionModal />
       <Hero />
-      {/* High on the page, directly after the departures a visitor came to
-          see — an offer buried under the testimonials is one nobody reads. */}
-      <PromotionBanner />
       <UpcomingDepartures />
       <Stats />
       <WhyChoose />
       <Experience />
       <Wildlife />
       <Packages />
+      {/* After the packages, not before them: an offer shown first is an answer
+          to a question the visitor has not asked yet. By here they have seen
+          what is on sale and the discount has something to attach to. Renders
+          nothing at all when no promotion is live. */}
+      <PromotionBanner />
       <Testimonials />
       <CTA />
     </>

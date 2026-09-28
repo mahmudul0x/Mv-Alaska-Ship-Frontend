@@ -27,7 +27,12 @@ export function Navbar() {
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
+      // top comes from a CSS variable rather than being pinned to 0: when a
+      // promotion bar is live it publishes its measured height as
+      // --promo-bar-h and the navbar drops below it. The fallback keeps the
+      // navbar at the very top the rest of the time.
+      style={{ top: "var(--promo-bar-h, 0px)" }}
+      className={`fixed inset-x-0 z-50 transition-all duration-500 ${
         scrolled ? "py-3" : "py-5"
       }`}
     >

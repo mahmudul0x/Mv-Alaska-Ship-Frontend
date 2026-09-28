@@ -6,10 +6,15 @@ import {
   Eye,
   EyeOff,
   ImagePlus,
+  LayoutPanelTop,
   Loader2,
+  type LucideIcon,
   Megaphone,
+  MessageSquare,
+  PanelTop,
   Pencil,
   Plus,
+  Ship,
   Trash2,
   X,
 } from "lucide-react";
@@ -26,7 +31,6 @@ import {
 } from "@/lib/api/staffPromotions";
 import {
   PageHeader,
-  SectionCard,
   StaffField,
   errorText,
   staffInputClass,
@@ -55,6 +59,31 @@ function fromInputValue(value: string): string | null {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
+/** How a sailing is named in the picker.
+ *
+ *  A bare start date does not identify anything — several sailings a month, all
+ *  looking like "2026-10-17". Lead with the name staff gave it, fall back to the
+ *  ship when they gave it none, and always carry the date range so two runs of
+ *  the same package are still distinguishable.
+ *
+ *  Matches StaffPromotionSerializer.get_linked_package_label on the server, so
+ *  the picker and the saved row read the same. Keep the two in step. */
+function sailingLabel(pkg: {
+  marketing_title: string;
+  ship_name: string;
+  start_date: string;
+  end_date: string;
+}): string {
+  const fmt = (iso: string) =>
+    new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  const name = pkg.marketing_title?.trim() || pkg.ship_name;
+  return `${name} — ${fmt(pkg.start_date)} → ${fmt(pkg.end_date)}`;
+}
+
 type FormState = {
   ship: number | null;
   badge_label: string;
@@ -65,7 +94,7 @@ type FormState = {
   cta_url: string;
   linked_package: number | null;
   show_in_modal: boolean;
-  show_in_hero: boolean;
+  show_in_top_bar: boolean;
   show_in_home_section: boolean;
   modal_frequency: StaffPromotion["modal_frequency"];
   modal_delay_seconds: number;
@@ -85,7 +114,7 @@ const BLANK: FormState = {
   cta_url: "",
   linked_package: null,
   show_in_modal: true,
-  show_in_hero: true,
+  show_in_top_bar: true,
   show_in_home_section: true,
   modal_frequency: "daily",
   modal_delay_seconds: 3,
@@ -150,7 +179,7 @@ function StaffPromotions() {
         cta_url: form.cta_url,
         linked_package: form.linked_package,
         show_in_modal: form.show_in_modal,
-        show_in_hero: form.show_in_hero,
+        show_in_top_bar: form.show_in_top_bar,
         show_in_home_section: form.show_in_home_section,
         modal_frequency: form.modal_frequency,
         modal_delay_seconds: form.modal_delay_seconds,
@@ -209,7 +238,7 @@ function StaffPromotions() {
       cta_url: promotion.cta_url,
       linked_package: promotion.linked_package,
       show_in_modal: promotion.show_in_modal,
-      show_in_hero: promotion.show_in_hero,
+      show_in_top_bar: promotion.show_in_top_bar,
       show_in_home_section: promotion.show_in_home_section,
       modal_frequency: promotion.modal_frequency,
       modal_delay_seconds: promotion.modal_delay_seconds,
@@ -248,7 +277,7 @@ function StaffPromotions() {
     <div className="space-y-6">
       <PageHeader
         title="Offers"
-        subtitle="Announcements shown on the website — as a pop-up, a strip across the hero, and a banner on the home page."
+        subtitle="What the website announces — a pop-up on arrival, a bar above the navigation, and a card on the home page."
       >
         <button
             type="button"
@@ -265,13 +294,25 @@ function StaffPromotions() {
           <Loader2 className="size-6 animate-spin text-muted-foreground" />
         </div>
       ) : promotions.length === 0 ? (
-        <SectionCard title="No offers yet">
-          <p className="text-sm text-muted-foreground">
-            Nothing is being shown on the website. Create an offer to put a
-            pop-up, a hero strip and a home-page banner live at once — you
-            choose which of the three.
+        <div className="rounded-2xl border border-dashed border-border bg-card/50 px-6 py-16 text-center">
+          <div className="mx-auto grid size-14 place-items-center rounded-2xl gradient-gold text-midnight shadow-luxe">
+            <Megaphone className="size-6" />
+          </div>
+          <h2 className="mt-5 font-display text-2xl">Nothing is being announced</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+            The website is showing no offer at all right now. One offer can
+            appear in three places at once — a pop-up on arrival, a bar above
+            the navigation and a card on the home page — and you choose which.
           </p>
-        </SectionCard>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="mt-6 inline-flex items-center gap-2 rounded-full gradient-gold px-5 py-2.5 text-sm font-semibold text-midnight shadow-luxe transition hover:brightness-105"
+          >
+            <Plus className="size-4" />
+            Create the first offer
+          </button>
+        </div>
       ) : (
         <div className="grid gap-4">
           {promotions.map((promotion) => (
@@ -432,7 +473,7 @@ function StaffPromotions() {
                     <option value="">— no sailing —</option>
                     {(packagesQuery.data?.results ?? []).map((pkg) => (
                       <option key={pkg.id} value={pkg.id}>
-                        {pkg.start_date}
+                        {sailingLabel(pkg)}
                       </option>
                     ))}
                   </select>
@@ -468,10 +509,10 @@ function StaffPromotions() {
                     onChange={(v) => set("show_in_modal", v)}
                   />
                   <Toggle
-                    label="Hero strip"
-                    hint="Slim gold bar"
-                    checked={form.show_in_hero}
-                    onChange={(v) => set("show_in_hero", v)}
+                    label="Top bar"
+                    hint="Above the navigation"
+                    checked={form.show_in_top_bar}
+                    onChange={(v) => set("show_in_top_bar", v)}
                   />
                   <Toggle
                     label="Home banner"
@@ -620,102 +661,171 @@ function PromotionRow({
   onDelete: () => void;
 }) {
   const places = [
-    promotion.show_in_modal && "Pop-up",
-    promotion.show_in_hero && "Hero",
-    promotion.show_in_home_section && "Home banner",
-  ].filter(Boolean) as string[];
+    promotion.show_in_modal && { label: "Pop-up", icon: MessageSquare },
+    promotion.show_in_top_bar && { label: "Top bar", icon: PanelTop },
+    promotion.show_in_home_section && { label: "Home card", icon: LayoutPanelTop },
+  ].filter(Boolean) as { label: string; icon: LucideIcon }[];
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl bg-card p-4 ring-1 ring-border sm:flex-row sm:items-center">
-      {promotion.image_url ? (
-        <img
-          src={promotion.image_url}
-          alt=""
-          className="h-20 w-32 shrink-0 rounded-lg object-cover"
-        />
-      ) : (
-        <div className="flex h-20 w-32 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <Megaphone className="size-5" />
-        </div>
-      )}
-
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          {/* The single honest answer to "is this showing right now?" — it
-              folds in the switch, the dates and whether a linked sailing has
-              already departed, which is the case staff otherwise miss. */}
-          {promotion.is_live ? (
-            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-600">
-              Live now
-            </span>
-          ) : (
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
-              Not showing
-            </span>
-          )}
-          {promotion.badge_label && (
-            <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-              {promotion.badge_label}
-            </span>
-          )}
-        </div>
-
-        <h3 className="mt-1 truncate font-semibold">{promotion.title}</h3>
-        {promotion.subtitle && (
-          <p className="truncate text-sm text-muted-foreground">
-            {promotion.subtitle}
-          </p>
+    <div className="group overflow-hidden rounded-2xl border border-border bg-card transition hover:border-gold/40 hover:shadow-luxe">
+      <div className="flex flex-col gap-5 p-5 sm:flex-row">
+        {/* Artwork, or the shape where artwork would be. A placeholder that
+            matches the real thumbnail's footprint keeps the row heights even,
+            so a list of offers reads as a list rather than a ragged stack. */}
+        {promotion.image_url ? (
+          <img
+            src={promotion.image_url}
+            alt=""
+            className="h-28 w-full shrink-0 rounded-xl object-cover sm:w-44"
+          />
+        ) : (
+          <div className="grid h-28 w-full shrink-0 place-items-center rounded-xl bg-muted/60 text-muted-foreground sm:w-44">
+            <div className="text-center">
+              <Megaphone className="mx-auto size-5" />
+              <span className="mt-1 block text-[10px] uppercase tracking-widest">
+                Text only
+              </span>
+            </div>
+          </div>
         )}
 
-        <p className="mt-1 text-xs text-muted-foreground">
-          {places.length ? places.join(" · ") : "Shown nowhere"}
-          {promotion.linked_package_label && ` · ${promotion.linked_package_label}`}
-        </p>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <LiveState promotion={promotion} />
+            {promotion.badge_label && (
+              <span className="rounded-full gradient-gold px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-midnight">
+                {promotion.badge_label}
+              </span>
+            )}
+          </div>
 
-        {(promotion.starts_at || promotion.ends_at) && (
-          <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-            <CalendarClock className="size-3" />
-            {promotion.starts_at
-              ? new Date(promotion.starts_at).toLocaleDateString()
-              : "now"}
-            {" → "}
-            {promotion.ends_at
-              ? new Date(promotion.ends_at).toLocaleDateString()
-              : "until switched off"}
-          </p>
-        )}
-      </div>
-
-      <div className="flex shrink-0 gap-2">
-        <button
-          type="button"
-          onClick={onToggle}
-          title={promotion.is_active ? "Hide from the website" : "Show on the website"}
-          className="rounded-lg p-2 text-muted-foreground transition hover:bg-muted"
-        >
-          {promotion.is_active ? (
-            <Eye className="size-4" />
-          ) : (
-            <EyeOff className="size-4" />
+          <h3 className="mt-2 truncate font-display text-xl leading-tight">
+            {promotion.title}
+          </h3>
+          {promotion.subtitle && (
+            <p className="mt-0.5 truncate text-sm text-muted-foreground">
+              {promotion.subtitle}
+            </p>
           )}
-        </button>
-        <button
-          type="button"
-          onClick={onEdit}
-          title="Edit"
-          className="rounded-lg p-2 text-muted-foreground transition hover:bg-muted"
-        >
-          <Pencil className="size-4" />
-        </button>
-        <button
-          type="button"
-          onClick={onDelete}
-          title="Delete"
-          className="rounded-lg p-2 text-destructive transition hover:bg-destructive/10"
-        >
-          <Trash2 className="size-4" />
-        </button>
+
+          {/* Where it shows, as chips rather than a run-on sentence: staff scan
+              this column to answer "is the pop-up on?" at a glance. */}
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            {places.length ? (
+              places.map(({ label, icon: Icon }) => (
+                <span
+                  key={label}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-muted/70 px-2 py-1 text-[11px] font-medium text-foreground/70"
+                >
+                  <Icon className="size-3" />
+                  {label}
+                </span>
+              ))
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-destructive/10 px-2 py-1 text-[11px] font-medium text-destructive">
+                <EyeOff className="size-3" />
+                Shown nowhere
+              </span>
+            )}
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <CalendarClock className="size-3" />
+              {promotion.starts_at
+                ? new Date(promotion.starts_at).toLocaleDateString()
+                : "from now"}
+              {" → "}
+              {promotion.ends_at
+                ? new Date(promotion.ends_at).toLocaleDateString()
+                : "until switched off"}
+            </span>
+            {promotion.linked_package_label && (
+              <span className="inline-flex items-center gap-1.5 truncate">
+                <Ship className="size-3" />
+                {promotion.linked_package_label}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-start gap-1">
+          <IconButton
+            onClick={onToggle}
+            title={promotion.is_active ? "Hide from the website" : "Show on the website"}
+            icon={promotion.is_active ? Eye : EyeOff}
+          />
+          <IconButton onClick={onEdit} title="Edit" icon={Pencil} />
+          <IconButton onClick={onDelete} title="Delete" icon={Trash2} destructive />
+        </div>
       </div>
     </div>
+  );
+}
+
+/** Why an offer is, or is not, on the website right now.
+ *
+ *  `is_live` is the server's verdict and folds in three separate things, so
+ *  "not showing" alone leaves staff guessing which one. Naming the reason is
+ *  the difference between a status light and an explanation — the case that
+ *  catches people out is an offer switched on, inside its dates, and invisible
+ *  because the sailing it is attached to has already left. */
+function LiveState({ promotion }: { promotion: StaffPromotion }) {
+  if (promotion.is_live) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600">
+        <span className="size-1.5 rounded-full bg-emerald-500" />
+        Live now
+      </span>
+    );
+  }
+
+  const now = Date.now();
+  let reason = "Switched off";
+  if (promotion.is_active) {
+    if (promotion.starts_at && new Date(promotion.starts_at).getTime() > now) {
+      reason = "Scheduled";
+    } else if (promotion.ends_at && new Date(promotion.ends_at).getTime() <= now) {
+      reason = "Ended";
+    } else if (promotion.linked_package) {
+      reason = "Sailing departed";
+    } else {
+      reason = "Not showing";
+    }
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
+      <span className="size-1.5 rounded-full bg-muted-foreground/50" />
+      {reason}
+    </span>
+  );
+}
+
+function IconButton({
+  onClick,
+  title,
+  icon: Icon,
+  destructive,
+}: {
+  onClick: () => void;
+  title: string;
+  icon: LucideIcon;
+  destructive?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      aria-label={title}
+      className={`grid size-9 place-items-center rounded-lg transition ${
+        destructive
+          ? "text-destructive/60 hover:bg-destructive/10 hover:text-destructive"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+      }`}
+    >
+      <Icon className="size-4" />
+    </button>
   );
 }

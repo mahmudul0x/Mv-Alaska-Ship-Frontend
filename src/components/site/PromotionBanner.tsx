@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 
 import { usePromotionFor } from "@/hooks/queries/usePromotions";
+import { SectionHeader } from "@/components/site/SectionHeader";
 import { PromotionCta } from "@/components/site/PromotionModal";
 
 /**
@@ -24,6 +25,22 @@ export function PromotionBanner() {
 
   return (
     <section className="px-4 py-14 sm:py-20">
+      {/* The heading lives INSIDE the component, after the early return above,
+          so there is never a titled section with nothing under it. A bare card
+          in the middle of the page reads as a stray advert; named, it reads as
+          part of the site. */}
+      <div className="mx-auto mb-8 max-w-6xl">
+        <SectionHeader
+          eyebrow="◆ Limited Time"
+          title={
+            <>
+              Current <em className="not-italic text-gradient-gold font-normal">Offer</em>
+            </>
+          }
+          align="center"
+        />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -39,7 +56,7 @@ export function PromotionBanner() {
               // Decorative — the copy beside it says everything it says.
               // A fixed height on small screens stops a tall portrait upload
               // from pushing the text entirely below the fold.
-              className="h-56 w-full object-cover md:h-full md:min-h-[22rem]"
+              className="h-56 w-full object-cover md:h-full md:min-h-88"
             />
           )}
 

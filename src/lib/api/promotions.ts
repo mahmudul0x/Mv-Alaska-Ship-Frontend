@@ -24,7 +24,7 @@ export type Promotion = {
   /** Already resolved by the server — a linked package beats a typed URL. */
   cta_url: string;
   show_in_modal: boolean;
-  show_in_hero: boolean;
+  show_in_top_bar: boolean;
   show_in_home_section: boolean;
   modal_frequency: ModalFrequency;
   modal_delay_seconds: number;

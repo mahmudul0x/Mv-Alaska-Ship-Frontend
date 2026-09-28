@@ -19,19 +19,19 @@ export function usePromotions() {
 
 /** The single promotion a given surface should show.
  *
- *  The modal and the hero strip are singular by nature — two modals is a
- *  broken site, and two stacked strips push the hero off the screen. Staff
+ *  The modal and the top bar are singular by nature — two modals is a
+ *  broken site, and two stacked bars push the whole page down. Staff
  *  order promotions with `sort_order`, and the server returns them in that
  *  order, so "the first one that asked for this surface" is the whole rule. */
 export function usePromotionFor(
-  surface: "modal" | "hero" | "home_section",
+  surface: "modal" | "top_bar" | "home_section",
 ): Promotion | undefined {
   const { data } = usePromotions();
   if (!data?.length) return undefined;
 
   const wants: Record<typeof surface, (p: Promotion) => boolean> = {
     modal: (p) => p.show_in_modal,
-    hero: (p) => p.show_in_hero,
+    top_bar: (p) => p.show_in_top_bar,
     home_section: (p) => p.show_in_home_section,
   };
 
