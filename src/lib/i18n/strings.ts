@@ -369,6 +369,10 @@ export const STRINGS = {
   "pk.bookable": { en: "Bookable", bn: "বুক করা যাবে" },
   "pk.sailingNow": { en: "Sailing now", bn: "এখন চলছে" },
   "pk.edit": { en: "Edit", bn: "সম্পাদনা" },
+  "pk.finishedLocked": {
+    en: "This sailing has finished — it can no longer be edited",
+    bn: "এই যাত্রা শেষ হয়ে গেছে — আর পরিবর্তন করা যাবে না",
+  },
   "pk.generateRooms": { en: "Generate rooms", bn: "রুম তৈরি করুন" },
   "pk.guideReport": { en: "Guide report (PDF)", bn: "গাইড রিপোর্ট (PDF)" },
   "pk.cancelDeparture": {

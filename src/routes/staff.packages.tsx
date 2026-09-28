@@ -557,7 +557,16 @@ function PackageRow({
       {/* Actions */}
       <td className="px-4 py-3">
         <div className="flex items-center gap-1 justify-end">
-          <RowAction title={t("pk.edit")} onClick={onEdit} icon={Pencil} />
+          <RowAction
+            title={
+              isPackageFinished(p)
+                ? t("pk.finishedLocked")
+                : t("pk.edit")
+            }
+            onClick={onEdit}
+            icon={Pencil}
+            disabled={isPackageFinished(p)}
+          />
           <RowAction
             title={p.is_booking_open ? t("pk.closeBooking") : t("pk.reopenBooking")}
             onClick={onToggle}
@@ -598,25 +607,47 @@ function RowAction({
   onClick,
   icon: Icon,
   destructive,
+  disabled,
 }: {
   title: string;
   onClick: () => void;
   icon: typeof Pencil;
   destructive?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <button
       title={title}
       onClick={onClick}
+      disabled={disabled}
       className={`size-8 rounded-lg grid place-items-center transition-colors ${
-        destructive
-          ? "text-destructive/60 hover:text-destructive hover:bg-destructive/10"
-          : "text-ocean/60 hover:text-gold hover:bg-gold/10"
+        disabled
+          ? "text-ocean/25 cursor-not-allowed"
+          : destructive
+            ? "text-destructive/60 hover:text-destructive hover:bg-destructive/10"
+            : "text-ocean/60 hover:text-gold hover:bg-gold/10"
       }`}
     >
       <Icon className="size-4" />
     </button>
   );
+}
+
+/** Whether a sailing is closed to edits, matching the server's rule exactly
+ *  (StaffPackageSerializer._finished_reason): it has returned, or it has been
+ *  marked completed. Cancelled is NOT finished — a called-off sailing that has
+ *  not departed can still be reinstated.
+ *
+ *  The server is the authority; this only stops staff filling in a form that
+ *  is going to be refused. Keep the two in step. */
+export function isPackageFinished(p: { end_date: string; status: string }): boolean {
+  if (p.status === "completed") return true;
+  // Date-only comparison in the browser's zone, which for this team is Dhaka —
+  // the same day boundary the server uses via timezone.localdate().
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const end = new Date(`${p.end_date}T00:00:00`);
+  return end < today;
 }
 
 /** The cutoff is a Bangladesh business rule ("noon the day before departure"),
