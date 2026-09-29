@@ -259,6 +259,45 @@ function StaffPromotions() {
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
+  // What the end date was last auto-filled to. Without this, changing sailings
+  // would either strand the previous sailing's date or overwrite one somebody
+  // typed on purpose — this way an untouched auto value follows the sailing,
+  // and a hand-typed one is never disturbed.
+  const autoEndRef = useRef<string>("");
+
+  /** Pick a sailing, and offer its booking cutoff as the offer's end date.
+   *
+   *  The START is deliberately NOT taken from the sailing: a sailing's start is
+   *  the day the ship leaves, and an offer that begins then has missed its
+   *  entire purpose. Blank — "right away" — is almost always what is wanted.
+   *
+   *  The END is different. Once booking closes on a sailing, an offer for it
+   *  can do nothing but mislead, so the cutoff is exactly the right moment to
+   *  stop showing it. Filled in rather than merely implied, so staff can see
+   *  and change the date instead of trusting something invisible.
+   *
+   *  (The server takes a departed sailing's promotion down regardless — this
+   *  is convenience and visibility, not the safety net.) */
+  function pickSailing(packageId: number | null) {
+    const pkg = (packagesQuery.data?.results ?? []).find((p) => p.id === packageId);
+
+    setForm((f) => {
+      const untouched = f.ends_at === "" || f.ends_at === autoEndRef.current;
+      if (!pkg || !untouched) {
+        return { ...f, linked_package: packageId };
+      }
+
+      // Fall back to the departure date when a package has no cutoff set: the
+      // ship leaving is the latest an offer for it could possibly matter.
+      const cutoff = pkg.booking_cutoff_datetime
+        ? toInputValue(pkg.booking_cutoff_datetime)
+        : toInputValue(`${pkg.start_date}T00:00:00`);
+
+      autoEndRef.current = cutoff;
+      return { ...f, linked_package: packageId, ends_at: cutoff };
+    });
+  }
+
   // Object URL for the pending upload, revoked on change so a staff member
   // swapping images half a dozen times does not leak them all.
   const previewUrl = useMemo(
@@ -464,10 +503,7 @@ function StaffPromotions() {
                     className={staffInputClass}
                     value={form.linked_package ?? ""}
                     onChange={(e) =>
-                      set(
-                        "linked_package",
-                        e.target.value ? Number(e.target.value) : null,
-                      )
+                      pickSailing(e.target.value ? Number(e.target.value) : null)
                     }
                   >
                     <option value="">— no sailing —</option>
@@ -559,7 +595,7 @@ function StaffPromotions() {
 
               {/* ── Schedule ────────────────────────────────────────────── */}
               <div className="grid gap-4 sm:grid-cols-2">
-                <StaffField label="Starts (blank = right away)">
+                <StaffField label="Starts showing (blank = right away)">
                   <input
                     type="datetime-local"
                     className={staffInputClass}
@@ -567,7 +603,7 @@ function StaffPromotions() {
                     onChange={(e) => set("starts_at", e.target.value)}
                   />
                 </StaffField>
-                <StaffField label="Ends (blank = until switched off)">
+                <StaffField label="Stops showing (blank = until switched off)">
                   <input
                     type="datetime-local"
                     className={staffInputClass}
@@ -577,14 +613,22 @@ function StaffPromotions() {
                 </StaffField>
               </div>
 
+              {form.linked_package !== null && form.ends_at !== "" && (
+                <p className="-mt-2 text-xs text-muted-foreground">
+                  The end date was filled in from that sailing&rsquo;s booking
+                  cutoff — once booking closes, an offer for it can only
+                  mislead. Change it if you want the offer to stop sooner.
+                </p>
+              )}
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <Toggle
                   label="Switched on"
-                  hint="Uncheck to hide everywhere"
+                  hint="Hides it everywhere at once, dates or no dates"
                   checked={form.is_active}
                   onChange={(v) => set("is_active", v)}
                 />
-                <StaffField label="Order (lower shows first)">
+                <StaffField label="Order (only matters with 2+ offers)">
                   <input
                     type="number"
                     min={0}
