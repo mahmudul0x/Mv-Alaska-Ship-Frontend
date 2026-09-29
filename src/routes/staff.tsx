@@ -15,6 +15,7 @@ import {
   LogOut,
   MessageSquare,
   Settings,
+  UsersRound,
   SlidersHorizontal,
   Wallet,
 } from "lucide-react";
@@ -26,7 +27,12 @@ import { useQuery } from "@tanstack/react-query";
 import { LanguageProvider, useLanguage } from "@/lib/i18n";
 import { money, num } from "@/lib/i18n/format";
 import type { StringKey } from "@/lib/i18n/strings";
-import { clearStaffSession, getRefreshToken, isStaffLoggedIn } from "@/lib/staffAuth";
+import {
+  clearStaffSession,
+  getRefreshToken,
+  isStaffAdmin,
+  isStaffLoggedIn,
+} from "@/lib/staffAuth";
 
 export const Route = createFileRoute("/staff")({
   // The provider wraps the layout rather than sitting inside it, so the layout
@@ -37,33 +43,61 @@ export const Route = createFileRoute("/staff")({
       <StaffLayout />
     </LanguageProvider>
   ),
-  beforeLoad: () => {
+  beforeLoad: ({ location }) => {
     if (!isStaffLoggedIn()) {
       throw redirect({ to: "/staff/login" });
+    }
+
+    // Typing the URL of a screen this role cannot use lands on the overview
+    // rather than a broken page of 403s. Convenience, not security — the API
+    // refuses every one of those calls regardless, which is what actually
+    // protects them (apps/accounts/permissions.py). Matched by prefix so
+    // detail routes under an admin-only section are covered too.
+    if (!isStaffAdmin()) {
+      const blocked = NAV.filter((i) => i.adminOnly).map((i) => i.to);
+      if (blocked.some((path) => location.pathname.startsWith(path))) {
+        throw redirect({ to: "/staff" });
+      }
     }
   },
   head: () => ({ meta: [{ title: "Staff Dashboard — MV Alaska" }] }),
 });
 
-const NAV: { to: string; label: StringKey; icon: LucideIcon; exact: boolean }[] = [
+/** The sidebar. `adminOnly` mirrors what the API enforces — see
+ *  apps/accounts/permissions.py. Hiding a link the account cannot use is
+ *  courtesy, not security: the endpoint refuses it either way, and typing the
+ *  URL still lands on a 403. Keep the two in step. */
+const NAV: {
+  to: string;
+  label: StringKey;
+  icon: LucideIcon;
+  exact: boolean;
+  adminOnly?: boolean;
+}[] = [
   { to: "/staff", label: "nav.overview", icon: LayoutDashboard, exact: true },
   { to: "/staff/bookings", label: "nav.bookings", icon: ClipboardList, exact: false },
   { to: "/staff/messages", label: "nav.messages", icon: MessageSquare, exact: false },
-  { to: "/staff/refunds", label: "nav.refunds", icon: Wallet, exact: false },
-  { to: "/staff/packages", label: "nav.packages", icon: CalendarRange, exact: false },
-  { to: "/staff/promotions", label: "nav.promotions", icon: Megaphone, exact: false },
-  { to: "/staff/rooms", label: "nav.rooms", icon: BedDouble, exact: false },
-  { to: "/staff/cabins", label: "nav.cabins", icon: DoorOpen, exact: false },
-  { to: "/staff/gallery", label: "nav.gallery", icon: Images, exact: false },
-  { to: "/staff/room-settings", label: "nav.roomSettings", icon: SlidersHorizontal, exact: false },
-  { to: "/staff/food-menu", label: "nav.foodMenu", icon: ChefHat, exact: false },
-  { to: "/staff/settings", label: "nav.settings", icon: Settings, exact: false },
+  // Money leaving the company.
+  { to: "/staff/refunds", label: "nav.refunds", icon: Wallet, exact: false, adminOnly: true },
+  // The price list, the public site, and everything that configures them.
+  { to: "/staff/packages", label: "nav.packages", icon: CalendarRange, exact: false, adminOnly: true },
+  { to: "/staff/promotions", label: "nav.promotions", icon: Megaphone, exact: false, adminOnly: true },
+  { to: "/staff/rooms", label: "nav.rooms", icon: BedDouble, exact: false, adminOnly: true },
+  { to: "/staff/cabins", label: "nav.cabins", icon: DoorOpen, exact: false, adminOnly: true },
+  { to: "/staff/gallery", label: "nav.gallery", icon: Images, exact: false, adminOnly: true },
+  { to: "/staff/room-settings", label: "nav.roomSettings", icon: SlidersHorizontal, exact: false, adminOnly: true },
+  { to: "/staff/food-menu", label: "nav.foodMenu", icon: ChefHat, exact: false, adminOnly: true },
+  { to: "/staff/users", label: "nav.users", icon: UsersRound, exact: false, adminOnly: true },
+  { to: "/staff/settings", label: "nav.settings", icon: Settings, exact: false, adminOnly: true },
 ] as const;
 
 const COLLAPSE_KEY = "staff.sidebar.collapsed";
 
 function StaffLayout() {
   const navigate = useNavigate();
+  // Read once per render from the stored session; the sidebar and the route
+  // guards below both key off it.
+  const admin = isStaffAdmin();
   const { t } = useLanguage();
   const { data: notify } = useNotifications();
   // The Refunds page owns both of these, so its badge counts both: a customer
@@ -129,7 +163,8 @@ function StaffLayout() {
         </div>
 
         <nav className="flex-1 py-4 space-y-1 px-2 lg:px-3 overflow-y-auto scroll-subtle">
-          {NAV.map(({ to, label, icon: Icon, exact }) => (
+          {NAV.filter((item) => !item.adminOnly || admin).map(
+            ({ to, label, icon: Icon, exact }) => (
             <Link
               key={to}
               to={to}
@@ -143,7 +178,8 @@ function StaffLayout() {
               {!collapsed && <span className="truncate">{t(label)}</span>}
               {to === "/staff/refunds" && <NavBadge count={refundsWaiting} collapsed={collapsed} />}
             </Link>
-          ))}
+            ),
+          )}
         </nav>
 
         {/* Log out, with the bell beside it. Stacked on the collapsed rail,

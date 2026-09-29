@@ -2,7 +2,32 @@ const ACCESS_KEY = "staff_access_token";
 const REFRESH_KEY = "staff_refresh_token";
 const USER_KEY = "staff_user";
 
-export type StaffUser = { username: string; first_name: string; is_staff: boolean };
+export type StaffRole = "admin" | "booking";
+
+export type StaffUser = {
+  username: string;
+  first_name: string;
+  is_staff: boolean;
+  role?: StaffRole;
+  is_admin?: boolean;
+};
+
+/** Whether this session may reach the administrator-only screens.
+ *
+ *  Used to hide what an account cannot use. That is courtesy, not security:
+ *  every endpoint enforces the role itself, so a hidden screen reached by
+ *  typing its URL still returns 403.
+ *
+ *  Defaults to TRUE when the field is missing. A session stored before roles
+ *  existed has no role on it, and its owner is an administrator — treating
+ *  the absence as "restricted" would blank the dashboard for the very person
+ *  who installed this, until they worked out they had to log in again. */
+export function isStaffAdmin(user: StaffUser | null = getStaffUser()): boolean {
+  if (!user) return false;
+  if (typeof user.is_admin === "boolean") return user.is_admin;
+  if (user.role) return user.role === "admin";
+  return true;
+}
 
 export function getAccessToken() {
   return localStorage.getItem(ACCESS_KEY);

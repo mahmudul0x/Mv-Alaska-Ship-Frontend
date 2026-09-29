@@ -19,6 +19,7 @@ export const STRINGS = {
   "nav.cabins": { en: "Cabins", bn: "কেবিন" },
   "nav.gallery": { en: "Gallery", bn: "গ্যালারি" },
   "nav.promotions": { en: "Offers", bn: "অফার" },
+  "nav.users": { en: "Staff", bn: "স্টাফ" },
   "nav.roomSettings": { en: "Room settings", bn: "রুম সেটিংস" },
   "nav.foodMenu": { en: "Food Menu", bn: "খাবারের তালিকা" },
   "nav.settings": { en: "Settings", bn: "সেটিংস" },

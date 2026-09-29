@@ -27,6 +27,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StaffIndexRouteImport } from './routes/staff.index'
 import { Route as StaffLoginRouteImport } from './routes/staff_.login'
+import { Route as StaffUsersRouteImport } from './routes/staff.users'
 import { Route as StaffSettingsRouteImport } from './routes/staff.settings'
 import { Route as StaffRoomsRouteImport } from './routes/staff.rooms'
 import { Route as StaffRoomSettingsRouteImport } from './routes/staff.room-settings'
@@ -133,6 +134,11 @@ const StaffLoginRoute = StaffLoginRouteImport.update({
   id: '/staff_/login',
   path: '/staff/login',
   getParentRoute: () => rootRouteImport,
+} as any)
+const StaffUsersRoute = StaffUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => StaffRoute,
 } as any)
 const StaffSettingsRoute = StaffSettingsRouteImport.update({
   id: '/settings',
@@ -247,6 +253,7 @@ export interface FileRoutesByFullPath {
   '/staff/room-settings': typeof StaffRoomSettingsRoute
   '/staff/rooms': typeof StaffRoomsRoute
   '/staff/settings': typeof StaffSettingsRoute
+  '/staff/users': typeof StaffUsersRoute
   '/staff/login': typeof StaffLoginRoute
   '/staff/': typeof StaffIndexRoute
   '/booking/confirmation/$code': typeof BookingConfirmationCodeRoute
@@ -282,6 +289,7 @@ export interface FileRoutesByTo {
   '/staff/room-settings': typeof StaffRoomSettingsRoute
   '/staff/rooms': typeof StaffRoomsRoute
   '/staff/settings': typeof StaffSettingsRoute
+  '/staff/users': typeof StaffUsersRoute
   '/staff/login': typeof StaffLoginRoute
   '/staff': typeof StaffIndexRoute
   '/booking/confirmation/$code': typeof BookingConfirmationCodeRoute
@@ -319,6 +327,7 @@ export interface FileRoutesById {
   '/staff/room-settings': typeof StaffRoomSettingsRoute
   '/staff/rooms': typeof StaffRoomsRoute
   '/staff/settings': typeof StaffSettingsRoute
+  '/staff/users': typeof StaffUsersRoute
   '/staff_/login': typeof StaffLoginRoute
   '/staff/': typeof StaffIndexRoute
   '/booking_/confirmation/$code': typeof BookingConfirmationCodeRoute
@@ -357,6 +366,7 @@ export interface FileRouteTypes {
     | '/staff/room-settings'
     | '/staff/rooms'
     | '/staff/settings'
+    | '/staff/users'
     | '/staff/login'
     | '/staff/'
     | '/booking/confirmation/$code'
@@ -392,6 +402,7 @@ export interface FileRouteTypes {
     | '/staff/room-settings'
     | '/staff/rooms'
     | '/staff/settings'
+    | '/staff/users'
     | '/staff/login'
     | '/staff'
     | '/booking/confirmation/$code'
@@ -428,6 +439,7 @@ export interface FileRouteTypes {
     | '/staff/room-settings'
     | '/staff/rooms'
     | '/staff/settings'
+    | '/staff/users'
     | '/staff_/login'
     | '/staff/'
     | '/booking_/confirmation/$code'
@@ -586,6 +598,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/staff/users': {
+      id: '/staff/users'
+      path: '/users'
+      fullPath: '/staff/users'
+      preLoaderRoute: typeof StaffUsersRouteImport
+      parentRoute: typeof StaffRoute
+    }
     '/staff/settings': {
       id: '/staff/settings'
       path: '/settings'
@@ -713,6 +732,7 @@ interface StaffRouteChildren {
   StaffRoomSettingsRoute: typeof StaffRoomSettingsRoute
   StaffRoomsRoute: typeof StaffRoomsRoute
   StaffSettingsRoute: typeof StaffSettingsRoute
+  StaffUsersRoute: typeof StaffUsersRoute
   StaffIndexRoute: typeof StaffIndexRoute
 }
 
@@ -728,6 +748,7 @@ const StaffRouteChildren: StaffRouteChildren = {
   StaffRoomSettingsRoute: StaffRoomSettingsRoute,
   StaffRoomsRoute: StaffRoomsRoute,
   StaffSettingsRoute: StaffSettingsRoute,
+  StaffUsersRoute: StaffUsersRoute,
   StaffIndexRoute: StaffIndexRoute,
 }
 
