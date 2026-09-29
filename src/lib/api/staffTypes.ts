@@ -107,6 +107,10 @@ export interface StaffPackageWrite {
   discount_type?: OfferType | "none";
   discount_value?: string;
   offer_ends_at?: string | null;
+  /** Acknowledgement, not data: the caller has been told that repricing a
+   *  sailing with live bookings leaves those bookings on the price they were
+   *  quoted, and wants it anyway. The server refuses the change without it. */
+  confirm_reprice?: boolean;
 }
 
 export interface StaffPayment {

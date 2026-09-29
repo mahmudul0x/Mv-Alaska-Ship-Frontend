@@ -734,9 +734,43 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      // Repricing a sailing people are already booked on needs saying out
+      // loud. The server refuses it without `confirm_reprice`, so asking here
+      // is what turns that refusal into a decision rather than a dead end —
+      // and it says plainly that the existing bookings are untouched, because
+      // the fear that they are not is what stops people doing something
+      // perfectly reasonable.
+      let confirmReprice = false;
+      const repricing =
+        pkg &&
+        form.adult_price !== undefined &&
+        String(form.adult_price) !== String(pkg.adult_price);
+      const liveBookings = pkg?.bookings_count ?? 0;
+
+      if (repricing && liveBookings > 0) {
+        confirmReprice = window.confirm(
+          `${liveBookings} booking(s) are already on this sailing.
+
+` +
+            `They keep the price they were quoted — their invoices and ` +
+            `balances will not change. Only NEW bookings will use ` +
+            `${form.adult_price}.
+
+` +
+            `To discount the remaining cabins instead, cancel this and set an ` +
+            `Offer — that shows the saving on the package card and ends on ` +
+            `its own date.
+
+Change the price anyway?`,
+        );
+        if (!confirmReprice) throw new Error("__cancelled__");
+      }
+
+      const payload = confirmReprice ? { ...form, confirm_reprice: true } : form;
+
       // Create first, then the picture: a new package has no id to attach it
       // to, and the upload is a separate multipart request either way.
-      const saved = pkg ? await updateStaffPackage(pkg.id, form) : await createStaffPackage(form);
+      const saved = pkg ? await updateStaffPackage(pkg.id, payload) : await createStaffPackage(form);
       if (heroFile) return uploadStaffPackageHero(saved.id, heroFile);
       if (heroCleared && pkg?.hero_image) return clearStaffPackageHero(saved.id);
       return saved;
@@ -746,7 +780,12 @@ function PackageFormDialog({ pkg, onClose }: { pkg: StaffPackage | null; onClose
       queryClient.invalidateQueries({ queryKey: ["staff"] });
       onClose();
     },
-    onError: (err) => toast.error(errorText(err)),
+    onError: (err) => {
+      // Declining the reprice confirmation is a choice, not a failure — it
+      // rejects the mutation to stop the save, and must not raise a toast.
+      if (err instanceof Error && err.message === "__cancelled__") return;
+      toast.error(errorText(err));
+    },
   });
 
   const canSubmit = form.start_date && form.end_date && form.adult_price;
