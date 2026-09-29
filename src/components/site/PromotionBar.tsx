@@ -125,11 +125,20 @@ export function PromotionBar() {
       initial={{ y: -40 }}
       animate={{ y: 0 }}
       transition={{ type: "spring", damping: 24, stiffness: 260, delay: 0.15 }}
-      // z-60 clears the navbar's z-50. Opaque gold, like OfferBadge: contrast
-      // then never depends on what happens to be behind it on a given page.
-      className="fixed inset-x-0 top-0 z-60 gradient-gold py-1.75 shadow-[0_1px_12px_rgba(0,0,0,0.18)]"
+      // z-60 clears the navbar's z-50.
+      //
+      // Deep ocean, not gold. A full-width band of bright gold reads as a sale
+      // banner — the thing every discount site has — and at this width the
+      // gradient went muddy rather than rich. Dark ground with gold on it is
+      // the same pairing the rest of the site uses for anything premium, it
+      // sits naturally above the navbar's dark glass, and it lets the badge and
+      // the button BE the gold instead of competing with a gold background.
+      //
+      // The hairline underneath separates the bar from the hero without a
+      // shadow, which at 36px tall would read as a smudge.
+      className="fixed inset-x-0 top-0 z-60 border-b border-gold/25 bg-ocean py-1.75"
     >
-      <div className="container-luxe flex items-center gap-2.5 text-midnight">
+      <div className="container-luxe flex items-center gap-3 text-background">
         {/* mode="wait" so one offer has left before the next arrives — two
             headlines crossfading through each other is unreadable at this
             size. */}
@@ -157,7 +166,7 @@ export function PromotionBar() {
                 aria-label={`Show offer ${i + 1}`}
                 onClick={() => setIndex(i)}
                 className={`size-1.5 rounded-full transition ${
-                  i === index ? "bg-midnight" : "bg-midnight/30 hover:bg-midnight/60"
+                  i === index ? "bg-gold" : "bg-background/30 hover:bg-background/60"
                 }`}
               />
             ))}
@@ -169,7 +178,7 @@ export function PromotionBar() {
           onClick={dismiss}
           aria-label="Hide this announcement"
           title="Hide until next visit"
-          className="-mr-1 shrink-0 rounded-full p-1 text-midnight/55 transition hover:bg-midnight/10 hover:text-midnight focus-visible:ring-2 focus-visible:ring-midnight/40 focus-visible:outline-none"
+          className="-mr-1 shrink-0 rounded-full p-1 text-background/45 transition hover:bg-background/10 hover:text-background focus-visible:ring-2 focus-visible:ring-gold/60 focus-visible:outline-none"
         >
           <X aria-hidden="true" className="size-3.5" />
         </button>
@@ -194,30 +203,30 @@ function BarContent({ promotion }: { promotion: Promotion }) {
           {promotion.badge_label}
         </span>
       ) : (
-        <Sparkles aria-hidden="true" className="size-3.5 shrink-0" />
+        <Sparkles aria-hidden="true" className="size-3.5 shrink-0 text-gold" />
       )}
 
       {/* One line, always. A bar that wraps stops being a bar and starts
           pushing the whole page down — so the headline truncates and the
           supporting line is dropped on narrow screens rather than allowed to
           claim a second row. */}
-      <span className="truncate text-[13px] font-semibold tracking-tight">
+      <span className="truncate text-[13px] font-semibold tracking-tight text-background">
         {promotion.title}
       </span>
 
       {promotion.subtitle && (
         <>
-          <span aria-hidden="true" className="hidden opacity-30 md:inline">
+          <span aria-hidden="true" className="hidden text-background/25 md:inline">
             |
           </span>
-          <span className="hidden truncate text-[13px] font-medium opacity-80 md:inline">
+          <span className="hidden truncate text-[13px] font-medium text-background/70 md:inline">
             {promotion.subtitle}
           </span>
         </>
       )}
 
       {hasLink && (
-        <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full bg-midnight/12 px-3 py-1 text-[11px] font-bold uppercase tracking-widest transition group-hover:bg-midnight/20">
+        <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full gradient-gold px-3.5 py-1 text-[11px] font-bold uppercase tracking-widest text-midnight shadow-sm transition duration-300 group-hover:brightness-110">
           {promotion.cta_label || "View"}
           <ArrowRight
             aria-hidden="true"
