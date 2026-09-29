@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 
 import { getPromotions, type Promotion } from "@/lib/api/promotions";
 
+export type PromotionSurface = "modal" | "top_bar" | "home_section";
+
 /** Every promotion the server considers live right now.
  *
  *  Kept fresh for five minutes: a promotion is marketing copy, not a price or
@@ -17,23 +19,38 @@ export function usePromotions() {
   });
 }
 
-/** The single promotion a given surface should show.
+const WANTS: Record<PromotionSurface, (p: Promotion) => boolean> = {
+  modal: (p) => p.show_in_modal,
+  top_bar: (p) => p.show_in_top_bar,
+  home_section: (p) => p.show_in_home_section,
+};
+
+/** Every live promotion that asked for this surface, in the order staff set.
  *
- *  The modal and the top bar are singular by nature — two modals is a
- *  broken site, and two stacked bars push the whole page down. Staff
- *  order promotions with `sort_order`, and the server returns them in that
- *  order, so "the first one that asked for this surface" is the whole rule. */
-export function usePromotionFor(
-  surface: "modal" | "top_bar" | "home_section",
-): Promotion | undefined {
+ *  Three sailings can each carry their own offer at the same time, and they
+ *  are not alternatives to each other — a visitor interested in the October
+ *  departure is not served by being shown only the one for December. The
+ *  surfaces differ in what they can do about that:
+ *
+ *  - the home section lays them all out, because it has the room;
+ *  - the top bar cycles through them, because it has one line;
+ *  - the modal shows one, because two modals is a broken site.
+ *
+ *  Returns a stable empty array while loading so callers can map over it
+ *  without a null check. */
+export function usePromotionsFor(surface: PromotionSurface): Promotion[] {
   const { data } = usePromotions();
-  if (!data?.length) return undefined;
+  if (!data?.length) return EMPTY;
+  return data.filter(WANTS[surface]);
+}
 
-  const wants: Record<typeof surface, (p: Promotion) => boolean> = {
-    modal: (p) => p.show_in_modal,
-    top_bar: (p) => p.show_in_top_bar,
-    home_section: (p) => p.show_in_home_section,
-  };
+const EMPTY: Promotion[] = [];
 
-  return data.find(wants[surface]);
+/** The single promotion a surface that can only hold one should show.
+ *
+ *  Staff order promotions with `sort_order` and the server returns them in
+ *  that order, so "the first one that asked for this surface" is the whole
+ *  rule. */
+export function usePromotionFor(surface: PromotionSurface): Promotion | undefined {
+  return usePromotionsFor(surface)[0];
 }

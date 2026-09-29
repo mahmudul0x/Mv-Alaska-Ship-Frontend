@@ -132,12 +132,20 @@ export function PackagePicker({ selectedPackageId, onSelectPackage }: Props) {
                   )}
                 </div>
 
-                {/* The offer and the tick share the right-hand column, aligned
+                {/* The offer and the tick share the top-right corner, aligned
                     to the edge. An offer is a different kind of news from a
                     status — stacking both down the left crowded one corner and
-                    left the other empty. Capped at 70% so a long offer name
-                    cannot reach across and collide with the status pill. */}
-                <div className="absolute top-3 right-3 flex max-w-[70%] flex-col items-end gap-1.5">
+                    left the other empty.
+
+                    One ROW, not a column. Stacked, selecting a package pushed
+                    the offer badge onto a second line and left it hanging
+                    mid-image — which nobody saw until offers started linking
+                    straight to /booking with the package already selected, so
+                    the two are now on screen together as a matter of course.
+                    row-reverse keeps the tick hard against the corner with the
+                    badge to its left; the badge already truncates its label, so
+                    a long offer name shortens rather than wrapping. */}
+                <div className="absolute top-3 right-3 flex max-w-[85%] flex-row-reverse items-center gap-2">
                   {selected && (
                     <div className="size-7 shrink-0 rounded-full gradient-gold grid place-items-center shadow-luxe">
                       <Check className="size-4 text-ocean" strokeWidth={3} />
