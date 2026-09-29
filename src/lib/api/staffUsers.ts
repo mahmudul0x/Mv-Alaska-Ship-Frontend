@@ -15,6 +15,10 @@ export type StaffAccount = {
   email: string;
   role: StaffRole;
   role_display: string;
+  /** What was ticked for this account. Empty for administrators. */
+  capabilities: string[];
+  /** What it can actually do — the full list for an administrator. */
+  effective_capabilities: string[];
   is_active: boolean;
   last_login: string | null;
   date_joined: string;
@@ -26,6 +30,7 @@ export type StaffAccountWrite = {
   last_name?: string;
   email?: string;
   role?: StaffRole;
+  capabilities?: string[];
   is_active?: boolean;
   /** Only when creating, or deliberately resetting. Omit to leave unchanged. */
   password?: string;
@@ -55,4 +60,27 @@ export async function updateStaffAccount(
  *  it created and the status changes it signed. */
 export async function deactivateStaffAccount(id: number): Promise<void> {
   await staffClient.delete(`/staff/users/${id}/`);
+}
+
+/** One thing an account can be given, as the server defines it. */
+export type CapabilityInfo = {
+  key: string;
+  label: string;
+  description: string;
+  group: string;
+  /** Costs money or reaches the public — the form says so before ticking. */
+  sensitive: boolean;
+};
+
+export type CapabilityCatalogue = {
+  capabilities: CapabilityInfo[];
+  /** Pre-ticked on a new account: the desk job. */
+  defaults: string[];
+};
+
+/** Served, not duplicated: the boxes an administrator ticks come from the same
+ *  list the endpoints enforce, so a box can never grant nothing. */
+export async function getCapabilityCatalogue(): Promise<CapabilityCatalogue> {
+  const { data } = await staffClient.get<CapabilityCatalogue>("/staff/capabilities/");
+  return data;
 }

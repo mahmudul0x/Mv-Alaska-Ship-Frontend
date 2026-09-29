@@ -47,25 +47,39 @@ import { money, num } from "@/lib/i18n/format";
 import type { StringKey } from "@/lib/i18n/strings";
 import type { StaffKidRule, StaffRoom, StaffRoomImage, StaffShip } from "@/lib/api/staffTypes";
 import type { KidChargeType, RoomType } from "@/lib/api/types";
+import { hasCapability } from "@/lib/staffAuth";
 
 export const Route = createFileRoute("/staff/room-settings")({
   component: RoomSettingsPage,
 });
 
+/** Two jobs share this page: the rooms themselves ("rooms") and what they
+ *  cost ("pricing"). Each tab names the capability that opens it, so an
+ *  account given only one of them sees only its own tabs — the others would
+ *  fetch from endpoints that refuse it and render as a broken panel. */
 const TABS = [
-  { key: "room-types", label: "rs.tabRoomTypes", hint: "rs.tabRoomTypesHint", icon: BedDouble },
-  { key: "kid-pricing", label: "rs.tabKid", hint: "rs.tabKidHint", icon: Baby },
+  { key: "room-types", label: "rs.tabRoomTypes", hint: "rs.tabRoomTypesHint", icon: BedDouble, needs: "rooms" },
+  { key: "kid-pricing", label: "rs.tabKid", hint: "rs.tabKidHint", icon: Baby, needs: "pricing" },
   // Sits beside kid pricing because it is the same kind of thing: a global
   // fare policy, not a per-sailing price.
-  { key: "foreigner", label: "rs.tabForeigner", hint: "rs.tabForeignerHint", icon: Globe },
-  { key: "room-photos", label: "rs.tabPhotos", hint: "rs.tabPhotosHint", icon: Images },
-] as const satisfies readonly { key: string; label: StringKey; hint: StringKey; icon: unknown }[];
+  { key: "foreigner", label: "rs.tabForeigner", hint: "rs.tabForeignerHint", icon: Globe, needs: "pricing" },
+  { key: "room-photos", label: "rs.tabPhotos", hint: "rs.tabPhotosHint", icon: Images, needs: "rooms" },
+] as const satisfies readonly {
+  key: string;
+  label: StringKey;
+  hint: StringKey;
+  icon: unknown;
+  needs: string;
+}[];
 
 type TabKey = (typeof TABS)[number]["key"];
 
 function RoomSettingsPage() {
   const t = useT();
-  const [activeTab, setActiveTab] = useState<TabKey>("room-types");
+  const tabs = TABS.filter((tab) => hasCapability(tab.needs));
+  // First tab this account can open — "room-types" for most, "kid-pricing"
+  // for somebody given pricing alone.
+  const [activeTab, setActiveTab] = useState<TabKey>(tabs[0]?.key ?? "room-types");
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -73,7 +87,7 @@ function RoomSettingsPage() {
 
       {/* Tab bar */}
       <div className="flex gap-2 border-b border-border">
-        {TABS.map(({ key, label, hint, icon: Icon }) => {
+        {tabs.map(({ key, label, hint, icon: Icon }) => {
           const active = key === activeTab;
           return (
             <button

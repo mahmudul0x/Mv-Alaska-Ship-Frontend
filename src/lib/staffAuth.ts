@@ -10,6 +10,9 @@ export type StaffUser = {
   is_staff: boolean;
   role?: StaffRole;
   is_admin?: boolean;
+  /** What this account may do, as sent at login. Administrators get the full
+   *  list, so nothing here has to re-derive "admin means everything". */
+  capabilities?: string[];
 };
 
 /** Whether this session may reach the administrator-only screens.
@@ -60,4 +63,24 @@ export function clearStaffSession() {
 
 export function isStaffLoggedIn() {
   return Boolean(getRefreshToken());
+}
+
+/** Whether this session was given any of the named capabilities.
+ *
+ *  "Any of", matching the server's HasCapability.of(...): a screen that two
+ *  jobs both legitimately use is shown to either.
+ *
+ *  Courtesy, not security — the API enforces every one of these itself. It
+ *  decides what to SHOW, so nobody is offered a screen that will refuse them.
+ *
+ *  A session stored before capabilities existed carries no list. Its owner
+ *  was an administrator at the time (booking staff did not exist yet), so the
+ *  absence falls back to the admin check rather than to "nothing" — which
+ *  would blank the dashboard for exactly the person who installed this. */
+export function hasCapability(...keys: string[]): boolean {
+  const user = getStaffUser();
+  if (!user) return false;
+  if (isStaffAdmin(user)) return true;
+  const held = user.capabilities ?? [];
+  return keys.some((k) => held.includes(k));
 }

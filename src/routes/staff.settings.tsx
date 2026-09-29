@@ -20,7 +20,7 @@ import { getStaffShips, updateStaffShip } from "@/lib/api/staff";
 import { useLanguage, useT } from "@/lib/i18n";
 import type { Lang } from "@/lib/i18n";
 import type { StringKey } from "@/lib/i18n/strings";
-import { getStaffUser } from "@/lib/staffAuth";
+import { getStaffUser, hasCapability } from "@/lib/staffAuth";
 import type { GuideReportDensity, StaffShip } from "@/lib/api/staffTypes";
 
 export const Route = createFileRoute("/staff/settings")({
@@ -30,17 +30,25 @@ export const Route = createFileRoute("/staff/settings")({
 /** The page's own contents, in the order they appear, so the side rail and the
  *  body cannot drift apart. Fare policy is deliberately NOT here — it lives on
  *  Room Settings, where staff go to change what things cost. */
-const SECTIONS: { id: string; label: StringKey; icon: LucideIcon }[] = [
+const SECTIONS: { id: string; label: StringKey; icon: LucideIcon; ship?: boolean }[] = [
+  // Yours, whatever you were given: who you are and what language you read.
   { id: "account", label: "st.account", icon: UserRound },
   { id: "language", label: "st.language", icon: Languages },
-  { id: "inbox", label: "st.contactInbox", icon: Mail },
-  { id: "helpline", label: "st.helpline", icon: Phone },
-  { id: "report", label: "st.guideReport", icon: FileText },
+  // The ship's, and they reach every customer — the inbox address, the
+  // helpline printed on invoices, the report layout. `ship` marks them as
+  // needing the "settings" capability; the API refuses the writes regardless.
+  { id: "inbox", label: "st.contactInbox", icon: Mail, ship: true },
+  { id: "helpline", label: "st.helpline", icon: Phone, ship: true },
+  { id: "report", label: "st.guideReport", icon: FileText, ship: true },
 ];
 
 function SettingsPage() {
   const t = useT();
   const user = getStaffUser();
+  // The page itself is open to everyone — the language switch lives here, and
+  // hiding the whole page (as the first version of roles did) left booking
+  // staff unable to change the dashboard's language at all.
+  const canEditShip = hasCapability("settings");
   const initial = (user?.first_name || user?.username || "S").charAt(0).toUpperCase();
 
   return (
@@ -55,7 +63,7 @@ function SettingsPage() {
         aria-label={t("st.sections")}
         className="mt-6 flex items-center gap-1 overflow-x-auto border-b border-border pb-px"
       >
-        {SECTIONS.map(({ id, label, icon: Icon }) => (
+        {SECTIONS.filter((s) => !s.ship || canEditShip).map(({ id, label, icon: Icon }) => (
           <a
             key={id}
             href={`#${id}`}
@@ -104,15 +112,19 @@ function SettingsPage() {
         <section id="language" className="scroll-mt-8">
           <LanguageSection />
         </section>
-        <section id="inbox" className="scroll-mt-8">
-          <NotificationInboxSection />
-        </section>
-        <section id="helpline" className="scroll-mt-8">
-          <HelplineSection />
-        </section>
-        <section id="report" className="scroll-mt-8">
-          <GuideReportSection />
-        </section>
+        {canEditShip && (
+          <>
+            <section id="inbox" className="scroll-mt-8">
+              <NotificationInboxSection />
+            </section>
+            <section id="helpline" className="scroll-mt-8">
+              <HelplineSection />
+            </section>
+            <section id="report" className="scroll-mt-8">
+              <GuideReportSection />
+            </section>
+          </>
+        )}
       </div>
     </div>
   );

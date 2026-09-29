@@ -30,6 +30,7 @@ import type { StringKey } from "@/lib/i18n/strings";
 import {
   clearStaffSession,
   getRefreshToken,
+  hasCapability,
   isStaffAdmin,
   isStaffLoggedIn,
 } from "@/lib/staffAuth";
@@ -53,51 +54,67 @@ export const Route = createFileRoute("/staff")({
     // refuses every one of those calls regardless, which is what actually
     // protects them (apps/accounts/permissions.py). Matched by prefix so
     // detail routes under an admin-only section are covered too.
-    if (!isStaffAdmin()) {
-      const blocked = NAV.filter((i) => i.adminOnly).map((i) => i.to);
-      if (blocked.some((path) => location.pathname.startsWith(path))) {
-        throw redirect({ to: "/staff" });
-      }
+    // Longest match first, so /staff/room-settings is judged as itself and not
+    // as /staff/rooms, and /staff itself (open to all) only matches exactly.
+    const entry = [...NAV]
+      .filter((i) => i.to !== "/staff")
+      .sort((a, b) => b.to.length - a.to.length)
+      .find((i) => location.pathname.startsWith(i.to));
+    if (entry && !canOpen(entry)) {
+      throw redirect({ to: "/staff" });
     }
   },
   head: () => ({ meta: [{ title: "Staff Dashboard — MV Alaska" }] }),
 });
 
-/** The sidebar. `adminOnly` mirrors what the API enforces — see
- *  apps/accounts/permissions.py. Hiding a link the account cannot use is
- *  courtesy, not security: the endpoint refuses it either way, and typing the
- *  URL still lands on a 403. Keep the two in step. */
+/** The sidebar. Each entry names the capabilities that open it — any one is
+ *  enough, matching the server's HasCapability.of(...). No `needs` means every
+ *  signed-in account. `adminOnly` is for staff management alone, which is
+ *  deliberately not a capability (granting it grants everything).
+ *
+ *  Mirrors apps/accounts/capabilities.py and the permission on each endpoint.
+ *  Hiding a link is courtesy, not security: the API refuses regardless, and a
+ *  typed URL still lands on a 403. Keep the two in step, or a visible button
+ *  refuses its own click. */
 const NAV: {
   to: string;
   label: StringKey;
   icon: LucideIcon;
   exact: boolean;
+  needs?: string[];
   adminOnly?: boolean;
 }[] = [
   { to: "/staff", label: "nav.overview", icon: LayoutDashboard, exact: true },
-  { to: "/staff/bookings", label: "nav.bookings", icon: ClipboardList, exact: false },
-  { to: "/staff/messages", label: "nav.messages", icon: MessageSquare, exact: false },
-  // Money leaving the company.
-  { to: "/staff/refunds", label: "nav.refunds", icon: Wallet, exact: false, adminOnly: true },
-  // The price list, the public site, and everything that configures them.
-  { to: "/staff/packages", label: "nav.packages", icon: CalendarRange, exact: false, adminOnly: true },
-  { to: "/staff/promotions", label: "nav.promotions", icon: Megaphone, exact: false, adminOnly: true },
-  { to: "/staff/rooms", label: "nav.rooms", icon: BedDouble, exact: false, adminOnly: true },
-  { to: "/staff/cabins", label: "nav.cabins", icon: DoorOpen, exact: false, adminOnly: true },
-  { to: "/staff/gallery", label: "nav.gallery", icon: Images, exact: false, adminOnly: true },
-  { to: "/staff/room-settings", label: "nav.roomSettings", icon: SlidersHorizontal, exact: false, adminOnly: true },
-  { to: "/staff/food-menu", label: "nav.foodMenu", icon: ChefHat, exact: false, adminOnly: true },
+  { to: "/staff/bookings", label: "nav.bookings", icon: ClipboardList, exact: false, needs: ["bookings"] },
+  { to: "/staff/messages", label: "nav.messages", icon: MessageSquare, exact: false, needs: ["messages"] },
+  { to: "/staff/refunds", label: "nav.refunds", icon: Wallet, exact: false, needs: ["refunds"] },
+  // A sailing is one record serving two jobs: the schedule and the price.
+  { to: "/staff/packages", label: "nav.packages", icon: CalendarRange, exact: false, needs: ["packages", "pricing"] },
+  { to: "/staff/promotions", label: "nav.promotions", icon: Megaphone, exact: false, needs: ["promotions"] },
+  // The room map: the desk sees what is free, whoever runs the sailing blocks cabins.
+  { to: "/staff/rooms", label: "nav.rooms", icon: BedDouble, exact: false, needs: ["bookings", "packages"] },
+  { to: "/staff/cabins", label: "nav.cabins", icon: DoorOpen, exact: false, needs: ["rooms"] },
+  { to: "/staff/gallery", label: "nav.gallery", icon: Images, exact: false, needs: ["media"] },
+  // Room types (rooms) sit beside kid pricing and the foreigner surcharge (pricing).
+  { to: "/staff/room-settings", label: "nav.roomSettings", icon: SlidersHorizontal, exact: false, needs: ["rooms", "pricing"] },
+  { to: "/staff/food-menu", label: "nav.foodMenu", icon: ChefHat, exact: false, needs: ["food_menu"] },
   { to: "/staff/users", label: "nav.users", icon: UsersRound, exact: false, adminOnly: true },
-  { to: "/staff/settings", label: "nav.settings", icon: Settings, exact: false, adminOnly: true },
+  // Everyone: this is where the dashboard language and your own account live.
+  // The ship-settings sections inside it check "settings" themselves.
+  { to: "/staff/settings", label: "nav.settings", icon: Settings, exact: false },
 ] as const;
+
+/** Whether this session may open a sidebar entry. */
+function canOpen(item: (typeof NAV)[number]): boolean {
+  if (item.adminOnly) return isStaffAdmin();
+  if (!item.needs?.length) return true;
+  return hasCapability(...item.needs);
+}
 
 const COLLAPSE_KEY = "staff.sidebar.collapsed";
 
 function StaffLayout() {
   const navigate = useNavigate();
-  // Read once per render from the stored session; the sidebar and the route
-  // guards below both key off it.
-  const admin = isStaffAdmin();
   const { t } = useLanguage();
   const { data: notify } = useNotifications();
   // The Refunds page owns both of these, so its badge counts both: a customer
@@ -163,7 +180,7 @@ function StaffLayout() {
         </div>
 
         <nav className="flex-1 py-4 space-y-1 px-2 lg:px-3 overflow-y-auto scroll-subtle">
-          {NAV.filter((item) => !item.adminOnly || admin).map(
+          {NAV.filter(canOpen).map(
             ({ to, label, icon: Icon, exact }) => (
             <Link
               key={to}
