@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 import { usePromotionFor } from "@/hooks/queries/usePromotions";
@@ -11,20 +12,23 @@ import { usePromotionFor } from "@/hooks/queries/usePromotions";
  *  padding, rounding and background as the page scrolls, all of which depend on
  *  being fixed — it reads `top: var(--promo-bar-h, 0px)`, and this sets that
  *  variable from the bar's measured height. Measured rather than hardcoded
- *  because the text wraps to two lines on a narrow phone. */
+ *  because the bar is one line on a phone and one line on a desktop, but not
+ *  the same line. */
 const CSS_VAR = "--promo-bar-h";
 
 /**
  * A slim gold bar pinned above the navigation, on every page of the site.
  *
- * The quiet half of the pair: the modal interrupts once and then honours its
- * dismissal, and this stays. Somebody who closed the modal on Tuesday can still
- * find the offer on Friday without it being pushed at them again — which is why
- * it is not dismissible, and why it carries no artwork or body copy.
+ * Deliberately shallow — around 36px. It sits above a fixed navbar, so every
+ * pixel it takes is a pixel the navbar pushes down and the hero loses. The
+ * first version centred one line of text in a narrow column, which left both
+ * ends empty and made the bar look taller than it needed to be; this spreads
+ * the same content across the full width instead: the announcement reads from
+ * the left, the action sits at the right, and nothing is stacked.
  *
- * Renders nothing at all when no promotion is live, and clears the CSS variable
- * on the way out, so the navbar returns to the top of the viewport and every
- * page keeps its normal spacing the rest of the year.
+ * The quiet half of the pair. The modal interrupts once and then honours its
+ * dismissal; this stays, so somebody who closed the modal on Tuesday can still
+ * find the offer on Friday without it being pushed at them again.
  */
 export function PromotionBar() {
   const promotion = usePromotionFor("top_bar");
@@ -39,14 +43,10 @@ export function PromotionBar() {
     }
 
     const publish = () => {
-      const height = ref.current?.offsetHeight ?? 0;
-      root.style.setProperty(CSS_VAR, `${height}px`);
+      root.style.setProperty(CSS_VAR, `${ref.current?.offsetHeight ?? 0}px`);
     };
-
     publish();
 
-    // The bar grows a line when the viewport narrows, and the navbar has to
-    // follow it down rather than overlap.
     const observer = new ResizeObserver(publish);
     if (ref.current) observer.observe(ref.current);
 
@@ -59,66 +59,86 @@ export function PromotionBar() {
   if (!promotion) return null;
 
   const hasLink = Boolean(promotion.cta_url);
+  const isExternal = /^https?:\/\//i.test(promotion.cta_url);
+
+  const action = (
+    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-midnight/12 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.1em] transition group-hover:bg-midnight/20">
+      {promotion.cta_label || "View"}
+      <ArrowRight
+        aria-hidden="true"
+        className="size-3 transition-transform duration-300 group-hover:translate-x-0.5"
+      />
+    </span>
+  );
 
   const content = (
     <>
-      {promotion.badge_label && (
-        <span className="shrink-0 rounded-full bg-midnight/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]">
+      {promotion.badge_label ? (
+        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-midnight px-2.5 py-[3px] text-[10px] font-bold uppercase tracking-[0.14em] text-gold">
+          <Sparkles aria-hidden="true" className="size-2.5" />
           {promotion.badge_label}
         </span>
+      ) : (
+        <Sparkles aria-hidden="true" className="size-3.5 shrink-0" />
       )}
-      {/* Truncates rather than wrapping on wide screens: a two-line bar stops
-          being a bar and starts pushing the whole page down. */}
-      <span className="truncate font-semibold">{promotion.title}</span>
+
+      {/* One line, always. A bar that wraps stops being a bar and starts
+          pushing the whole page down — so the headline truncates and the
+          supporting line is simply dropped on narrow screens rather than
+          allowed to claim a second row. */}
+      <span className="truncate text-[13px] font-semibold tracking-tight">
+        {promotion.title}
+      </span>
+
       {promotion.subtitle && (
         <>
-          <span aria-hidden="true" className="hidden opacity-45 sm:inline">
-            ·
+          <span aria-hidden="true" className="hidden opacity-30 md:inline">
+            |
           </span>
-          <span className="hidden truncate font-medium opacity-90 sm:inline">
+          <span className="hidden truncate text-[13px] font-medium opacity-80 md:inline">
             {promotion.subtitle}
           </span>
         </>
       )}
-      {hasLink && (
-        <ArrowRight
-          aria-hidden="true"
-          className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5"
-        />
-      )}
+
+      {/* Pushes the action to the far right, which is the whole point of the
+          rework: the ends of the bar carry something instead of being padding. */}
+      {hasLink && <span className="ml-auto" />}
+      {hasLink && action}
     </>
   );
 
-  // Solid gold with midnight text, matching OfferBadge: an opaque background
-  // means the contrast does not depend on what is behind it on any given page.
   const inner =
-    "group mx-auto flex w-full max-w-5xl items-center justify-center gap-2.5 px-4 text-sm text-midnight";
+    "group container-luxe flex w-full items-center gap-2.5 text-midnight";
 
   return (
-    // z-60 clears the navbar's z-50. Fixed rather than in the document flow so
-    // it stays put over the full-bleed hero, which starts at the very top.
-    <div
+    <motion.div
       ref={ref}
-      className="fixed inset-x-0 top-0 z-[60] gradient-gold py-2 shadow-luxe"
+      initial={{ y: -40 }}
+      animate={{ y: 0 }}
+      transition={{ type: "spring", damping: 24, stiffness: 260, delay: 0.15 }}
+      // z-60 clears the navbar's z-50. Opaque gold, like OfferBadge: contrast
+      // then never depends on what happens to be behind it on a given page.
+      className="fixed inset-x-0 top-0 z-60 gradient-gold py-[7px] shadow-[0_1px_12px_rgba(0,0,0,0.18)]"
     >
       {hasLink ? (
-        /^https?:\/\//i.test(promotion.cta_url) ? (
+        isExternal ? (
           <a
             href={promotion.cta_url}
             target="_blank"
             rel="noopener noreferrer"
-            className={`${inner} transition hover:brightness-105`}
+            className={inner}
           >
             {content}
           </a>
         ) : (
-          <Link to={promotion.cta_url} className={`${inner} transition hover:brightness-105`}>
+          <Link to={promotion.cta_url} className={inner}>
             {content}
           </Link>
         )
       ) : (
         <div className={inner}>{content}</div>
       )}
-    </div>
+    </motion.div>
   );
 }
