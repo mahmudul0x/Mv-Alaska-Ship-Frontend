@@ -126,32 +126,34 @@ export function PromotionBar() {
       initial={{ y: -40 }}
       animate={{ y: 0 }}
       transition={{ type: "spring", damping: 24, stiffness: 260, delay: 0.15 }}
-      // z-60 clears the navbar's z-50. Opaque gold, like OfferBadge: contrast
-      // then never depends on what happens to be behind it on a given page.
+      // z-60 clears the navbar's z-50.
       //
-      // The two dark elements — the badge at one end, the button at the other —
-      // are what make the band read as composed rather than as a plain strip of
-      // colour. They bookend the line and give the eye somewhere to start and
-      // finish. A hairline underneath separates the bar from the hero; a drop
-      // shadow at 36px tall reads as a smudge.
-      className="fixed inset-x-0 top-0 z-60 overflow-hidden border-b border-midnight/10 gradient-gold py-1.75"
+      // glass-dark, the same treatment the navbar takes once it scrolls — so
+      // the two read as one stacked surface rather than a coloured slab with a
+      // navbar hanging under it. Deliberately NOT fully transparent: the bar is
+      // fixed, so the whole page scrolls beneath it, and over pale content the
+      // text would be unreadable within one flick of the wheel. The tint keeps
+      // it legible over anything while still letting the hero show through.
+      //
+      // The gold now belongs to the badge and the button, which bookend the
+      // line and give the eye somewhere to start and finish.
+      className="glass-dark fixed inset-x-0 top-0 z-60 overflow-hidden py-1.75"
     >
       {/* One sweep of light across the band shortly after it lands, then
-          never again. It says "this is new" at the moment that is true and
-          then gets out of the way; on a loop it would be a carnival sign, and
-          on something pinned to every page that is unforgivable. Hidden from
-          anyone who asked for reduced motion. */}
+          never again. Fainter than it was on the gold ground — over glass a
+          bright sweep reads as a smear on the screen rather than a shine on a
+          surface. Hidden from anyone who asked for reduced motion. */}
       {!reduceMotion && (
         <motion.span
           aria-hidden="true"
           initial={{ x: "-130%" }}
           animate={{ x: "130%" }}
           transition={{ delay: 1, duration: 1.4, ease: "easeInOut" }}
-          className="pointer-events-none absolute inset-y-0 w-1/4 -skew-x-12 bg-white/25 blur-md"
+          className="pointer-events-none absolute inset-y-0 w-1/4 -skew-x-12 bg-white/10 blur-md"
         />
       )}
 
-      <div className="relative container-luxe flex items-center gap-3 text-midnight">
+      <div className="relative container-luxe flex items-center gap-3 text-background">
         {/* mode="wait" so one offer has left before the next arrives — two
             headlines crossfading through each other is unreadable at this
             size. */}
@@ -179,7 +181,7 @@ export function PromotionBar() {
                 aria-label={`Show offer ${i + 1}`}
                 onClick={() => setIndex(i)}
                 className={`size-1.5 rounded-full transition ${
-                  i === index ? "bg-ocean" : "bg-midnight/25 hover:bg-midnight/50"
+                  i === index ? "bg-gold" : "bg-background/30 hover:bg-background/60"
                 }`}
               />
             ))}
@@ -191,7 +193,7 @@ export function PromotionBar() {
           onClick={dismiss}
           aria-label="Hide this announcement"
           title="Hide until next visit"
-          className="-mr-1 shrink-0 rounded-full p-1 text-midnight/45 transition hover:bg-midnight/10 hover:text-midnight focus-visible:ring-2 focus-visible:ring-ocean/50 focus-visible:outline-none"
+          className="-mr-1 shrink-0 rounded-full p-1 text-background/45 transition hover:bg-background/10 hover:text-background focus-visible:ring-2 focus-visible:ring-gold/60 focus-visible:outline-none"
         >
           <X aria-hidden="true" className="size-3.5" />
         </button>
@@ -216,14 +218,14 @@ function BarContent({ promotion }: { promotion: Promotion }) {
           {promotion.badge_label}
         </span>
       ) : (
-        <Sparkles aria-hidden="true" className="size-3.5 shrink-0 text-ocean/70" />
+        <Sparkles aria-hidden="true" className="size-3.5 shrink-0 text-gold" />
       )}
 
       {/* One line, always. A bar that wraps stops being a bar and starts
           pushing the whole page down — so the headline truncates and the
           supporting line is dropped on narrow screens rather than allowed to
           claim a second row. */}
-      <span className="truncate text-[13px] font-semibold tracking-tight text-midnight">
+      <span className="truncate text-[13px] font-semibold tracking-tight text-background">
         {promotion.title}
       </span>
 
@@ -233,16 +235,16 @@ function BarContent({ promotion }: { promotion: Promotion }) {
               baseline and reads as punctuation belonging to the headline. */}
           <span
             aria-hidden="true"
-            className="hidden h-3.5 w-px shrink-0 bg-midnight/20 md:block"
+            className="hidden h-3.5 w-px shrink-0 bg-background/25 md:block"
           />
-          <span className="hidden truncate text-[12.5px] font-medium tracking-tight text-midnight/65 md:inline">
+          <span className="hidden truncate text-[12.5px] font-medium tracking-tight text-background/70 md:inline">
             {promotion.subtitle}
           </span>
         </>
       )}
 
       {hasLink && (
-        <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ocean px-3.5 py-1 text-[10px] font-bold uppercase tracking-widest text-gold transition duration-300 group-hover:bg-midnight">
+        <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full gradient-gold px-3.5 py-1 text-[10px] font-bold uppercase tracking-widest text-midnight transition duration-300 group-hover:brightness-110">
           {promotion.cta_label || "View"}
           <ArrowRight
             aria-hidden="true"
